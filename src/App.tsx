@@ -8,6 +8,7 @@ import { useBattleLiveEngine } from './hooks/useBattleLiveEngine';
 import { BroadcastStage9x16, StagePerfMetrics } from './components/BroadcastStage9x16';
 import { AiDirectorWorkspace } from './components/AiDirectorWorkspace';
 import { TikTokIntelAndMemoryWorkspace } from './components/TikTokIntelAndMemoryWorkspace';
+import { LiveIntelligenceWorkspace } from './components/LiveIntelligenceWorkspace';
 import { VfxLibraryWorkspace } from './components/VfxLibraryWorkspace';
 import { TimelineAndSoundWorkspace } from './components/TimelineAndSoundWorkspace';
 import { ManifestAndQcWorkspace } from './components/ManifestAndQcWorkspace';
@@ -16,6 +17,7 @@ import { ObsLinksModal } from './components/ObsLinksModal';
 type WorkspaceTab =
   | 'ai_director'
   | 'tiktok_intel'
+  | 'live_intelligence'
   | 'vfx_library'
   | 'timeline_sound'
   | 'manifest_qc';
@@ -80,6 +82,7 @@ export default function App() {
             [
               { id: 'ai_director', label: 'במאי AI ומצלמה' },
               { id: 'tiktok_intel', label: 'הזנת לייבים ולמידת AI' },
+              { id: 'live_intelligence', label: 'מודיעין לייבים ומסקנות' },
               { id: 'vfx_library', label: 'ספריית אפקטים' },
               { id: 'timeline_sound', label: 'ציר זמן וסאונד' },
               { id: 'manifest_qc', label: 'מניפסט ובקרה' },
@@ -126,6 +129,10 @@ export default function App() {
             onPerfSample={setPerfMetrics}
             onOpenTikTokTab={() => setActiveTab('tiktok_intel')}
           />
+        )}
+
+        {activeTab === 'live_intelligence' && (
+          <LiveIntelligenceWorkspace onOpenOriginalWatchlist={() => setActiveTab('tiktok_intel')} />
         )}
 
         {activeTab === 'tiktok_intel' && (

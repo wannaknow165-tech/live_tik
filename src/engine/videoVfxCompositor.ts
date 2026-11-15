@@ -4,6 +4,8 @@ import {
   CustomUserVideoVfx,
   VfxLayer,
 } from '../data/boosteraCatalog';
+// @ts-ignore: portable pure-EJS geometry shared with Node unit tests.
+import { alphaPlacementRects } from './alphaGeometry.mjs';
 
 export interface VideoVfxDescriptor {
   id: string;
@@ -17,7 +19,7 @@ export interface VideoVfxDescriptor {
   maskBottomFeatherPct: number;
   playEmbeddedAudio: boolean;
   durationSec: number;
-  compositingMode: 'CHROMA_GREEN' | 'SCREEN_BLACK';
+  compositingMode: 'CHROMA_GREEN' | 'SCREEN_BLACK' | 'TRUE_ALPHA';
 }
 
 interface ActivePlaybackEntry {
@@ -37,6 +39,33 @@ class BoosteraVideoVfxCompositor {
   private readonly WORK_H = 320;
 
   constructor() {
+    // Original studio effects + eight true-alpha clips integrated with the actual stage.
+    // Browser draws VP9 alpha directly (no chroma key), on the declared FRONT/BACK layer.
+    const alphaClips: Array<{
+      id: string; titleHe: string; filename: string;
+      layer: 'FRONT' | 'BACK'; durationSec: number;
+    }> = [
+      { id: 'ALPHA_BATTLE_SMOKE', titleHe: 'עשן קרב שקוף', filename: 'battle_smoke', layer: 'BACK', durationSec: 7 },
+      { id: 'ALPHA_CO2_SHARE', titleHe: 'CO2 שקוף', filename: 'co2_share', layer: 'FRONT', durationSec: 5 },
+      { id: 'ALPHA_ELECTRIC_ENERGY', titleHe: 'אנרגיה חשמלית שקופה', filename: 'electric_energy', layer: 'BACK', durationSec: 6 },
+      { id: 'ALPHA_FIRE_CANNONS', titleHe: 'עמודי אש שקופים', filename: 'fire_cannons', layer: 'FRONT', durationSec: 5 },
+      { id: 'ALPHA_FIRE_SWEEP', titleHe: 'מעבר אש שקוף', filename: 'fire_sweep', layer: 'FRONT', durationSec: 5 },
+      { id: 'ALPHA_GOLD_SPARKS', titleHe: 'ניצוצות זהב שקופים', filename: 'gold_sparks', layer: 'FRONT', durationSec: 6 },
+      { id: 'ALPHA_LIGHTNING_STRIKES', titleHe: 'ברק שקוף', filename: 'lightning_strikes', layer: 'FRONT', durationSec: 5 },
+      { id: 'ALPHA_SHOCKWAVE', titleHe: 'גל הדף שקוף', filename: 'shockwave', layer: 'FRONT', durationSec: 4 },
+    ];
+    for (const clip of alphaClips) {
+      this.descriptors.set(clip.id, {
+        id: clip.id, titleHe: clip.titleHe,
+        videoSrc: '/assets/boostera-alpha/' + clip.filename + '.webm',
+        layer: clip.layer,
+        framingMode: 'SPLIT_EDGES_9X16',
+        cropBottomPct: 0, fadeTailSec: 0.55,
+        trimStartSec: 0, maskBottomFeatherPct: 0,
+        playEmbeddedAudio: false, durationSec: clip.durationSec,
+        compositingMode: 'TRUE_ALPHA',
+      });
+    }
     for (const asset of BOOSTERA_ASSETS) {
       if (asset.videoSrc) {
         this.descriptors.set(asset.id, {
@@ -391,6 +420,27 @@ class BoosteraVideoVfxCompositor {
         player.video.play().catch(() => {});
       }
 
+      const totalSec = inst.durationMs / 1000;
+      const entryFade = Math.min(1, elapsedSec / 0.2);
+      const remainingSec = Math.max(0, totalSec - elapsedSec);
+      const tailFade = desc.fadeTailSec > 0 ? Math.min(1, remainingSec / desc.fadeTailSec) : 1;
+      const alpha = entryFade * tailFade * Math.min(1.15, inst.intensity || 1);
+
+      if (desc.compositingMode === 'TRUE_ALPHA') {
+        if (player.video.readyState < 2) continue;
+        // Preserve existing alpha pixels and the vertical 9:16 canvas proportions.
+        // Limit intensity even if a legacy manual or AI caller requests 1.0.
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(0.28, alpha));
+        const rectangles = alphaPlacementRects(desc.id,
+          player.video.videoWidth || 1280, player.video.videoHeight || 720, W, H);
+        for (const g of rectangles) {
+          ctx.drawImage(player.video,g.sx,g.sy,g.sw,g.sh,g.dx,g.dy,g.dw,g.dh);
+        }
+        ctx.restore();
+        continue;
+      }
+
       const keyed = this.keyFrameIntoWorkCanvas(
         player.video,
         desc.compositingMode,
@@ -398,13 +448,6 @@ class BoosteraVideoVfxCompositor {
         desc.maskBottomFeatherPct
       );
       if (!keyed) continue;
-
-      const totalSec = inst.durationMs / 1000;
-      const entryFade = Math.min(1, elapsedSec / 0.2);
-      const remainingSec = Math.max(0, totalSec - elapsedSec);
-      const tailFade = desc.fadeTailSec > 0 ? Math.min(1, remainingSec / desc.fadeTailSec) : 1;
-      const alpha = entryFade * tailFade * Math.min(1.15, inst.intensity || 1);
-
       this.projectKeyedSurfaceTo9x16(ctx, W, H, keyed, desc.framingMode, alpha);
     }
 
