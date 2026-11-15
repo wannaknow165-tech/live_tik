@@ -1,0 +1,146 @@
+{
+  "accounts": [
+    {
+      "id": "comp_tactical_1",
+      "handle": "kobi_pk_commander",
+      "displayName": "קובי · קצין קרב וסנייפ",
+      "avatarUrl": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2232%25%22%20r%3D%2270%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%231E1508%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230B0E14%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2246%22%20fill%3D%22url(%23g)%22%20stroke%3D%22%23F59E0B%22%20stroke-width%3D%223.5%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2239%22%20fill%3D%22none%22%20stroke%3D%22%23F59E0B%22%20stroke-opacity%3D%220.32%22%20stroke-width%3D%221.2%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2228%22%20fill%3D%22%23FDE68A%22%3E%D7%A7%D7%91%3C%2Ftext%3E%3C%2Fsvg%3E",
+      "role": "TACTICAL_SNIPE",
+      "enabled": true,
+      "connectionStatus": "SLOT_READY",
+      "externalWebhookOrWsTag": "ws://companion-slot-1",
+      "toneNotesHe": "חד, טקטי, סופר שניות לכפפה, מתריע מיד על ענן יריב ומדרבן בשניות ההכרעה.",
+      "messagesDispatched": 4,
+      "moderationsTriggered": 0
+    },
+    {
+      "id": "comp_hype_2",
+      "handle": "maya_vibe_boost",
+      "displayName": "מאיה · הרמת אווירה וצ׳אט",
+      "avatarUrl": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2232%25%22%20r%3D%2270%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%230A1926%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230B0E14%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2246%22%20fill%3D%22url(%23g)%22%20stroke%3D%22%2338BDF8%22%20stroke-width%3D%223.5%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2239%22%20fill%3D%22none%22%20stroke%3D%22%2338BDF8%22%20stroke-opacity%3D%220.32%22%20stroke-width%3D%221.2%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2228%22%20fill%3D%22%23BAE6FD%22%3E%D7%9E%D7%99%3C%2Ftext%3E%3C%2Fsvg%3E",
+      "role": "VIBE_HYPE",
+      "enabled": true,
+      "connectionStatus": "SLOT_READY",
+      "externalWebhookOrWsTag": "ws://companion-slot-2",
+      "toneNotesHe": "אנרגטית, חמה, שוברת שתיקות עם שאלות לקהל ומרימה רצפי דאבל-טאפ ושיתופים.",
+      "messagesDispatched": 6,
+      "moderationsTriggered": 0
+    },
+    {
+      "id": "comp_shield_3",
+      "handle": "ori_room_shield",
+      "displayName": "אורי · מגן חדר וניקוי רעשים",
+      "avatarUrl": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2232%25%22%20r%3D%2270%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%231B0F26%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230B0E14%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2246%22%20fill%3D%22url(%23g)%22%20stroke%3D%22%23A855F7%22%20stroke-width%3D%223.5%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2239%22%20fill%3D%22none%22%20stroke%3D%22%23A855F7%22%20stroke-opacity%3D%220.32%22%20stroke-width%3D%221.2%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2228%22%20fill%3D%22%23E9D5FF%22%3E%D7%90%D7%A8%3C%2Ftext%3E%3C%2Fsvg%3E",
+      "role": "MOD_SHIELD",
+      "enabled": true,
+      "connectionStatus": "SLOT_READY",
+      "externalWebhookOrWsTag": "ws://companion-slot-3",
+      "toneNotesHe": "מזהה טרולים מהחדר היריב, הודעות שליליות וספאם — מסמן להשתקה ומציף אנרגיה חיובית.",
+      "messagesDispatched": 3,
+      "moderationsTriggered": 4
+    },
+    {
+      "id": "comp_vip_4",
+      "handle": "shir_vip_hostess",
+      "displayName": "שיר · קבלת פנים ותודות VIP",
+      "avatarUrl": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2232%25%22%20r%3D%2270%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23092218%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230B0E14%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2246%22%20fill%3D%22url(%23g)%22%20stroke%3D%22%2310B981%22%20stroke-width%3D%223.5%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2239%22%20fill%3D%22none%22%20stroke%3D%22%2310B981%22%20stroke-opacity%3D%220.32%22%20stroke-width%3D%221.2%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2228%22%20fill%3D%22%23A7F3D0%22%3E%D7%A9%D7%A8%3C%2Ftext%3E%3C%2Fsvg%3E",
+      "role": "WELCOME_VIP",
+      "enabled": true,
+      "connectionStatus": "SLOT_READY",
+      "externalWebhookOrWsTag": "ws://companion-slot-4",
+      "toneNotesHe": "נותנת כבוד אישי לתומכים, מברכת מצטרפים חדשים וגורמת לכל תומך להרגיש מלך בחדר.",
+      "messagesDispatched": 5,
+      "moderationsTriggered": 0
+    },
+    {
+      "id": "comp_acc_1794743543953_609",
+      "handle": "eden_hype_live",
+      "displayName": "עדן · מלווה לייב ואווירה",
+      "avatarUrl": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2232%25%22%20r%3D%2270%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%231E1508%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230B0E14%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2246%22%20fill%3D%22url(%23g)%22%20stroke%3D%22%23F59E0B%22%20stroke-width%3D%223.5%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2239%22%20fill%3D%22none%22%20stroke%3D%22%23F59E0B%22%20stroke-opacity%3D%220.32%22%20stroke-width%3D%221.2%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2228%22%20fill%3D%22%23FDE68A%22%3E%D7%A2%D7%93%3C%2Ftext%3E%3C%2Fsvg%3E",
+      "role": "VIBE_HYPE",
+      "enabled": true,
+      "connectionStatus": "SLOT_READY",
+      "externalWebhookOrWsTag": "ws://companion-eden_hype_live",
+      "toneNotesHe": "מרים את הצ׳אט בחרוזים וקריאות דאבל-טאפ מהירות",
+      "messagesDispatched": 0,
+      "moderationsTriggered": 0
+    }
+  ],
+  "learnedPatterns": [
+    {
+      "id": "cpat_glove_1",
+      "moment": "GLOVE_X5_PUSH",
+      "role": "TACTICAL_SNIPE",
+      "sourceStreamHe": "נלמד ממנחי באטלים מובילים",
+      "whatObservedHe": "מנחה מלווה לא כותב סתם \"תזרקו\" — הוא מבקש להכין ורדים/מתנות קטנות ב-5 השניות הראשונות של הכפפה כדי לפתוח מכפיל x5.",
+      "hebrewLines": [
+        "כפפה פתוחה 30 שניות!! כולם לזרוק אפילו ורד אחד עכשיו לתפוס מכפיל x5! 🥊🔥",
+        "חלון x5 באוויר! כל לחיצה וכל מתנה קטנה עכשיו שווה פי 5 — בואו נפתח פער!"
+      ],
+      "effectivenessScore": 96,
+      "autoDispatchEnabled": true,
+      "usedCount": 3,
+      "updatedAtTs": 1794743454839
+    },
+    {
+      "id": "cpat_cloud_2",
+      "moment": "CLOUD_DEFENSE",
+      "role": "TACTICAL_SNIPE",
+      "sourceStreamHe": "נלמד מהגנות ענן בזירות PK",
+      "whatObservedHe": "כשהיריב פותח ענן הסתרת סקור, הקהל נוטה לקפוא מחוסר ודאות. מנחה חזק מרגיע מיד ומכוון לשמירת תחמושת לסנייפ.",
+      "hebrewLines": [
+        "היריב פתח ענן כי הוא בלחץ! אנחנו רואים את הסקור האמיתי — להמשיך דאבל טאפ ולשמור סנייפ ל-8 שניות אחרונות! 🎯⚡",
+        "לא לעצור בגלל הענן חברים! כל נקודה נספרת עכשיו בשקט — תנו עבודה על המסך!"
+      ],
+      "effectivenessScore": 95,
+      "autoDispatchEnabled": true,
+      "usedCount": 2,
+      "updatedAtTs": 1794743464839
+    },
+    {
+      "id": "cpat_deadair_3",
+      "moment": "DEAD_AIR_ICEBREAKER",
+      "role": "VIBE_HYPE",
+      "sourceStreamHe": "נלמד ממרימי אווירה בלייבים",
+      "whatObservedHe": "ברגע שהצ׳אט מאט ל-15 שניות, שאלת מיקרו קצרה (מאיפה צופים / דירוג 1-10) מקפיצה את האלגוריתם של טיקטוק פי 3.",
+      "hebrewLines": [
+        "בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב? תכתבו! 👇🔥",
+        "כל מי שאיתנו בחדר תנו \"1\" בצ׳אט ושיתוף אחד לחבר, בואו נראה כמה כוח יש פה הערב! 🚀"
+      ],
+      "effectivenessScore": 91,
+      "autoDispatchEnabled": true,
+      "usedCount": 4,
+      "updatedAtTs": 1794743474839
+    },
+    {
+      "id": "cpat_shield_4",
+      "moment": "ANTI_TROLL_SHIELD",
+      "role": "MOD_SHIELD",
+      "sourceStreamHe": "נלמד ממודרטורים בזירות תחרותיות",
+      "whatObservedHe": "כשנכנסים צופים של היריב להוריד מורל, לא עונים להם ישירות (זה מעלה להם חשיפה) — מסמנים להשתקה ומציפים מיד 2 שורות חיוביות.",
+      "hebrewLines": [
+        "רק אנרגיות טובות בחדר שלנו 👑 כולם להציף לבבות כתומים בצ׳אט ולדחוף קדימה! 🧡🔥",
+        "המשפחה פה הכי חזקה שיש — מתרכזים אך ורק בניצחון ובדאבל טאפ על המסך! 💪✨"
+      ],
+      "effectivenessScore": 94,
+      "autoDispatchEnabled": true,
+      "usedCount": 3,
+      "updatedAtTs": 1794743484839
+    },
+    {
+      "id": "cpat_vip_5",
+      "moment": "VIP_THANK_YOU",
+      "role": "WELCOME_VIP",
+      "sourceStreamHe": "נלמד מחדרי VIP במפרץ ובישראל",
+      "whatObservedHe": "אזכור שם התומך בצ׳אט תוך 2 שניות מהמתנה גורם ל-40% יותר מתנות המשך באותו סיבוב.",
+      "hebrewLines": [
+        "כבוד ענק ל-{{USER}} על התמיכה המטורפת!! כולם לפרגן לו בלבבות בצ׳אט! 👑🔥",
+        "איזו כניסה מלכותית של {{USER}}! מרים את כל החדר באוויר 🙌💎"
+      ],
+      "effectivenessScore": 93,
+      "autoDispatchEnabled": true,
+      "usedCount": 3,
+      "updatedAtTs": 1794743494839
+    }
+  ]
+}

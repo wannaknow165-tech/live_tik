@@ -1,0 +1,6 @@
+{
+  "name": "BOOSTERA — Live Battle VFX & Sound Engine",
+  "description": "מערכת VFX וסאונד קולנועית בזמן אמת לקרבות TikTok LIVE ב-OBS וב-TikTok Studio, כולל 11 אפקטים בשכבות BACK/FRONT, ציר זמן של 240 שניות ומניפסט אינטגרציה.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
