@@ -20,6 +20,7 @@ import { exportVfxClipToWebm } from '../engine/vfxRenderer';
 import { soundEngine } from '../engine/soundEngine';
 import { videoVfxCompositor } from '../engine/videoVfxCompositor';
 import { useEffect } from 'react';
+import { HybridAiFxLibrary } from './HybridAiFxLibrary';
 
 interface VfxLibraryWorkspaceProps {
   roundPalette: RoundPaletteId;
@@ -444,6 +445,7 @@ export function VfxLibraryWorkspace({
 
   return (
     <div className="space-y-8">
+      <HybridAiFxLibrary />
       {/* Header & Export Plate Selector */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#1E2636] pb-5">
         <div>

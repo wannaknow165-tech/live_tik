@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+# Keep operator-approved facts and temporary integration tests local.
+data/live_intelligence_facts.json
+data/live_intelligence_facts.json.tmp
+preview-*.stdout.log
+preview-*.stderr.log
+INTEGRATION_V10_*.png
