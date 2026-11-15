@@ -27,6 +27,8 @@ type Live = {
   battle: {
     active: boolean; opponent?: string | null; hostPoints: number | null;
     opponentPoints: number | null; card?: string | null;
+    clock?: { source:string; seconds:number|null; remainingSec:number|null; durationSec:number|null; official:boolean };
+    scoreVerified?: boolean;
   };
   recommendations: Advice[];
   director?: { effect:string; opacity:number; maxDurationMs:number; mood:string; soundGain:number; reasonHe:string; automatic:boolean };
@@ -274,7 +276,7 @@ export function LiveIntelligenceWorkspace({ onOpenOriginalWatchlist }: { onOpenO
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div>
           <div className="flex items-center gap-2 text-amber-300 text-xs font-bold tracking-widest">
-            <Brain className="w-4 h-4"/> BOOSTERA / LIVE INTELLIGENCE / V10
+            <Brain className="w-4 h-4"/> BOOSTERA / LIVE INTELLIGENCE / V11
           </div>
           <h2 className="text-2xl font-bold text-slate-100 mt-2">מוח אחד. עשרה לייבים. החלטות מבוססות נתונים.</h2>
           <p className="text-sm text-slate-400 mt-2 max-w-3xl">
@@ -363,6 +365,11 @@ export function LiveIntelligenceWorkspace({ onOpenOriginalWatchlist }: { onOpenO
               <div className="flex gap-2 flex-wrap mt-3 text-[11px]">
                 {m.chatOverloaded&&<span className="text-rose-300 rounded-md bg-rose-900/20 px-2 py-1">צ׳אט עמוס</span>}
                 {l.battle.active&&<span className="text-amber-200 rounded-md bg-amber-900/20 px-2 py-1">Battle @{l.battle.opponent||'?'}</span>}
+                {l.battle.active&&<span className={'rounded-md px-2 py-1 '+(l.battle.scoreVerified?'text-emerald-200 bg-emerald-900/20':'text-amber-300 bg-amber-900/20')}>
+                  {l.battle.scoreVerified?'ניקוד מאומת: '+l.battle.hostPoints+' : '+l.battle.opponentPoints:'ניקוד בהמתנה לזיהוי שני צדדי הקרב'}
+                </span>}
+                {l.battle.clock?.seconds!=null&&<span className="text-cyan-200 rounded-md bg-cyan-900/20 px-2 py-1">זמן קרב: {Math.floor(l.battle.clock.seconds/60)}:{String(Math.floor(l.battle.clock.seconds%60)).padStart(2,'0')} · {l.battle.clock.official?'חותמת זמן TikTok':'משוער לפי אירוע TikTok'}</span>}
+                {l.battle.active&&l.battle.clock?.remainingSec==null&&<span className="text-amber-200/80 rounded-md bg-amber-900/20 px-2 py-1">אין זמן סיום מאומת — לא מציגים ספירה לאחור</span>}
                 {m.trend==='rising'&&<span className="text-emerald-300 rounded-md bg-emerald-900/20 px-2 py-1">↑ פעילות עולה</span>}
                 {m.visual&&<span className="text-cyan-300 rounded-md bg-cyan-900/20 px-2 py-1">תנועה {Math.round(m.visual.motion*100)}%</span>}
                 {!!m.captions?.length&&<span className="text-cyan-300 rounded-md bg-cyan-900/20 px-2 py-1">כתוביות מקור</span>}
@@ -395,7 +402,7 @@ export function LiveIntelligenceWorkspace({ onOpenOriginalWatchlist }: { onOpenO
           <p className="text-sm text-slate-400 mt-2">מילות מפתח: {selected.metrics.topics.map(x=>x.term).join(' · ')||'עדיין אין'}</p>
           {selected.metrics.captions.length>0&&<p className="mt-2 text-sm text-slate-300">
             כתוביות שהתקבלו מ־TikTok: {selected.metrics.captions.map(x=>x.text).slice(-2).join(' / ')}</p>}
-          {selected.battle.active&&<p className="mt-2 text-sm text-amber-200">באטל מזוהה. נתוני ניקוד מדווחים רק כשהם מתקבלים.</p>}
+          {selected.battle.active&&<p className="mt-2 text-sm text-amber-200">באטל מזוהה. נתוני ניקוד מדווחים רק כשהם מתקבלים. {selected.battle.clock?.remainingSec!=null?'זמן לסיום לפי אירוע TikTok: '+selected.battle.clock.remainingSec+' שניות.':'לא התקבל זמן סיום אמיתי מטיקטוק; לא מוצגת ספירה לאחור משוערת.'}</p>}
         </div>}
       </section>
       <aside className="xl:col-span-5 space-y-4">

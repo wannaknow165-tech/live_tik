@@ -12,3 +12,4 @@ data/live_intelligence_facts.json.tmp
 preview-*.stdout.log
 preview-*.stderr.log
 INTEGRATION_V10_*.png
+V11_*.png

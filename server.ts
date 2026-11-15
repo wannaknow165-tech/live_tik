@@ -9,7 +9,11 @@ import { FunctionDeclaration, GoogleGenAI, ThinkingLevel, Type } from '@google/g
 import { ControlEvent, TikTokLiveConnection, WebcastEvent } from 'tiktok-live-connector';
 // Unified V10 intelligence uses existing TikTok Swarm sockets.
 // @ts-ignore: analyzer is maintained as ESM to share pure Node tests.
-import { StreamInsights, summarizeLives, normalizeLiveInput } from './src/server/liveInsights.mjs';
+import { StreamInsights, summarizeLives, normalizeLiveInput } from './src/server/liveInsights.mjs';// @ts-ignore: pure ESM, tested separately in Node.
+import { fromTikTokBattleEvent, battleClockNow, clockMayTriggerFinale } from './src/server/battleClock.mjs';
+// @ts-ignore: strict anchor scoreboard parser shipped as pure ESM with tests
+import { verifiedBattleSides } from './src/server/battleScores.mjs';
+
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -232,6 +236,14 @@ const EFFECT_RULES: Record<string, EffectRule> = {
   BEAST_08_VIOLET_PHOENIX: { id: 'BEAST_08_VIOLET_PHOENIX', cooldownMs: 8500, priority: 9, durationMs: 8200, layer: 'BACK' },
   BEAST_09_SOLAR_TIGER: { id: 'BEAST_09_SOLAR_TIGER', cooldownMs: 9000, priority: 9, durationMs: 7600, layer: 'BACK' },
   BEAST_10_ROYAL_FIRE_LION: { id: 'BEAST_10_ROYAL_FIRE_LION', cooldownMs: 9500, priority: 10, durationMs: 7800, layer: 'BACK' },
+  ALPHA_BATTLE_SMOKE: { id: 'ALPHA_BATTLE_SMOKE', cooldownMs: 18000, priority: 2, durationMs: 6500, layer: 'BACK' },
+  ALPHA_CO2_SHARE: { id: 'ALPHA_CO2_SHARE', cooldownMs: 22000, priority: 6, durationMs: 4300, layer: 'FRONT' },
+  ALPHA_ELECTRIC_ENERGY: { id: 'ALPHA_ELECTRIC_ENERGY', cooldownMs: 18000, priority: 5, durationMs: 5400, layer: 'BACK' },
+  ALPHA_FIRE_CANNONS: { id: 'ALPHA_FIRE_CANNONS', cooldownMs: 50000, priority: 10, durationMs: 4400, layer: 'FRONT' },
+  ALPHA_FIRE_SWEEP: { id: 'ALPHA_FIRE_SWEEP', cooldownMs: 45000, priority: 9, durationMs: 4400, layer: 'FRONT' },
+  ALPHA_GOLD_SPARKS: { id: 'ALPHA_GOLD_SPARKS', cooldownMs: 16000, priority: 5, durationMs: 5000, layer: 'FRONT' },
+  ALPHA_LIGHTNING_STRIKES: { id: 'ALPHA_LIGHTNING_STRIKES', cooldownMs: 30000, priority: 8, durationMs: 4200, layer: 'FRONT' },
+  ALPHA_SHOCKWAVE: { id: 'ALPHA_SHOCKWAVE', cooldownMs: 30000, priority: 8, durationMs: 3500, layer: 'FRONT' },
 };
 
 const VALID_MUSIC_IDS = new Set([
@@ -2080,7 +2092,9 @@ interface ManagedLiveRoom {
 }
 
 const MAX_CONCURRENT_SWARM_ROOMS = 10;
-const activeSwarmRooms = new Map<string, ManagedLiveRoom>();
+const activeSwarmRooms = new Map<string, ManagedLiveRoom>();const observedBattleClocks = new Map<string, ReturnType<typeof fromTikTokBattleEvent>>();
+const verifiedBattleScoresAt = new Map<string, number>();
+
 // Bounded, in-memory evidence from EXISTING Swarm connections.
 const liveInsights = new Map<string, InstanceType<typeof StreamInsights>>();
 const LIVE_FACTS_FILE = path.join(DATA_DIR, 'live_intelligence_facts.json');
@@ -2105,6 +2119,41 @@ function liveInsightFor(username: string): InstanceType<typeof StreamInsights> {
 }
 // V9-style restrained artistic policy, now backed by real multi-LIVE evidence.
 // Recommendation only; never fires a cue without the operator approving stage changes.
+// V11 guarded autonomous alpha director: no external AI calls, no OBS source changes.
+// Reuses monitored room evidence; one short low-intensity cue per 20 seconds at most.
+const lastSmartAlphaByRoom = new Map<string, number>();
+function maybeRunSmartAlpha(room: ManagedLiveRoom, trigger: 'like' | 'share' | 'follow' | 'gift',
+  giftDiamonds=0): ActiveEffectInstance | null {
+  if (!battleState.aiAutopilot || !room.summary.connected || !room.summary.mirrorToStage) return null;
+  if (process.env.BOOSTERA_SAFE_TEST_MODE === '1') return null;
+  const now = Date.now();
+  const key = room.username.toLowerCase();
+  if (now - (lastSmartAlphaByRoom.get(key) || 0) < 20000) return null;
+  const m = liveInsightFor(key).metrics(now);
+  // Avoid visual overload; active legacy effects take priority.
+  if (m.chatOverloaded || (m.visual?.motion ?? 0) >= 0.42 ||
+      battleState.activeEffects.some(fx => (EFFECT_RULES[fx.effectId]?.priority ?? 0) >= 7)) return null;
+  let id: string | null = null;
+  let opacity = 0.1;
+  const realBattleScores = room.summary.inBattle &&
+    room.summary.hostBattlePoints + room.summary.opponentBattlePoints > 0;
+  if (trigger === 'like' && realBattleScores && m.sampleSec >= 45 && m.likesPerSec >= 35) {
+    id = 'ALPHA_FIRE_CANNONS'; opacity = 0.22;
+  } else if (trigger === 'like' && m.sampleSec >= 30 && m.likesPerSec >= 20) {
+    id = 'ALPHA_ELECTRIC_ENERGY'; opacity = 0.13;
+  } else if (trigger === 'share' && m.shares60 >= 2) {
+    id = 'ALPHA_CO2_SHARE'; opacity = 0.13;
+  } else if (trigger === 'follow' && m.follows60 >= 2) {
+    id = 'ALPHA_GOLD_SPARKS'; opacity = 0.09;
+  } else if (trigger === 'gift' && giftDiamonds >= 40) {
+    id = 'ALPHA_GOLD_SPARKS'; opacity = 0.11;
+  }
+  if (!id) return null;  // Calm phases must be actually calm; no random hype.
+  const result = tryTriggerOneShot(id, 'V11: observed LIVE activity', opacity, false);
+  if (!result.triggered || !result.instance) return null;
+  lastSmartAlphaByRoom.set(key, now);
+  return result.instance;
+}
 function intelligentCueAdvice(room: ManagedLiveRoom, metrics: any) {
   const rate = Number(metrics.likesPerSec || 0);
   const chatBusy = Boolean(metrics.chatOverloaded);
@@ -2154,6 +2203,10 @@ function liveIntelligenceReport() {
     // Privacy: this endpoint exposes grouped questions, NOT raw usernames or full chat logs.
     const { chat: _privateRecentChat, ...safeReport } = report;
     return { ...safeReport, director: intelligentCueAdvice(r, report.metrics), battle: {
+      clock: r.summary.inBattle ? battleClockNow(observedBattleClocks.get(r.username.toLowerCase()),now) :
+        battleClockNow(null, now),
+      scoreVerified: r.summary.inBattle &&
+        now - (verifiedBattleScoresAt.get(r.username.toLowerCase()) || 0) < 12000,
       active: r.summary.inBattle,
       opponent: r.summary.opponentUsername,
       hostPoints: r.summary.inBattle ? r.summary.hostBattlePoints : null,
@@ -2164,7 +2217,7 @@ function liveIntelligenceReport() {
   });
   const connected = rooms.filter(r => r.summary.connected).map(r => liveInsightFor(r.username));
   return {
-    version: '10.1-integrated',
+    version: '11.0-integrated',
     source: 'Existing BOOSTERA Swarm: no duplicate TikTok connections',
     liveCount: connected.length, capacity: MAX_CONCURRENT_SWARM_ROOMS,
     lives, comparison: summarizeLives(connected, now),
@@ -2182,10 +2235,18 @@ function nextId(prefix: string): string {
 }
 
 function trackCueEffectiveness(cueId: string, labelHe: string) {
-  const baselineLps = battleState.likesPerSecond;
+  // Cues must NEVER be scored on demo likes or given a fabricated positive lift.
+  const room = Array.from(activeSwarmRooms.values()).find(
+    (r) => r.summary.mirrorToStage && r.summary.connected
+  );
+  if (!room) return;
+  const source = room.username.toLowerCase();
+  const baselineLps = liveInsightFor(source).metrics().likesPerSec;
   setTimeout(() => {
-    const afterLps = battleState.likesPerSecond;
-    const delta = Math.max(0.5, Number((afterLps - baselineLps + 2.2).toFixed(1)));
+    const sameRoom = activeSwarmRooms.get(source);
+    if (!sameRoom?.summary.connected || !sameRoom.summary.mirrorToStage) return;
+    const afterLps = liveInsightFor(source).metrics().likesPerSec;
+    const delta = Number((afterLps - baselineLps).toFixed(1));
     const existing = aiMemory.cueStats.find((c) => c.cueId === cueId);
     if (existing) {
       existing.avgLpsBoost = Number(
@@ -2322,7 +2383,9 @@ function tryTriggerOneShot(
     triggeredAt: now,
     durationMs: rule.durationMs,
     layer: rule.layer,
-    intensity,
+    intensity: effectId.startsWith('ALPHA_')
+      ? Math.min(Math.max(0.02, intensity), effectId === 'ALPHA_BATTLE_SMOKE' ? 0.08 : 0.25)
+      : intensity,
     sourceLabel,
   };
   battleState.activeEffects.push(instance);
@@ -3122,12 +3185,32 @@ async function startServer() {
       }
     }
 
-    battleState.snipeWindowActive = battleState.streamMode === 'BATTLE' && battleState.elapsedSec >= 205;
+    const mirroredLiveRoom = Array.from(activeSwarmRooms.values()).find(
+      (r) => r.summary.mirrorToStage && r.summary.connected
+    );
+    const realClock = mirroredLiveRoom?.summary.inBattle
+      ? observedBattleClocks.get(mirroredLiveRoom.username.toLowerCase()) : null;
+    const clockData = battleClockNow(realClock, now);
+    const timeFromLive = clockData.seconds !== null;
+
+    // A match with no verified timer receives NO synthetic final-35-second alarm.
+    battleState.snipeWindowActive = timeFromLive
+      ? clockMayTriggerFinale(realClock, now)
+      : (!mirroredLiveRoom && battleState.streamMode === 'BATTLE' && battleState.elapsedSec >= 205);
 
     if (battleState.streamMode === 'BATTLE' && battleState.isRunning) {
-      battleState.elapsedSec = Number((battleState.elapsedSec + 0.25).toFixed(2));
+      if (timeFromLive) {
+        // Real timestamp anchored to actual TikTok event; never invent a new round at 240s.
+        battleState.elapsedSec = Math.min(239.9, clockData.seconds);
+      } else if (!mirroredLiveRoom) {
+        // Explicit local simulator mode continues to use a synthetic 4-minute demo.
+        battleState.elapsedSec = Number((battleState.elapsedSec + 0.25).toFixed(2));
+      } else {
+        // Observing mid-battle without a start event: don't invent a countdown.
+        battleState.elapsedSec = 0;
+      }
 
-      if (battleState.elapsedSec >= 240) {
+      if (!timeFromLive && !mirroredLiveRoom && battleState.elapsedSec >= 240) {
         battleState.roundNumber += 1;
         aiMemory.totalRoundsAnalyzed += 1;
         battleState.memorySummary = buildMemorySummary();
@@ -5075,6 +5158,8 @@ Return JSON matching the schema:
           user: sender,
           avatarUrl,
         });
+        const smartFx = maybeRunSmartAlpha(managed, 'like');
+        if (smartFx) broadcast({ type: 'effect:triggered', effect: smartFx, state: battleState });
       } else {
         syncGlobalTikTokRoomSummary();
       }
@@ -5147,7 +5232,7 @@ Return JSON matching the schema:
           username: String(data?.user?.uniqueId || giver),
           displayName: giver,
           avatarUrl,
-          pointsDelta: diamonds * 3,
+          pointsDelta: diamonds,
           giftsDelta: 1,
           actionHe: `${giftName} x${repeatCount} (+${diamonds * 3})`,
           spotlight:
@@ -5161,17 +5246,13 @@ Return JSON matching the schema:
         });
       }
 
-      if (managed.summary.mirrorToStage && diamonds >= 5) {
-        processTikTokEvent({
-          type: diamonds >= 300 ? 'snipe_us' : 'score_us',
-          points: diamonds * 3,
-          user: giver,
-          avatarUrl,
-        });
-      } else {
-        syncGlobalTikTokRoomSummary();
-        broadcast({ type: 'state:update', state: battleState });
+      // A gift may cause a visual thanks, but it NEVER invents live PK points.
+      if (managed.summary.mirrorToStage && diamonds >= 40) {
+        const smartFx = maybeRunSmartAlpha(managed, 'gift', diamonds);
+        if (smartFx) broadcast({ type: 'effect:triggered', effect: smartFx, state: battleState });
       }
+      syncGlobalTikTokRoomSummary();
+      broadcast({ type: 'state:update', state: battleState });
     });
 
     // 5. Party Treasure Envelopes, Emotes, Barrages & Goals
@@ -5202,6 +5283,8 @@ Return JSON matching the schema:
       pushSwarmFeedEvent(managed, 'JOIN_SHARE', `${sender} שיתף את השידור`);
       if (managed.summary.mirrorToStage) {
         processTikTokEvent({ type: 'share', count: 1, user: sender, avatarUrl });
+        const smartFx = maybeRunSmartAlpha(managed, 'share');
+        if (smartFx) broadcast({ type: 'effect:triggered', effect: smartFx, state: battleState });
       } else {
         syncGlobalTikTokRoomSummary();
       }
@@ -5217,6 +5300,8 @@ Return JSON matching the schema:
       pushSwarmFeedEvent(managed, 'JOIN_SHARE', `עוקב חדש: ${sender}`);
       if (managed.summary.mirrorToStage) {
         processTikTokEvent({ type: 'follow', count: 1, user: sender, avatarUrl });
+        const smartFx = maybeRunSmartAlpha(managed, 'follow');
+        if (smartFx) broadcast({ type: 'effect:triggered', effect: smartFx, state: battleState });
       } else {
         syncGlobalTikTokRoomSummary();
       }
@@ -5247,7 +5332,19 @@ Return JSON matching the schema:
 
     // 7. Live PK Battle Detection + Anchor ID Mapping + Auto-Opponent Spy Connection!
     conn.on(WebcastEvent.LINK_MIC_BATTLE, (data: any) => {
+      const oldClock = observedBattleClocks.get(key);
+      const nextClock = fromTikTokBattleEvent(data, Date.now(), oldClock);
+      if (nextClock) observedBattleClocks.set(key, nextClock);
       managed.summary.inBattle = true;
+      if (!oldClock || nextClock?.id !== oldClock.id) {
+        verifiedBattleScoresAt.delete(key);
+        managed.summary.hostBattlePoints = 0;
+        managed.summary.opponentBattlePoints = 0;
+        if (managed.summary.mirrorToStage) {
+          battleState.myScore = 0;
+          battleState.opponentScore = 0;
+        }
+      }
       managed.unsynthesizedEventCount += 3;
 
       let opp = '';
@@ -5326,7 +5423,10 @@ Return JSON matching the schema:
 
       if (managed.summary.mirrorToStage) {
         battleState.streamMode = 'BATTLE';
-        battleState.elapsedSec = 0;
+        // Anchored to a real TikTok event (prefer protocol start timestamp when present).
+        // Never restart at 0 when the connector repeats the same battle ID.
+        const observed = battleClockNow(observedBattleClocks.get(key));
+        if (observed.seconds !== null) battleState.elapsedSec = Math.min(239.9, observed.seconds);
         battleState.isRunning = true;
       }
       syncGlobalTikTokRoomSummary();
@@ -5334,6 +5434,19 @@ Return JSON matching the schema:
     });
 
     // 8. Real-Time Battle Armies Score + Top Supporter Avatars + Cross-Room Anti-Cloud Score Extraction!
+    // Battle outcome/punish signal means the battle clock is no longer live.
+    conn.on(WebcastEvent.LINK_MIC_BATTLE_PUNISH_FINISH, (_data: any) => {
+      managed.summary.inBattle = false;
+      observedBattleClocks.delete(key);
+      verifiedBattleScoresAt.delete(key);
+      if (managed.summary.mirrorToStage) {
+        battleState.isRunning = false;
+        battleState.snipeWindowActive = false;
+      }
+      syncGlobalTikTokRoomSummary();
+      broadcast({ type: 'state:update', state: battleState });
+    });
+
     conn.on(WebcastEvent.LINK_MIC_ARMIES, (data: any) => {
       managed.summary.inBattle = true;
 
@@ -5342,28 +5455,19 @@ Return JSON matching the schema:
       const entries: any[] = v3Map.length >= 2 ? v3Map : Array.isArray(data?.battleItems) ? data.battleItems : Array.isArray(data?.battleArmies) ? data.battleArmies : [];
 
       if (entries.length >= 2) {
-        let hostPts = 0;
-        let oppPts = 0;
-
-        const e0 = entries[0];
-        const e1 = entries[1];
-        const s0 = Number(e0?.hostscore ?? e0?.points ?? e0?.hostScore ?? 0);
-        const s1 = Number(e1?.hostscore ?? e1?.points ?? e1?.hostScore ?? 0);
-        const id0 = String(e0?.anchorIdStr || e0?.anchorId || '');
-        const id1 = String(e1?.anchorIdStr || e1?.anchorId || '');
-
-        if (managed.hostAnchorId && id1 === managed.hostAnchorId) {
-          hostPts = s1;
-          oppPts = s0;
-        } else if (managed.opponentAnchorId && id0 === managed.opponentAnchorId) {
-          hostPts = s1;
-          oppPts = s0;
-        } else {
-          hostPts = s0;
-          oppPts = s1;
+        const mapped = verifiedBattleSides(entries, managed.hostAnchorId, managed.opponentAnchorId);
+        if (!mapped) {
+          pushSwarmFeedEvent(managed, 'BATTLE_PK',
+            'Armies event received; team-to-anchor mapping is not yet verified.');
+          syncGlobalTikTokRoomSummary();
+          broadcast({ type: 'state:update', state: battleState });
+          return;
         }
-
-        if (hostPts > 0 || oppPts > 0) {
+        const hostPts = Number(mapped.hostPts);
+        const oppPts = Number(mapped.oppPts);
+        if (!Number.isFinite(hostPts) || !Number.isFinite(oppPts)) return;
+        verifiedBattleScoresAt.set(key, Date.now());
+        if (hostPts > 0 || oppPts > 0 || mapped) {
           managed.summary.hostBattlePoints = hostPts;
           managed.summary.opponentBattlePoints = oppPts;
 
@@ -5388,8 +5492,7 @@ Return JSON matching the schema:
         }
 
         // Extract Real Supporter Avatars from BattleUserArmy[] (top contributors on our side!)
-        const ourArmyEntry =
-          managed.hostAnchorId && id1 === managed.hostAnchorId ? e1 : e0;
+        const ourArmyEntry = entries[mapped.ourIdx];
         const userArmies = Array.isArray(ourArmyEntry?.userArmies) ? ourArmyEntry.userArmies : [];
         if (managed.summary.mirrorToStage && userArmies.length > 0) {
           for (const contributor of userArmies.slice(0, 5)) {
@@ -5552,6 +5655,8 @@ Return JSON matching the schema:
 
     const handleStreamClosed = () => {
       intel.status = 'offline';
+      observedBattleClocks.delete(key);
+      verifiedBattleScoresAt.delete(key);
 
       const hadActivity = managed.chatSamples.length + managed.giftSamples.length > 0;
       managed.summary.connected = false;
@@ -5609,6 +5714,8 @@ Return JSON matching the schema:
       return { ok: true, connected: true, summary: managed.summary };
     } catch (err: unknown) {
       activeSwarmRooms.delete(key);
+      observedBattleClocks.delete(key);
+      verifiedBattleScoresAt.delete(key);
       const rawErr = err instanceof Error ? err.message : '';
       intel.status = 'offline';
       intel.lastError = err instanceof Error ? err.message.slice(0, 180) : 'Connection failed';
@@ -5747,7 +5854,7 @@ Return JSON matching the schema:
   let autoSynthesizeInProgress = false;
   setInterval(() => {
     if (process.env.BOOSTERA_SAFE_TEST_MODE === '1') return;
-    if (autoSynthesizeInProgress) return;
+    if (autoSynthesizeInProgress || process.env.BOOSTERA_GEMINI_AUTORUN !== '1') return;
     const hasFresh = Array.from(activeSwarmRooms.values()).some(
       (r) => r.summary.connected && r.unsynthesizedEventCount >= 6 && Date.now() - r.lastSynthesizedTs > 30000
     );
@@ -5763,7 +5870,9 @@ Return JSON matching the schema:
   // Kick off initial non-blocking radar scan right after server starts!
   setTimeout(() => {
     if (process.env.BOOSTERA_SAFE_TEST_MODE !== '1') {
-      void scanWatchlistAndAutoConnect(true).catch(() => {});
+      void scanWatchlistAndAutoConnect(
+        process.env.BOOSTERA_GLOBAL_SCOUT_AUTORUN === '1'
+      ).catch(() => {});
     }
   }, 2000);
 
@@ -5864,7 +5973,7 @@ Return JSON matching the schema:
         } else {
           queuedForAutoWatch.push(entry.username);
           // Pre-learn creator profile in background so AI already knows them before their next live!
-          void synthesizeCreatorOrSwarmInsights(entry.username, 'למידה מקדימה ברשימת המעקב').catch(() => {});
+          if (process.env.BOOSTERA_GEMINI_AUTORUN === '1') void synthesizeCreatorOrSwarmInsights(entry.username, 'למידה מקדימה ברשימת המעקב').catch(() => {});
         }
       })
     );
@@ -7149,7 +7258,9 @@ ${JSON.stringify(liveTelemetry, null, 2)}`;
     if (
       autonomousDirectorCycleIdx % 2 === 0 &&
       !autonomousGeminiBusy &&
-      process.env.GEMINI_API_KEY
+      process.env.GEMINI_API_KEY &&
+      process.env.BOOSTERA_GEMINI_AUTORUN === '1' &&
+      Array.from(activeSwarmRooms.values()).some(r => r.summary.connected && r.summary.mirrorToStage)
     ) {
       autonomousGeminiBusy = true;
       const ai = getGeminiClient();
@@ -8147,8 +8258,13 @@ ${collectedLiveChat.slice(0, 35).join('\n') || 'אין עדיין דגימות �
   }
 
   const PORT = Number(process.env.PORT || 3000);
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`BOOSTERA Apex Broadcast Engine running on http://0.0.0.0:${PORT}`);
+  // Local installation is private by default; hosted production keeps external binding
+  // and MUST be placed behind an authenticated reverse proxy.
+  const BIND_HOST = process.env.BOOSTERA_BIND_HOST ||
+    (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
+  server.listen(PORT, BIND_HOST, () => {
+    console.log(`BOOSTERA Apex Broadcast Engine running on http://${BIND_HOST}:${PORT}`);
+    if (BIND_HOST === '0.0.0.0') console.warn('[SECURITY] Public binding: configure access control before exposing operator endpoints.');
   });
 }
 
