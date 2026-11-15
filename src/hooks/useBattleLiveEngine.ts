@@ -121,9 +121,23 @@ const INITIAL_FALLBACK_STATE: BattleState = {
     autoCompanionEnabled: true,
     autoModerationShieldEnabled: true,
     autoLearnFromLiveChat: true,
+    autoEventScriptsEnabled: true,
     chatVelocityPerMin: 0,
     detectedRoomMoodHe: 'מאזין לצ׳אט חי ולמנחים מלווים...',
+    commanderBrain: {
+      autonomousBrainEnabled: true,
+      activeTargetRoom: null,
+      activeTargetRoomLive: false,
+      currentDirectiveHe: 'מוח AI מפקד על 6 המנחים — מוכן לפריסה בלייב ולשליחת פקודות מתוזמנות',
+      brainStatusHe: 'מחכה לפקודה או פריסה לחדר לייב',
+      trainingSessionsCount: 1,
+      lastTrainedAtTs: 0,
+      lastTrainingSummaryHe: '6 המנחים מאומנים בתבניות בסיס של כפפה x5, בלימת ענן, הרמת הקשות וניקוי טרולים.',
+      recentOrders: [],
+    },
     accounts: [],
+    envSlotsActivity: [],
+    autoScripts: [],
     learnedPatterns: [],
     moderationFlags: [],
     recentDispatches: [],
@@ -213,6 +227,28 @@ export function useBattleLiveEngine(enableAudio = true) {
                 if (oldest) playedSoundIdsRef.current.delete(oldest);
               }
               soundEngine.triggerEffectSound(msg.effect.effectId);
+            }
+          }
+
+          if (msg.type === 'chat_companion:dispatch' && msg.item) {
+            const outPayload = JSON.stringify({
+              event: 'boostera_moderator_send',
+              accountId: msg.item.accountId,
+              accountHandle: msg.item.accountHandle,
+              accountDisplayName: msg.item.accountDisplayName,
+              role: msg.item.role,
+              targetRoom: msg.item.targetRoom || null,
+              text: msg.item.messageTextHe,
+              ts: msg.item.ts,
+            });
+            for (const bSock of localBridgesRef.current.values()) {
+              if (bSock.readyState === WebSocket.OPEN) {
+                try {
+                  bSock.send(outPayload);
+                } catch {
+                  // Ignore local bridge send error
+                }
+              }
             }
           }
 

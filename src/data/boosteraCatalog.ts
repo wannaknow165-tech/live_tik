@@ -763,6 +763,11 @@ export interface DiscoveredWsEventRecord {
   rawEventName: string;
   labelHe: string;
   descriptionHe: string;
+  whatHappensInLiveHe?: string;
+  triggerAdviceHe?: string;
+  visualSceneTag?: string;
+  sampleImageUrl?: string | null;
+  sampleAvatarUrl?: string | null;
   category: WsCollectedEventCategory;
   seenCount: number;
   firstSeenTs: number;
@@ -808,7 +813,13 @@ export interface WsSnifferState {
   recentPackets: RecentCapturedWsPacket[];
 }
 
-export type CompanionRoleId = 'TACTICAL_SNIPE' | 'VIBE_HYPE' | 'MOD_SHIELD' | 'WELCOME_VIP';
+export type CompanionRoleId =
+  | 'TACTICAL_SNIPE'
+  | 'VIBE_HYPE'
+  | 'MOD_SHIELD'
+  | 'WELCOME_VIP'
+  | 'COMBO_PACER'
+  | 'SCOUT_SUPPORT';
 
 export type ChatMomentType =
   | 'OPENING_WARMUP'
@@ -821,12 +832,24 @@ export type ChatMomentType =
 
 export interface CompanionAccountSlot {
   id: string;
+  slotNumber: number;
   handle: string;
   displayName: string;
   avatarUrl: string;
   role: CompanionRoleId;
   enabled: boolean;
-  connectionStatus: 'SLOT_READY' | 'WS_BRIDGE_ACTIVE';
+  connectionStatus:
+    | 'SLOT_READY'
+    | 'LIVE_ROOM_DEPLOYED'
+    | 'TIKTOK_AUTH_LIVE'
+    | 'WS_BRIDGE_ACTIVE';
+  hasServerTikTokAuth?: boolean;
+  deployedRoomHandle?: string | null;
+  deployedRoomLive?: boolean;
+  trainingLevel: number;
+  trainedSkillSummaryHe: string;
+  trainedLinesHe: string[];
+  lastOrderHe?: string | null;
   externalWebhookOrWsTag: string;
   toneNotesHe: string;
   messagesDispatched: number;
@@ -866,20 +889,135 @@ export interface CompanionDispatchActionItem {
   accountHandle: string;
   accountDisplayName: string;
   role: CompanionRoleId;
-  kind: 'CHAT_VIBE_LINE' | 'MOD_CLEANUP';
+  kind: 'CHAT_VIBE_LINE' | 'MOD_CLEANUP' | 'BRAIN_COMMAND_STEP' | 'AUTO_EVENT_SCRIPT';
   momentLabelHe: string;
   messageTextHe: string;
+  targetRoom?: string | null;
+  deliveryModeHe?: string;
   targetOffender?: string;
   dispatchedToBridge: boolean;
+}
+
+export type ModeratorTriggerEventType =
+  | 'WHALE_GIFT'
+  | 'MEDIUM_GIFT'
+  | 'GLOVE_OPENED'
+  | 'OPPONENT_CLOUD'
+  | 'BATTLE_SPEED_TASK'
+  | 'SNIPE_WINDOW_30S'
+  | 'VIP_BARRAGE_JOIN'
+  | 'SHARE_SPIKE'
+  | 'FOLLOW_NEW'
+  | 'LIKE_BURST'
+  | 'TROLL_OR_SPAM_CHAT'
+  | 'CHAT_KEYWORD_MATCH'
+  | 'CUSTOM_WS_EVENT';
+
+export interface ModeratorScriptStep {
+  id: string;
+  slotNumber: number; // 1..6 for specific .env account, or 0 for smart rotation
+  delaySec: number;
+  messageTemplateHe: string; // Supports {{USER}}, {{GIFT}}, {{VALUE}}, {{ROOM}}
+}
+
+export interface ModeratorAutoScriptRule {
+  id: string;
+  nameHe: string;
+  descriptionHe: string;
+  enabled: boolean;
+  triggerEventType: ModeratorTriggerEventType;
+  customWsEventKey?: string;
+  keywordFilter?: string;
+  minNumericValue: number;
+  cooldownSec: number;
+  steps: ModeratorScriptStep[];
+  triggeredCount: number;
+  lastTriggeredTs: number;
+  lastTriggeredSummaryHe: string | null;
+}
+
+export interface EnvModeratorSlotLogItem {
+  id: string;
+  ts: number;
+  targetRoom: string | null;
+  messageHe: string;
+  sourceKind: 'AUTO_SCRIPT' | 'BRAIN_CMD' | 'MOD_SHIELD' | 'MANUAL';
+  sourceLabelHe: string;
+  deliveryStatusHe: string;
+}
+
+export interface EnvModeratorSlotActivity {
+  slotNumber: number;
+  envSessionKeyName: string;
+  envIdcKeyName: string;
+  sessionConfiguredInEnv: boolean;
+  sessionMaskedStatusHe: string;
+  targetIdc: string;
+  accountId: string;
+  handle: string;
+  displayName: string;
+  avatarUrl: string;
+  role: CompanionRoleId;
+  enabled: boolean;
+  deployedRoomHandle: string | null;
+  deployedRoomLive: boolean;
+  liveDeliveryState: 'DIRECT_TIKTOK_AUTH' | 'WS_BRIDGE_CONNECTED' | 'STAGE_READY' | 'PAUSED';
+  messagesSentTotal: number;
+  autoScriptTriggersCount: number;
+  brainCommandsCount: number;
+  moderationsCount: number;
+  lastSentAtTs: number | null;
+  lastSentMessageHe: string | null;
+  lastTriggerReasonHe: string | null;
+  recentLogs: EnvModeratorSlotLogItem[];
+}
+
+export interface BrainSquadOrderStep {
+  stepIndex: number;
+  accountId: string;
+  accountHandle: string;
+  accountDisplayName: string;
+  role: CompanionRoleId;
+  delaySec: number;
+  lineHe: string;
+  tacticalPurposeHe: string;
+  status: 'QUEUED' | 'SENT';
+  sentAtTs?: number;
+}
+
+export interface BrainSquadOrderItem {
+  id: string;
+  ts: number;
+  source: 'USER_COMMAND' | 'AUTONOMOUS_BRAIN';
+  commandHe: string;
+  brainReasoningHe: string;
+  targetRoom: string | null;
+  steps: BrainSquadOrderStep[];
+}
+
+export interface CompanionBrainCommanderState {
+  autonomousBrainEnabled: boolean;
+  activeTargetRoom: string | null;
+  activeTargetRoomLive: boolean;
+  currentDirectiveHe: string;
+  brainStatusHe: string;
+  trainingSessionsCount: number;
+  lastTrainedAtTs: number;
+  lastTrainingSummaryHe: string;
+  recentOrders: BrainSquadOrderItem[];
 }
 
 export interface ChatCompanionState {
   autoCompanionEnabled: boolean;
   autoModerationShieldEnabled: boolean;
   autoLearnFromLiveChat: boolean;
+  autoEventScriptsEnabled: boolean;
   chatVelocityPerMin: number;
   detectedRoomMoodHe: string;
+  commanderBrain: CompanionBrainCommanderState;
   accounts: CompanionAccountSlot[];
+  envSlotsActivity: EnvModeratorSlotActivity[];
+  autoScripts: ModeratorAutoScriptRule[];
   learnedPatterns: LearnedChatModeratorPattern[];
   moderationFlags: ChatModerationFlagItem[];
   recentDispatches: CompanionDispatchActionItem[];

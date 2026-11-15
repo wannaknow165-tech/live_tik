@@ -8,6 +8,7 @@ import { useBattleLiveEngine } from './hooks/useBattleLiveEngine';
 import { BroadcastStage9x16, StagePerfMetrics } from './components/BroadcastStage9x16';
 import { AiDirectorWorkspace } from './components/AiDirectorWorkspace';
 import { TikTokIntelAndMemoryWorkspace } from './components/TikTokIntelAndMemoryWorkspace';
+import { ModeratorsManagementWorkspace } from './components/ModeratorsManagementWorkspace';
 import { VfxLibraryWorkspace } from './components/VfxLibraryWorkspace';
 import { TimelineAndSoundWorkspace } from './components/TimelineAndSoundWorkspace';
 import { ManifestAndQcWorkspace } from './components/ManifestAndQcWorkspace';
@@ -15,6 +16,7 @@ import { ObsLinksModal } from './components/ObsLinksModal';
 
 type WorkspaceTab =
   | 'ai_director'
+  | 'moderators_hub'
   | 'tiktok_intel'
   | 'vfx_library'
   | 'timeline_sound'
@@ -35,7 +37,7 @@ export default function App() {
     refreshState,
   } = useBattleLiveEngine(isObsMode ? obsAudioEnabled : true);
 
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('ai_director');
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('moderators_hub');
   const [obsModalOpen, setObsModalOpen] = useState(false);
   const [perfMetrics, setPerfMetrics] = useState<StagePerfMetrics>({ fps: 60, frameTimeMs: 2.4 });
 
@@ -74,11 +76,12 @@ export default function App() {
           BOOSTERA
         </a>
 
-        {/* Zone 2: 5 concise single-line text navigation links */}
+        {/* Zone 2: Concise single-line text navigation links */}
         <nav className="flex items-center gap-6 text-sm font-medium text-slate-400 overflow-x-auto">
           {(
             [
               { id: 'ai_director', label: 'במאי AI ומצלמה' },
+              { id: 'moderators_hub', label: 'ניהול מנחים ותסריטים' },
               { id: 'tiktok_intel', label: 'הזנת לייבים ולמידת AI' },
               { id: 'vfx_library', label: 'ספריית אפקטים' },
               { id: 'timeline_sound', label: 'ציר זמן וסאונד' },
@@ -125,6 +128,14 @@ export default function App() {
             refreshState={refreshState}
             onPerfSample={setPerfMetrics}
             onOpenTikTokTab={() => setActiveTab('tiktok_intel')}
+          />
+        )}
+
+        {activeTab === 'moderators_hub' && (
+          <ModeratorsManagementWorkspace
+            battleState={battleState}
+            sendTikTokEvent={sendTikTokEvent}
+            refreshState={refreshState}
           />
         )}
 

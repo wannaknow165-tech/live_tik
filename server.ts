@@ -1093,6 +1093,11 @@ interface DiscoveredWsEventRecord {
   rawEventName: string;
   labelHe: string;
   descriptionHe: string;
+  whatHappensInLiveHe?: string;
+  triggerAdviceHe?: string;
+  visualSceneTag?: string;
+  sampleImageUrl?: string | null;
+  sampleAvatarUrl?: string | null;
   category: WsCollectedEventCategory;
   seenCount: number;
   firstSeenTs: number;
@@ -1138,7 +1143,13 @@ interface WsSnifferState {
   recentPackets: RecentCapturedWsPacket[];
 }
 
-type CompanionRoleId = 'TACTICAL_SNIPE' | 'VIBE_HYPE' | 'MOD_SHIELD' | 'WELCOME_VIP';
+type CompanionRoleId =
+  | 'TACTICAL_SNIPE'
+  | 'VIBE_HYPE'
+  | 'MOD_SHIELD'
+  | 'WELCOME_VIP'
+  | 'COMBO_PACER'
+  | 'SCOUT_SUPPORT';
 
 type ChatMomentType =
   | 'OPENING_WARMUP'
@@ -1151,12 +1162,24 @@ type ChatMomentType =
 
 interface CompanionAccountSlot {
   id: string;
+  slotNumber: number;
   handle: string;
   displayName: string;
   avatarUrl: string;
   role: CompanionRoleId;
   enabled: boolean;
-  connectionStatus: 'SLOT_READY' | 'WS_BRIDGE_ACTIVE';
+  connectionStatus:
+    | 'SLOT_READY'
+    | 'LIVE_ROOM_DEPLOYED'
+    | 'TIKTOK_AUTH_LIVE'
+    | 'WS_BRIDGE_ACTIVE';
+  hasServerTikTokAuth?: boolean;
+  deployedRoomHandle?: string | null;
+  deployedRoomLive?: boolean;
+  trainingLevel: number;
+  trainedSkillSummaryHe: string;
+  trainedLinesHe: string[];
+  lastOrderHe?: string | null;
   externalWebhookOrWsTag: string;
   toneNotesHe: string;
   messagesDispatched: number;
@@ -1196,20 +1219,135 @@ interface CompanionDispatchActionItem {
   accountHandle: string;
   accountDisplayName: string;
   role: CompanionRoleId;
-  kind: 'CHAT_VIBE_LINE' | 'MOD_CLEANUP';
+  kind: 'CHAT_VIBE_LINE' | 'MOD_CLEANUP' | 'BRAIN_COMMAND_STEP' | 'AUTO_EVENT_SCRIPT';
   momentLabelHe: string;
   messageTextHe: string;
+  targetRoom?: string | null;
+  deliveryModeHe?: string;
   targetOffender?: string;
   dispatchedToBridge: boolean;
+}
+
+type ModeratorTriggerEventType =
+  | 'WHALE_GIFT'
+  | 'MEDIUM_GIFT'
+  | 'GLOVE_OPENED'
+  | 'OPPONENT_CLOUD'
+  | 'BATTLE_SPEED_TASK'
+  | 'SNIPE_WINDOW_30S'
+  | 'VIP_BARRAGE_JOIN'
+  | 'SHARE_SPIKE'
+  | 'FOLLOW_NEW'
+  | 'LIKE_BURST'
+  | 'TROLL_OR_SPAM_CHAT'
+  | 'CHAT_KEYWORD_MATCH'
+  | 'CUSTOM_WS_EVENT';
+
+interface ModeratorScriptStep {
+  id: string;
+  slotNumber: number;
+  delaySec: number;
+  messageTemplateHe: string;
+}
+
+interface ModeratorAutoScriptRule {
+  id: string;
+  nameHe: string;
+  descriptionHe: string;
+  enabled: boolean;
+  triggerEventType: ModeratorTriggerEventType;
+  customWsEventKey?: string;
+  keywordFilter?: string;
+  minNumericValue: number;
+  cooldownSec: number;
+  steps: ModeratorScriptStep[];
+  triggeredCount: number;
+  lastTriggeredTs: number;
+  lastTriggeredSummaryHe: string | null;
+}
+
+interface EnvModeratorSlotLogItem {
+  id: string;
+  ts: number;
+  targetRoom: string | null;
+  messageHe: string;
+  sourceKind: 'AUTO_SCRIPT' | 'BRAIN_CMD' | 'MOD_SHIELD' | 'MANUAL';
+  sourceLabelHe: string;
+  deliveryStatusHe: string;
+}
+
+interface EnvModeratorSlotActivity {
+  slotNumber: number;
+  envSessionKeyName: string;
+  envIdcKeyName: string;
+  sessionConfiguredInEnv: boolean;
+  sessionMaskedStatusHe: string;
+  targetIdc: string;
+  accountId: string;
+  handle: string;
+  displayName: string;
+  avatarUrl: string;
+  role: CompanionRoleId;
+  enabled: boolean;
+  deployedRoomHandle: string | null;
+  deployedRoomLive: boolean;
+  liveDeliveryState: 'DIRECT_TIKTOK_AUTH' | 'WS_BRIDGE_CONNECTED' | 'STAGE_READY' | 'PAUSED';
+  messagesSentTotal: number;
+  autoScriptTriggersCount: number;
+  brainCommandsCount: number;
+  moderationsCount: number;
+  lastSentAtTs: number | null;
+  lastSentMessageHe: string | null;
+  lastTriggerReasonHe: string | null;
+  recentLogs: EnvModeratorSlotLogItem[];
+}
+
+interface BrainSquadOrderStep {
+  stepIndex: number;
+  accountId: string;
+  accountHandle: string;
+  accountDisplayName: string;
+  role: CompanionRoleId;
+  delaySec: number;
+  lineHe: string;
+  tacticalPurposeHe: string;
+  status: 'QUEUED' | 'SENT';
+  sentAtTs?: number;
+}
+
+interface BrainSquadOrderItem {
+  id: string;
+  ts: number;
+  source: 'USER_COMMAND' | 'AUTONOMOUS_BRAIN';
+  commandHe: string;
+  brainReasoningHe: string;
+  targetRoom: string | null;
+  steps: BrainSquadOrderStep[];
+}
+
+interface CompanionBrainCommanderState {
+  autonomousBrainEnabled: boolean;
+  activeTargetRoom: string | null;
+  activeTargetRoomLive: boolean;
+  currentDirectiveHe: string;
+  brainStatusHe: string;
+  trainingSessionsCount: number;
+  lastTrainedAtTs: number;
+  lastTrainingSummaryHe: string;
+  recentOrders: BrainSquadOrderItem[];
 }
 
 interface ChatCompanionState {
   autoCompanionEnabled: boolean;
   autoModerationShieldEnabled: boolean;
   autoLearnFromLiveChat: boolean;
+  autoEventScriptsEnabled: boolean;
   chatVelocityPerMin: number;
   detectedRoomMoodHe: string;
+  commanderBrain: CompanionBrainCommanderState;
   accounts: CompanionAccountSlot[];
+  envSlotsActivity: EnvModeratorSlotActivity[];
+  autoScripts: ModeratorAutoScriptRule[];
   learnedPatterns: LearnedChatModeratorPattern[];
   moderationFlags: ChatModerationFlagItem[];
   recentDispatches: CompanionDispatchActionItem[];
@@ -1306,7 +1444,7 @@ function buildMemorySummary() {
   };
 }
 
-function makeDefaultBinding(partial: Partial<WsEventTriggerBinding>): WsEventTriggerBinding {
+function makeDefaultBinding(partial: Partial<WsEventTriggerBinding> = {}): WsEventTriggerBinding {
   return {
     enabled: false,
     vfxId: 'NONE',
@@ -1321,6 +1459,448 @@ function makeDefaultBinding(partial: Partial<WsEventTriggerBinding>): WsEventTri
     lastTriggeredTs: 0,
     triggeredCount: 0,
     ...partial,
+  };
+}
+
+function extractFirstHttpUrlFromObj(candidate: any): string | null {
+  if (!candidate) return null;
+  if (typeof candidate === 'string' && /^https?:\/\//i.test(candidate.trim())) {
+    return candidate.trim();
+  }
+  const list =
+    candidate?.urlList ||
+    candidate?.urls ||
+    candidate?.url_list ||
+    candidate?.image?.urlList ||
+    candidate?.icon?.urlList;
+  if (Array.isArray(list)) {
+    const found = list.find((u: any) => typeof u === 'string' && /^https?:\/\//i.test(u));
+    if (found) return found;
+  }
+  if (typeof candidate?.imageUrl === 'string' && /^https?:\/\//i.test(candidate.imageUrl)) {
+    return candidate.imageUrl;
+  }
+  return null;
+}
+
+function extractTikTokEventImageUrl(inner: any): string | null {
+  if (!inner || typeof inner !== 'object') return null;
+  const directCandidates = [
+    inner?.giftDetails?.giftImage,
+    inner?.giftDetails?.giftPictureUrl,
+    inner?.giftDetails?.icon,
+    inner?.giftImage,
+    inner?.gift?.image,
+    inner?.gift?.icon,
+    inner?.cardInfo?.cardImage,
+    inner?.cardInfo?.iconImage,
+    inner?.useSmokeCard?.cardInfo?.cardImage,
+    inner?.useVaultGloveCard?.cardInfo?.cardImage,
+    inner?.useCriticalStrikeCard?.cardInfo?.cardImage,
+    inner?.emotes?.[0]?.image,
+    inner?.emote?.image,
+    inner?.envelopeInfo?.skin,
+    inner?.content?.icon,
+  ];
+  for (const c of directCandidates) {
+    const url = extractFirstHttpUrlFromObj(c);
+    if (url) return url;
+  }
+  return null;
+}
+
+function extractRawTikTokHttpUserAvatar(userObj: any): string | null {
+  if (!userObj || typeof userObj !== 'object') return null;
+  const candidates = [
+    userObj?.profilePicture,
+    userObj?.avatarThumb,
+    userObj?.avatarMedium,
+    userObj?.avatarLarge,
+    userObj?.avatarUrl,
+  ];
+  for (const c of candidates) {
+    const url = extractFirstHttpUrlFromObj(c);
+    if (url) return url;
+  }
+  return null;
+}
+
+interface WebcastVisualMetaHe {
+  labelHe: string;
+  descriptionHe: string;
+  whatHappensInLiveHe: string;
+  triggerAdviceHe: string;
+  visualSceneTag: string;
+  category: WsCollectedEventCategory;
+}
+
+function describeRawWebcastEventHe(rawNameOrKey: string): WebcastVisualMetaHe {
+  const key = String(rawNameOrKey || '').trim();
+  const lower = key.toLowerCase();
+
+  if (lower.includes('smoke_cloud')) {
+    return {
+      labelHe: 'קלף ענן / ערפל הסתרת סקור (Smoke / Mist Card)',
+      descriptionHe: 'היריב או צופה זורק ענן שמסתיר את פס הניקוד העליון של הבאטל לכ-20–25 שניות',
+      whatHappensInLiveHe:
+        'על מסך הלייב מופיע פתאום ענן עשן/ערפל אפור-לבן על פס הנקודות למעלה ובמקום מספרים רואים "???" כך שלא יודעים מי מוביל.',
+      triggerAdviceHe:
+        'חובה להשאיר דלוק! מפעיל אוטומטית רנטגן אנטי-ענן (שואב את הסקור האמיתי מהחדר של היריב) + ברקים בשוליים.',
+      visualSceneTag: 'SMOKE_CLOUD',
+      category: 'CARDS_BOOSTS',
+    };
+  }
+  if (lower.includes('glove_x5')) {
+    return {
+      labelHe: 'פתיחת כפפת בוסט / מכה קריטית x5 (Boosting Glove)',
+      descriptionHe: 'מופעלת כפפת אגרוף זוהרת של 30 שניות שמכפילה נקודות מתנות ולייקים פי 5 במזל',
+      whatHappensInLiveHe:
+        'בצד מד הקרב של טיקטוק נדלק אייקון כפפת אגרוף עם טיימר 30 שניות לאחור וכל מתנה יכולה לקפוץ ב-x5 נקודות.',
+      triggerAdviceHe:
+        'רגע שיא קריטי! מומלץ מאוד לשייך לטיגריס אש (#9) או פלזמה כחולה (#6) + מוזיקת האצה ובאנר הקשות.',
+      visualSceneTag: 'GLOVE_X5',
+      category: 'CARDS_BOOSTS',
+    };
+  }
+  if (lower.includes('battleitemcard')) {
+    return {
+      labelHe: 'שימוש בקלף קרב כללי (Battle Item Card)',
+      descriptionHe: 'אירוע הגג של כל הקלפים בבאטל: כפפה, ענן ערפל, תוספת זמן (+30s) או שיקוי נקודות',
+      whatHappensInLiveHe:
+        'צופה מפעיל אחד מקלפי הקרב המיוחדים בראש המסך (כפפה, ענן, שעון הארכה או קלף אפקט מיוחד).',
+      triggerAdviceHe:
+        'שימושי אם תרצה תגובה על קלפי "תוספת זמן" או "שיקוי" מעבר לכפפה ולענן שכבר מופרדים למעלה.',
+      visualSceneTag: 'GLOVE_X5',
+      category: 'CARDS_BOOSTS',
+    };
+  }
+  if (lower.includes('boostcard')) {
+    return {
+      labelHe: 'קלף חשיפה / Flare Boost של טיקטוק (Boost Card)',
+      descriptionHe: 'פתיחת קלף שמזרים גל צופים חדשים מהפור-יו לחדר הלייב לכמה דקות',
+      whatHappensInLiveHe:
+        'נדלק סמל להבה/טיל חשיפה קטן בחדר וטיקטוק דוחף את השידור לפיד — נכנסים עשרות צופים חדשים בבת אחת.',
+      triggerAdviceHe:
+        'מומלץ לשייך לתותחי הקיטור/אדים הלבנים (#2 Cryo Jets) כדי שמי שנכנס מהפור-יו יראה מיד אולפן אנרגטי!',
+      visualSceneTag: 'BARRAGE_BANNER',
+      category: 'CARDS_BOOSTS',
+    };
+  }
+  if (lower.includes('battletask')) {
+    return {
+      labelHe: 'משימת מהירות / בונוס בקרב (Battle Speed Task)',
+      descriptionHe: 'משימה קצובה של טיקטוק באמצע קרב (למשל: שלחו 15 ורדים או 2,000 לייקים ב-40 שניות לבונוס)',
+      whatHappensInLiveHe:
+        'מתחת לפס הניקוד של הבאטל נפתח פס משימה מיוחד עם שעון עצר ויעד מהיר — אם הקהל משלים אותו בזמן מקבלים בונוס נקודות לקרב.',
+      triggerAdviceHe:
+        'מצוין להפעלה אוטומטית! משויך לזרמי פלזמה (#6) + באנר הקשות מהירות כדי להעיר את כל הצופים לעזור במשימה.',
+      visualSceneTag: 'SPEED_TASK',
+      category: 'BATTLE_PK',
+    };
+  }
+  if (lower.includes('lead_flip_us')) {
+    return {
+      labelHe: 'מהפך יתרון לטובתנו בקרב! (Lead Taken)',
+      descriptionHe: 'הרגע שבו פס הניקוד שלנו עובר את של היריב מאחור קדימה',
+      whatHappensInLiveHe:
+        'הצד הכחול שלנו בפס ה-PK דוחף את הצד האדום של היריב לאחור ואנחנו עולים למקום הראשון בקרב.',
+      triggerAdviceHe:
+        'מומלץ מאוד! משויך לפניקס הסגול (#8) שפורש כנפיים מאחורי הכתפיים שלך ברגע המהפך.',
+      visualSceneTag: 'PK_START',
+      category: 'BATTLE_PK',
+    };
+  }
+  if (lower.includes('battlepunish')) {
+    return {
+      labelHe: 'סיום קרב ומעבר לזמן תוצאה/עונש (Battle Punish Finish)',
+      descriptionHe: 'שעון ה-4–5 דקות של הבאטל נגמר, מוכרז המנצח ומתחיל זמן העונש/שיחה',
+      whatHappensInLiveHe:
+        'מופיעה חותמת WIN / Victory על צד המנצח בפס העליון והשעון עובר לספירת זמן שאחרי הקרב.',
+      triggerAdviceHe:
+        'אפשר לשייך למזרקות זיקוקי זהב (#4) לחגיגת סיום קרב או להורדת המוזיקה למצב שיחה רגוע.',
+      visualSceneTag: 'PUNISH_FINISH',
+      category: 'BATTLE_PK',
+    };
+  }
+  if (lower === 'webcastlinkmicbattle' || lower === 'linkmicbattle') {
+    return {
+      labelHe: 'פתיחת קרב PK חדש (Battle Start)',
+      descriptionHe: 'הרגע שבו שני השדרנים לוחצים אישור ומתחיל קרב ראש-בראש במסך מפוצל',
+      whatHappensInLiveHe:
+        'המסך מתפצל לשני שדרנים (ימין מול שמאל), מופיעה אנימציית VS ופס הניקוד הכחול-אדום נפתח ל-0:0.',
+      triggerAdviceHe:
+        'מומלץ מאוד! משויך לעשן וברקים כחול-מול-אדום (#5 PK Clash) שנותן פתיחה קולנועית לכל סיבוב.',
+      visualSceneTag: 'PK_START',
+      category: 'BATTLE_PK',
+    };
+  }
+  if (lower.includes('linkmicarmies')) {
+    return {
+      labelHe: 'עדכון ניקוד שוטף ובועיות תורמים בקרב (Battle Armies)',
+      descriptionHe: 'הודעה רציפה שרצה כל חצי שנייה בקרב ומעדכנת את מספר הנקודות ואת 3 התורמים המובילים',
+      whatHappensInLiveHe:
+        'המספרים בפס הניקוד של הבאטל עולים ובועיות הפרופיל העגולות של 3 התומכים החזקים מתעדכנות בפינות.',
+      triggerAdviceHe:
+        'זה אירוע שרץ מאות פעמים בדקה — עדיף להשאיר כבוי כאן (המנוע כבר משתמש בו אוטומטית לחישוב סקור ורנטגן ענן).',
+      visualSceneTag: 'PK_START',
+      category: 'BATTLE_PK',
+    };
+  }
+  if (lower.includes('giftmessage:whale')) {
+    return {
+      labelHe: 'מתנת לווייתן / סנייפ כבד (Whale Gift)',
+      descriptionHe: 'מתנה יקרה שחוצה את סף הלווייתן של המדינה (בישראל מ-100 יהלומים / 300 נק׳ קרב ומעלה)',
+      whatHappensInLiveHe:
+        'אנימציית מתנה גדולה מתפוצצת על המסך (כמו אריה, גלקסיה, לוויתן, רכב או רצף x100) והניקוד מזנק בחדות.',
+      triggerAdviceHe:
+        'חובה להשאיר דלוק! מפעיל את אריה האש המלכותי (#10) + רעידת מצלמה + זרקור לתמונת הפרופיל של התומך.',
+      visualSceneTag: 'WHALE_GIFT',
+      category: 'GIFTS_DIAMONDS',
+    };
+  }
+  if (lower.includes('giftmessage:medium')) {
+    return {
+      labelHe: 'מתנה בינונית (20–99 יהלומים)',
+      descriptionHe: 'מתנת ביניים שמרימה את הקצב באמצע הקרב (למשל כתר קטן, לבבות אש, דונאטס ברצף)',
+      whatHappensInLiveHe:
+        'בצד המסך קופץ באנר מתנה של הצופה עם תמונת המתנה ומכפיל הרצף (x5, x10, x23).',
+      triggerAdviceHe:
+        'מומלץ מאוד! משויך לארבעה תותחי להבות (#7) + הקפצת תמונת התומך לבמה כדי לעודד אותו להמשיך.',
+      visualSceneTag: 'GIFT_BOX',
+      category: 'GIFTS_DIAMONDS',
+    };
+  }
+  if (lower.includes('giftbroadcast')) {
+    return {
+      labelHe: 'באנר מתנת-על גלובלית בטיקטוק (Global Gift Banner)',
+      descriptionHe: 'הודעה שטיקטוק מציגה בראש המסך כשמישהו שלח מתנת ענק (כמו TikTok Universe)',
+      whatHappensInLiveHe:
+        'סרט נוצץ עובר בחלק העליון של הלייב ומכריז על מתנת ענק שנשלחה בחדר או באזור.',
+      triggerAdviceHe:
+        'אם תרצה לחגוג מתנות ענק בראש המסך — מתאים לכדור אש (#1) או אריה אש (#10).',
+      visualSceneTag: 'WHALE_GIFT',
+      category: 'GIFTS_DIAMONDS',
+    };
+  }
+  if (lower.includes('giftpanelupdate') || lower.includes('giftdynamicrestriction')) {
+    return {
+      labelHe: `עדכון טכני של תפריט המתנות (${key})`,
+      descriptionHe: 'הודעת מערכת פנימית של טיקטוק שמעדכנת לצופים אילו מתנות פתוחות או נעולות כרגע בחדר',
+      whatHappensInLiveHe:
+        'לא קורה שום דבר על מסך הווידאו עצמו — זה רק מרענן בשקט את רשימת האייקונים בתוך מגירת המתנות של הצופים.',
+      triggerAdviceHe:
+        'מידע טכני בלבד — השאר כבוי (אין צורך להפעיל עליו אפקט במה).',
+      visualSceneTag: 'SYSTEM_TELEMETRY',
+      category: 'GIFTS_DIAMONDS',
+    };
+  }
+  if (lower === 'webcastgiftmessage' || lower === 'gift') {
+    return {
+      labelHe: 'כל שליחת מתנה (כולל ורד של מטבע 1)',
+      descriptionHe: 'כל מתנה שנשלחת בחדר מכל גודל שהוא — מוורד בודד ועד מתנות גדולות',
+      whatHappensInLiveHe:
+        'בצד המסך מעל הצ׳אט מופיע הכרטיס הקטן של הצופה עם ציור המתנה שהוא שלח ומספר הקומבו (x1, x2, x3...).',
+      triggerAdviceHe:
+        'אם תפעיל כאן אפקט, הוא יפעל גם על ורד של מטבע 1 (אלא אם תגדיר "סף מינימום יהלומים"). לרוב עדיף להשתמש במתנה בינונית/לווייתן.',
+      visualSceneTag: 'GIFT_BOX',
+      category: 'GIFTS_DIAMONDS',
+    };
+  }
+  if (lower.includes('barragemessage')) {
+    return {
+      labelHe: 'הודעת באנר מרחפת VIP / כניסת תומך בדרגה גבוהה (Barrage)',
+      descriptionHe: 'הודעה מודגשת או הודעת דרגת תומך גבוהה שטסה לרוחב המסך מעל הצ׳אט הרגיל',
+      whatHappensInLiveHe:
+        'במקום שורה רגילה בצ׳אט, מופיעה בועה צבעוניות/זוהרת עם מסגרת דרגה (Level 25+) שמרחפת מעל התגובות!',
+      triggerAdviceHe:
+        'אירוע מעולה לשיוך! זה מסמן שתומך כבד או צופה VIP נכנס/כתב — מומלץ לשייך לזיקוקי זהב (#4) או זרקור אווטאר.',
+      visualSceneTag: 'BARRAGE_BANNER',
+      category: 'CROWD_SOCIAL',
+    };
+  }
+  if (lower.includes('inroombanner')) {
+    return {
+      labelHe: 'עדכון קוביית הדירוג / הבאנר הקטן בפינת החדר (In-Room Banner)',
+      descriptionHe: 'עדכון של הווידג׳ט הקטן בפינת מסך הלייב (מיקום בדירוג שעתי, משימת יהלומים או קמפיין טיקטוק)',
+      whatHappensInLiveHe:
+        'הקובייה הקטנה שיושבת בפינה של מסך הטיקטוק (מתחת למספר הצופים) מחליפה טקסט או מעדכנת אחוז התקדמות.',
+      triggerAdviceHe:
+        'קורה מעצמו כל כמה שניות — מומלץ להשאיר כבוי כדי לא להקפיץ אפקטים סתם.',
+      visualSceneTag: 'GOAL_TARGET',
+      category: 'RANKS_GOALS',
+    };
+  }
+  if (lower.includes('goalupdate')) {
+    return {
+      labelHe: 'התקדמות יעד המתנות של החדר (Live Goal Update)',
+      descriptionHe: 'צופה תרם מתנה שקידמה את בר היעד שהשדרן הגדיר (למשל 14/50 ורדים או לבבות)',
+      whatHappensInLiveHe:
+        'מד היעד הקבוע שמוצג בחדר מתמלא בעוד צעד לכיוון השלמת היעד (וכשהוא מגיע ל-100% יש חגיגת יעד).',
+      triggerAdviceHe:
+        'אפשר לשייך עם צינון של 15–20 שניות לאפקט עדין כשמתקרבים להשלמת יעד החדר.',
+      visualSceneTag: 'GOAL_TARGET',
+      category: 'RANKS_GOALS',
+    };
+  }
+  if (lower.includes('envelopemessage') || lower.includes('capsule')) {
+    return {
+      labelHe: 'פתיחת תיבת אוצר / מעטפת מטבעות בחדר (Treasure Box)',
+      descriptionHe: 'תומך זרק תיבת אוצר בחדר שמחלקת מטבעות לצופים שלוחצים עליה בזמן',
+      whatHappensInLiveHe:
+        'מופיעה תיבת אוצר זהובה בחלק העליון של החדר עם טיימר ספירה לאחור, וכל הצופים נשארים בחדר כדי לתפוס מטבעות!',
+      triggerAdviceHe:
+        'מומלץ מאוד להשאיר דלוק! שומר צופים בחדר ומרים אנרגיה — מתאים לתותחי קיטור לבנים (#2) או זיקוקי זהב (#4).',
+      visualSceneTag: 'TREASURE_BOX',
+      category: 'RANKS_GOALS',
+    };
+  }
+  if (lower.includes('subnotify') || lower.includes('superfan')) {
+    return {
+      labelHe: 'הצטרפות מנוי בתשלום / SuperFan לחדר (VIP Subscriber)',
+      descriptionHe: 'צופה רכש או חידש מנוי חודשי לערוץ שלך תוך כדי השידור החי',
+      whatHappensInLiveHe:
+        'קופצת הודעת חגיגה מיוחדת עם תג כוכב/כתר של מנוי מועדון המעריצים בצ׳אט.',
+      triggerAdviceHe:
+        'חובה לחגוג בגדול! משויך למזרקות זיקוקי זהב (#4) + זרקור לתמונת המנוי החדש על הבמה.',
+      visualSceneTag: 'VIP_CROWN',
+      category: 'CROWD_SOCIAL',
+    };
+  }
+  if (lower.includes('hourlyrank') || lower.includes('rank')) {
+    return {
+      labelHe: 'כניסה / עלייה בדירוג השעתי של המדינה (Hourly Rank)',
+      descriptionHe: 'החדר שלך עלה במיקום בטבלת השדרנים המובילים של השעה האחרונה',
+      whatHappensInLiveHe:
+        'תג הדירוג בראש המסך מתעדכן (למשל: מקום #12 בדירוג השעתי בישראל!) ומודיע לכל החדר.',
+      triggerAdviceHe:
+        'מעולה להרמת גאווה קהילתית! מתאים לפניקס הסגול (#8) או זיקוקי זהב (#4).',
+      visualSceneTag: 'VIP_CROWN',
+      category: 'RANKS_GOALS',
+    };
+  }
+  if (lower.includes('imdeletemessage')) {
+    return {
+      labelHe: 'מחיקת הודעה בצ׳אט ע״י מודרטור או סינון טיקטוק (Chat Delete)',
+      descriptionHe: 'מודרטור בחדר (או המערכת האוטומטית של טיקטוק) מחק כרגע תגובה בעייתית מהצ׳אט',
+      whatHappensInLiveHe:
+        'שורת תגובה שהופיעה בצ׳אט נעלמת מיד מהמסך של כל הצופים כי מנהל חדר ניקה אותה.',
+      triggerAdviceHe:
+        'אין צורך באפקט במה ויזואלי — מנוע המנחים המלווים שלנו לומד מזה אילו תגובות מודרטורים מוחקים!',
+      visualSceneTag: 'MOD_DELETE',
+      category: 'CROWD_SOCIAL',
+    };
+  }
+  if (lower.includes('socialmessage')) {
+    return {
+      labelHe: 'שיתוף שידור או עוקב חדש (Follow / Share Social)',
+      descriptionHe: 'צופה לחץ עכשיו "עקוב" אחרי השדרן או שיתף את הלייב לחברים בווטסאפ/טיקטוק',
+      whatHappensInLiveHe:
+        'בתחתית הצ׳אט מופיעה ההודעה "עקב אחרי המארח" או "שיתף את השידור החי".',
+      triggerAdviceHe:
+        'המנוע המרכזי כבר מפעיל תותחי קיטור (#2) על שיתופים וניצוצות זהב (#4) על עוקבים לפי כיול מדינה — אפשר להשאיר כבוי כאן או לשים צינון ארוך.',
+      visualSceneTag: 'VIP_CROWN',
+      category: 'CROWD_SOCIAL',
+    };
+  }
+  if (lower.includes('likemessage')) {
+    return {
+      labelHe: 'הקשות לייקים על המסך (Tap-Tap Likes)',
+      descriptionHe: 'צופים מקישים עם האצבע על המסך ושולחים צרורות של לבבות',
+      whatHappensInLiveHe:
+        'לבבות צבעוניים עולים בצד התחתון של המסך ומספר הלייקים של החדר מטפס.',
+      triggerAdviceHe:
+        'רץ מאות פעמים בדקה — מד האנרגיה של הבמה כבר מגיב לזה אוטומטית ב-5 דרגות, לכן כדאי להשאיר כאן כבוי.',
+      visualSceneTag: 'BARRAGE_BANNER',
+      category: 'CROWD_SOCIAL',
+    };
+  }
+  if (lower.includes('membermessage')) {
+    return {
+      labelHe: 'כניסת צופה חדש לחדר הלייב (Viewer Joined)',
+      descriptionHe: 'צופה גלל בפור-יו ונכנס כרגע לתוך החדר שלך',
+      whatHappensInLiveHe:
+        'בשורה התחתונה מעל תיבת הכתיבה כתוב: "משתמש X הצטרף לשידור החי" (ואם יש לו רכב כניסה מופיעה אנימציה).',
+      triggerAdviceHe:
+        'קורה בתדירות גבוהה מאוד — עדיף להשאיר כבוי כאן כדי שהבמה לא תוצף על כל נכנס בודד.',
+      visualSceneTag: 'BARRAGE_BANNER',
+      category: 'CROWD_SOCIAL',
+    };
+  }
+  if (lower.includes('chatmessage')) {
+    return {
+      labelHe: 'הודעת צ׳אט רגילה מצופה (Live Chat Comment)',
+      descriptionHe: 'צופה כתב הודעת טקסט או אימוג׳י בצ׳אט של השידור',
+      whatHappensInLiveHe:
+        'הודעה חדשה קופצת בזרם התגובות בחלק התחתון של מסך הלייב.',
+      triggerAdviceHe:
+        'מערכת המנחים המלווים והמודרציה כבר קוראת כל הודעה כאן — השאר כבוי לאפקטי וידאו כבדים.',
+      visualSceneTag: 'BARRAGE_BANNER',
+      category: 'CROWD_SOCIAL',
+    };
+  }
+  if (lower.includes('roomuserseq')) {
+    return {
+      labelHe: 'עדכון מונה הצופים החיים בחדר (Viewer Count Tick)',
+      descriptionHe: 'הודעת מערכת שמעדכנת כמה צופים בדיוק נמצאים כרגע בלייב ומי התורמים המובילים של החדר',
+      whatHappensInLiveHe:
+        'המספר של כמות הצופים בפינה העליונה של המסך מתעדכן (למשל 84 צופים ← 92 צופים).',
+      triggerAdviceHe:
+        'מידע פנימי לכיול כמות הצופים לפי מדינה — השאר כבוי לאפקטים.',
+      visualSceneTag: 'SYSTEM_TELEMETRY',
+      category: 'CROWD_SOCIAL',
+    };
+  }
+  if (lower.includes('linkmicfanticket')) {
+    return {
+      labelHe: 'עדכון מטבעות אירוח / קופת מולטי-גסט (Fan Ticket Method)',
+      descriptionHe: 'עדכון מספר הנקודות האישי מעל הראש של כל משתתף כשיש חלונות אירוח או קרב',
+      whatHappensInLiveHe:
+        'המספר הקטן של הנקודות שמופיע בפינת החלון של המגיש או האורח מתעדכן אחרי מתנה.',
+      triggerAdviceHe:
+        'עדכון טכני שוטף — מומלץ להשאיר כבוי.',
+      visualSceneTag: 'SYSTEM_TELEMETRY',
+      category: 'BATTLE_PK',
+    };
+  }
+  if (
+    lower.includes('linkmicmethod') ||
+    lower.includes('linkmiclayout') ||
+    lower.includes('linklayer') ||
+    lower === 'webcastlinkmessage'
+  ) {
+    return {
+      labelHe: `סנכרון חלונות מצלמה ואירוח על הבמה (${key})`,
+      descriptionHe: 'הודעת תשתית של טיקטוק כשהמסך עובר בין שידור יחיד, העלאת אורח לחלון או פיצול מסך',
+      whatHappensInLiveHe:
+        'גודל החלונות על המסך מתארגן מחדש (למשל אורח עולה/יורד מחלון מצלמה או פתיחת חיבור בין שני חדרים).',
+      triggerAdviceHe:
+        'אירוע טכני של סידור חלונות — בדרך כלל משאירים כבוי (אלא אם תרצה סאונד מעבר כשעולה אורח).',
+      visualSceneTag: 'SYSTEM_TELEMETRY',
+      category: 'BATTLE_PK',
+    };
+  }
+  if (lower.includes('liveintromessage') || lower.includes('roommessage')) {
+    return {
+      labelHe: `הודעת פתיחה / מערכת של החדר (${key})`,
+      descriptionHe: 'הודעת הברוכים-הבאים האוטומטית של השדרן או הודעת מערכת של טיקטוק בצ׳אט',
+      whatHappensInLiveHe:
+        'בצ׳אט מופיעה שורת מערכת (למשל משפט הפתיחה שהשדרן הגדיר לחדר או "ברוכים הבאים לשידור החי").',
+      triggerAdviceHe:
+        'הודעת מערכת שקטה — מומלץ להשאיר כבוי.',
+      visualSceneTag: 'SYSTEM_TELEMETRY',
+      category: 'CROWD_SOCIAL',
+    };
+  }
+
+  return {
+    labelHe: `אירוע שידור שנקלט חי (${key})`,
+    descriptionHe: 'אירוע חדש שזוהה בצינור ה-WebSocket של הלייב ומוכן לבחירת הפעלה אם תרצה',
+    whatHappensInLiveHe:
+      'אירוע שנשלח משרתי השידור החי בזמן אמת — לחץ על כפתור הקוד בפינה כדי לראות את התוכן המדויק שנקלט.',
+    triggerAdviceHe:
+      'אפשר לבדוק על הבמה בלחיצה על "בדוק בבמה" ולהחליט אם לשייך לו אפקט.',
+    visualSceneTag: 'BARRAGE_BANNER',
+    category: 'EXTERNAL_CUSTOM',
   };
 }
 
@@ -1585,23 +2165,124 @@ const DEFAULT_WS_DISCOVERED_EVENTS: DiscoveredWsEventRecord[] = [
 ];
 
 function loadPersistedWsSniffer(): DiscoveredWsEventRecord[] {
+  let baseList: DiscoveredWsEventRecord[] = [];
   try {
     if (fs.existsSync(WS_SNIFFER_FILE)) {
       const parsed = JSON.parse(fs.readFileSync(WS_SNIFFER_FILE, 'utf8'));
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const merged = [...parsed];
-        for (const def of DEFAULT_WS_DISCOVERED_EVENTS) {
-          if (!merged.some((e) => e.eventKey === def.eventKey)) {
-            merged.push(def);
-          }
-        }
-        return merged;
+        baseList = parsed.filter(
+          (item) => item && item.eventKey && item.eventKey !== 'ExternalWS:BoosteraSpeedAlert'
+        );
       }
     }
   } catch {
     // Ignore corrupt file
   }
-  return DEFAULT_WS_DISCOVERED_EVENTS.map((d) => ({ ...d, binding: { ...d.binding } }));
+
+  if (baseList.length === 0) {
+    baseList = DEFAULT_WS_DISCOVERED_EVENTS.map((d) => ({ ...d, binding: { ...d.binding } }));
+  } else {
+    for (const def of DEFAULT_WS_DISCOVERED_EVENTS) {
+      const existingIdx = baseList.findIndex(
+        (e) => String(e.eventKey).toLowerCase() === def.eventKey.toLowerCase()
+      );
+      if (existingIdx === -1) {
+        baseList.push({ ...def, binding: { ...def.binding } });
+      }
+    }
+  }
+
+  const dedupedByLower = new Map<string, DiscoveredWsEventRecord>();
+  for (const item of baseList) {
+    const lowerKey = String(item.eventKey || '').toLowerCase();
+    const defMatch = DEFAULT_WS_DISCOVERED_EVENTS.find(
+      (d) => d.eventKey.toLowerCase() === lowerKey
+    );
+    const canonicalKey = defMatch ? defMatch.eventKey : item.eventKey;
+    const prev = dedupedByLower.get(lowerKey);
+    if (!prev) {
+      dedupedByLower.set(lowerKey, {
+        ...item,
+        eventKey: canonicalKey,
+        binding:
+          !item.binding?.enabled && item.binding?.vfxId === 'NONE' && defMatch?.binding?.enabled
+            ? { ...defMatch.binding }
+            : { ...makeDefaultBinding(), ...(item.binding || {}) },
+      });
+    } else {
+      prev.seenCount = (prev.seenCount || 0) + (item.seenCount || 0);
+      prev.lastSeenTs = Math.max(prev.lastSeenTs || 0, item.lastSeenTs || 0);
+      if ((item.seenCount || 0) > 0 && item.lastSourceLabel && item.lastSourceLabel !== 'מוכן לקליטה חיה') {
+        prev.lastSourceLabel = item.lastSourceLabel;
+        prev.lastSampleSummaryHe = item.lastSampleSummaryHe;
+        prev.lastPayloadPreview =
+          item.lastPayloadPreview && item.lastPayloadPreview !== '{}'
+            ? item.lastPayloadPreview
+            : prev.lastPayloadPreview;
+      }
+      if (!prev.binding.enabled && item.binding?.enabled) {
+        prev.binding = { ...makeDefaultBinding(), ...item.binding };
+      }
+      prev.detectedFields = Array.from(
+        new Set([...(prev.detectedFields || []), ...(item.detectedFields || [])])
+      ).slice(0, 12);
+    }
+  }
+
+  const enriched = Array.from(dedupedByLower.values()).map((rec) => {
+    const meta = describeRawWebcastEventHe(rec.eventKey || rec.rawEventName);
+    const isGenericOldLabel =
+      !rec.labelHe ||
+      rec.labelHe.startsWith('אירוע WebSocket שנתפס חי') ||
+      rec.labelHe.startsWith('אירוע קהל ואינטראקציה') ||
+      rec.labelHe.startsWith('אירוע מתנה ב-WebSocket') ||
+      rec.labelHe.startsWith('אירוע דירוג / יעד / סקר');
+
+    let sampleSummary = rec.lastSampleSummaryHe;
+    let sampleImg = rec.sampleImageUrl || null;
+    let sampleAvatar = rec.sampleAvatarUrl || null;
+
+    if (rec.lastPayloadPreview && rec.lastPayloadPreview.startsWith('{') && rec.lastPayloadPreview.length > 4) {
+      try {
+        const parsedPreview = JSON.parse(rec.lastPayloadPreview);
+        const inner = parsedPreview?.data || parsedPreview;
+        if (inner?.common?.describe && (!sampleSummary || sampleSummary.startsWith('נקלט פריים'))) {
+          sampleSummary = String(inner.common.describe);
+        }
+        if (!sampleImg) {
+          sampleImg = extractTikTokEventImageUrl(inner);
+        }
+        if (!sampleAvatar) {
+          sampleAvatar = extractRawTikTokHttpUserAvatar(inner?.user || inner?.fromUser);
+        }
+      } catch {
+        const descMatch = rec.lastPayloadPreview.match(/"describe":"([^"]{3,100})"/);
+        if (descMatch && descMatch[1] && (!sampleSummary || sampleSummary.startsWith('נקלט פריים'))) {
+          sampleSummary = descMatch[1];
+        }
+      }
+    }
+
+    return {
+      ...rec,
+      labelHe: isGenericOldLabel ? meta.labelHe : rec.labelHe,
+      descriptionHe: meta.descriptionHe,
+      whatHappensInLiveHe: meta.whatHappensInLiveHe,
+      triggerAdviceHe: meta.triggerAdviceHe,
+      visualSceneTag: meta.visualSceneTag,
+      category: rec.category === 'EXTERNAL_CUSTOM' && meta.category !== 'EXTERNAL_CUSTOM' ? meta.category : rec.category,
+      lastSampleSummaryHe: sampleSummary,
+      sampleImageUrl: sampleImg,
+      sampleAvatarUrl: sampleAvatar,
+    };
+  });
+
+  enriched.sort((a, b) => {
+    if (a.binding.enabled !== b.binding.enabled) return a.binding.enabled ? -1 : 1;
+    return (b.seenCount || 0) - (a.seenCount || 0);
+  });
+
+  return enriched;
 }
 
 function savePersistedWsSniffer(records: DiscoveredWsEventRecord[]) {
@@ -1613,57 +2294,160 @@ function savePersistedWsSniffer(records: DiscoveredWsEventRecord[]) {
   }
 }
 
+function hasServerTikTokModSession(slotNumber: number): boolean {
+  const sid = process.env[`TIKTOK_MOD_${slotNumber}_SESSIONID`];
+  return Boolean(sid && sid.trim().length > 6);
+}
+
 const DEFAULT_COMPANION_ACCOUNTS: CompanionAccountSlot[] = [
   {
     id: 'comp_tactical_1',
+    slotNumber: 1,
     handle: 'kobi_pk_commander',
     displayName: 'קובי · קצין קרב וסנייפ',
     avatarUrl: buildBroadcastAvatarCrestUri('קב', 0),
     role: 'TACTICAL_SNIPE',
     enabled: true,
-    connectionStatus: 'SLOT_READY',
-    externalWebhookOrWsTag: 'ws://companion-slot-1',
+    connectionStatus: hasServerTikTokModSession(1) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    hasServerTikTokAuth: hasServerTikTokModSession(1),
+    deployedRoomHandle: null,
+    deployedRoomLive: false,
+    trainingLevel: 92,
+    trainedSkillSummaryHe: 'תזמון פתיחת כפפה x5 ב-5 השניות הראשונות והכנת קהל לסנייפ בשנייה ה-8',
+    trainedLinesHe: [
+      'כפפה באוויר 30 שניות — כל ורד קטן עכשיו תופס מכפיל x5, כולם ביחד!',
+      'לשמור תחמושת חברים, סנייפ מדויק ב-8 שניות אחרונות סוגר את הסיבוב!',
+      'היריב פתח ענן מלחץ — ממשיכים נקודות בשקט ולא עוצרים לשנייה!',
+    ],
+    lastOrderHe: null,
+    externalWebhookOrWsTag: 'tiktok-mod-slot-1',
     toneNotesHe: 'חד, טקטי, סופר שניות לכפפה, מתריע מיד על ענן יריב ומדרבן בשניות ההכרעה.',
     messagesDispatched: 4,
     moderationsTriggered: 0,
   },
   {
     id: 'comp_hype_2',
+    slotNumber: 2,
     handle: 'maya_vibe_boost',
     displayName: 'מאיה · הרמת אווירה וצ׳אט',
     avatarUrl: buildBroadcastAvatarCrestUri('מי', 1),
     role: 'VIBE_HYPE',
     enabled: true,
-    connectionStatus: 'SLOT_READY',
-    externalWebhookOrWsTag: 'ws://companion-slot-2',
+    connectionStatus: hasServerTikTokModSession(2) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    hasServerTikTokAuth: hasServerTikTokModSession(2),
+    deployedRoomHandle: null,
+    deployedRoomLive: false,
+    trainingLevel: 90,
+    trainedSkillSummaryHe: 'שבירת שתיקות בצ׳אט עם שאלות קצרות שמקפיצות חשיפה באלגוריתם הלייב',
+    trainedLinesHe: [
+      'בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב?',
+      'איזה אנרגיות יש בחדר הערב!! כל מי שכאן תנו "1" בצ׳אט ונרים את המסך!',
+      'יאללה משפחה לא להוריד רגל מהגז, החדר שלנו בוער היום!',
+    ],
+    lastOrderHe: null,
+    externalWebhookOrWsTag: 'tiktok-mod-slot-2',
     toneNotesHe: 'אנרגטית, חמה, שוברת שתיקות עם שאלות לקהל ומרימה רצפי דאבל-טאפ ושיתופים.',
     messagesDispatched: 6,
     moderationsTriggered: 0,
   },
   {
     id: 'comp_shield_3',
+    slotNumber: 3,
     handle: 'ori_room_shield',
     displayName: 'אורי · מגן חדר וניקוי רעשים',
     avatarUrl: buildBroadcastAvatarCrestUri('אר', 2),
     role: 'MOD_SHIELD',
     enabled: true,
-    connectionStatus: 'SLOT_READY',
-    externalWebhookOrWsTag: 'ws://companion-slot-3',
+    connectionStatus: hasServerTikTokModSession(3) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    hasServerTikTokAuth: hasServerTikTokModSession(3),
+    deployedRoomHandle: null,
+    deployedRoomLive: false,
+    trainingLevel: 94,
+    trainedSkillSummaryHe: 'ניטרול טרולים מחדר יריב ע״י הצפה חיובית מתואמת בלי לתת להם במה',
+    trainedLinesHe: [
+      'מתרכזים אך ורק בניצחון שלנו — להציף לבבות כתומים בצ׳אט ולדחוף קדימה!',
+      'אף רעש מבחוץ לא עוצר את המשפחה הזאת, כולנו על המסך בדאבל טאפ!',
+      'שומרים על צ׳אט נקי ואנרגיה גבוהה, כל החדר איתך עד הסוף!',
+    ],
+    lastOrderHe: null,
+    externalWebhookOrWsTag: 'tiktok-mod-slot-3',
     toneNotesHe: 'מזהה טרולים מהחדר היריב, הודעות שליליות וספאם — מסמן להשתקה ומציף אנרגיה חיובית.',
     messagesDispatched: 2,
     moderationsTriggered: 3,
   },
   {
     id: 'comp_vip_4',
+    slotNumber: 4,
     handle: 'shir_vip_hostess',
     displayName: 'שיר · קבלת פנים ותודות VIP',
     avatarUrl: buildBroadcastAvatarCrestUri('שר', 3),
     role: 'WELCOME_VIP',
     enabled: true,
-    connectionStatus: 'SLOT_READY',
-    externalWebhookOrWsTag: 'ws://companion-slot-4',
+    connectionStatus: hasServerTikTokModSession(4) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    hasServerTikTokAuth: hasServerTikTokModSession(4),
+    deployedRoomHandle: null,
+    deployedRoomLive: false,
+    trainingLevel: 89,
+    trainedSkillSummaryHe: 'יחס אישי לתומכים תוך 2 שניות מהמתנה ליצירת נאמנות ומתנות המשך',
+    trainedLinesHe: [
+      'כבוד ענק ל-{{USER}} על התמיכה המטורפת! כולם לפרגן לו בצ׳אט!',
+      'ברוכים הבאים לכל מי שנכנס עכשיו ללייב — הגעתם בדיוק לרגע השיא!',
+      'איזו כניסה מלכותית של התומכים שלנו, מרימים את כל החדר באוויר!',
+    ],
+    lastOrderHe: null,
+    externalWebhookOrWsTag: 'tiktok-mod-slot-4',
     toneNotesHe: 'נותנת כבוד אישי לתומכים, מברכת מצטרפים חדשים וגורמת לכל תומך להרגיש מלך בחדר.',
     messagesDispatched: 5,
+    moderationsTriggered: 0,
+  },
+  {
+    id: 'comp_pacer_5',
+    slotNumber: 5,
+    handle: 'dan_combo_pacer',
+    displayName: 'דן · דחיפת הקשות וקומבו מהירות',
+    avatarUrl: buildBroadcastAvatarCrestUri('דן', 0),
+    role: 'COMBO_PACER',
+    enabled: true,
+    connectionStatus: hasServerTikTokModSession(5) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    hasServerTikTokAuth: hasServerTikTokModSession(5),
+    deployedRoomHandle: null,
+    deployedRoomLive: false,
+    trainingLevel: 88,
+    trainedSkillSummaryHe: 'הנעת גלי הקשות (Speed Challenge / 3,000 לייקים בנקודות חינם) וסגירת משימות קרב',
+    trainedLinesHe: [
+      'כולם אצבעות על המסך עכשיו — סוגרים את משימת המהירות לנקודות בונוס חינם!',
+      'עוד דחיפה קטנה בהקשות ואנחנו פותחים את מד האנרגיה עד הסוף!',
+      'כל צופה נותן 30 הקשות מהירות עכשיו — בואו נראה את הקומבו עף!',
+    ],
+    lastOrderHe: null,
+    externalWebhookOrWsTag: 'tiktok-mod-slot-5',
+    toneNotesHe: 'ממוקד במשימות מהירות, גלי לייקים מתואמים וסגירת יעדי חדר בזמן קצר.',
+    messagesDispatched: 3,
+    moderationsTriggered: 0,
+  },
+  {
+    id: 'comp_scout_6',
+    slotNumber: 6,
+    handle: 'noam_live_scout',
+    displayName: 'נועם · מלווה תצפית ושיתופי לייב',
+    avatarUrl: buildBroadcastAvatarCrestUri('נע', 1),
+    role: 'SCOUT_SUPPORT',
+    enabled: true,
+    connectionStatus: hasServerTikTokModSession(6) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    hasServerTikTokAuth: hasServerTikTokModSession(6),
+    deployedRoomHandle: null,
+    deployedRoomLive: false,
+    trainingLevel: 87,
+    trainedSkillSummaryHe: 'שיח דו-שיחי טבעי עם שאר המנחים והנעת שיתופי לייב להבאת צופים חדשים',
+    trainedLinesHe: [
+      'שיתפתי עכשיו ל-3 חברים, בואו נביא עוד גל צופים מהפור-יו לתוך הקרב!',
+      'לגמרי, רואים שהמומנטום עובר אלינו — רק להמשיך לשתף ולהקיש!',
+      'מי שעוד לא עשה עוקב לשידור זה הזמן, הולך להיות פה סיום מטורף!',
+    ],
+    lastOrderHe: null,
+    externalWebhookOrWsTag: 'tiktok-mod-slot-6',
+    toneNotesHe: 'משלים שיחה טבעית מול שאר המנחים כדי לייצר תחושת קהילה חיה ומניע שיתופים ועוקבים.',
+    messagesDispatched: 2,
     moderationsTriggered: 0,
   },
 ];
@@ -1676,7 +2460,7 @@ const DEFAULT_LEARNED_CHAT_PATTERNS: LearnedChatModeratorPattern[] = [
     sourceStreamHe: 'נלמד ממנחי באטלים מובילים',
     whatObservedHe: 'מנחה מלווה לא כותב סתם "תזרקו" — הוא מבקש להכין ורדים/מתנות קטנות ב-5 השניות הראשונות של הכפפה כדי לפתוח מכפיל x5.',
     hebrewLines: [
-      'כפפה פתוחה 30 שניות!! כולם לזרוק אפילו ורד אחד עכשיו לתפוס מכפיל x5! 🥊🔥',
+      'כפפה פתוחה 30 שניות!! כולם לזרוק אפילו ורד אחד עכשיו לתפוס מכפיל x5!',
       'חלון x5 באוויר! כל לחיצה וכל מתנה קטנה עכשיו שווה פי 5 — בואו נפתח פער!',
     ],
     effectivenessScore: 96,
@@ -1691,7 +2475,7 @@ const DEFAULT_LEARNED_CHAT_PATTERNS: LearnedChatModeratorPattern[] = [
     sourceStreamHe: 'נלמד מהגנות ענן בזירות PK',
     whatObservedHe: 'כשהיריב פותח ענן הסתרת סקור, הקהל נוטה לקפוא מחוסר ודאות. מנחה חזק מרגיע מיד ומכוון לשמירת תחמושת לסנייפ.',
     hebrewLines: [
-      'היריב פתח ענן כי הוא בלחץ! אנחנו רואים את הסקור האמיתי — להמשיך דאבל טאפ ולשמור סנייפ ל-8 שניות אחרונות! 🎯⚡',
+      'היריב פתח ענן כי הוא בלחץ! אנחנו רואים את הסקור האמיתי — להמשיך דאבל טאפ ולשמור סנייפ ל-8 שניות אחרונות!',
       'לא לעצור בגלל הענן חברים! כל נקודה נספרת עכשיו בשקט — תנו עבודה על המסך!',
     ],
     effectivenessScore: 95,
@@ -1706,8 +2490,8 @@ const DEFAULT_LEARNED_CHAT_PATTERNS: LearnedChatModeratorPattern[] = [
     sourceStreamHe: 'נלמד ממרימי אווירה בלייבים',
     whatObservedHe: 'ברגע שהצ׳אט מאט ל-15 שניות, שאלת מיקרו קצרה (מאיפה צופים / דירוג 1-10) מקפיצה את האלגוריתם של טיקטוק פי 3.',
     hebrewLines: [
-      'בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב? תכתבו! 👇🔥',
-      'כל מי שאיתנו בחדר תנו "1" בצ׳אט ושיתוף אחד לחבר, בואו נראה כמה כוח יש פה הערב! 🚀',
+      'בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב? תכתבו!',
+      'כל מי שאיתנו בחדר תנו "1" בצ׳אט ושיתוף אחד לחבר, בואו נראה כמה כוח יש פה הערב!',
     ],
     effectivenessScore: 91,
     autoDispatchEnabled: true,
@@ -1721,8 +2505,8 @@ const DEFAULT_LEARNED_CHAT_PATTERNS: LearnedChatModeratorPattern[] = [
     sourceStreamHe: 'נלמד ממודרטורים בזירות תחרותיות',
     whatObservedHe: 'כשנכנסים צופים של היריב להוריד מורל, לא עונים להם ישירות (זה מעלה להם חשיפה) — מסמנים להשתקה ומציפים מיד 2 שורות חיוביות.',
     hebrewLines: [
-      'רק אנרגיות טובות בחדר שלנו 👑 כולם להציף לבבות כתומים בצ׳אט ולדחוף קדימה! 🧡🔥',
-      'המשפחה פה הכי חזקה שיש — מתרכזים אך ורק בניצחון ובדאבל טאפ על המסך! 💪✨',
+      'רק אנרגיות טובות בחדר שלנו — כולם להציף לבבות כתומים בצ׳אט ולדחוף קדימה!',
+      'המשפחה פה הכי חזקה שיש — מתרכזים אך ורק בניצחון ובדאבל טאפ על המסך!',
     ],
     effectivenessScore: 94,
     autoDispatchEnabled: true,
@@ -1736,8 +2520,8 @@ const DEFAULT_LEARNED_CHAT_PATTERNS: LearnedChatModeratorPattern[] = [
     sourceStreamHe: 'נלמד מחדרי VIP במפרץ ובישראל',
     whatObservedHe: 'אזכור שם התומך בצ׳אט תוך 2 שניות מהמתנה גורם ל-40% יותר מתנות המשך באותו סיבוב.',
     hebrewLines: [
-      'כבוד ענק ל-{{USER}} על התמיכה המטורפת!! כולם לפרגן לו בלבבות בצ׳אט! 👑🔥',
-      'איזו כניסה מלכותית של {{USER}}! מרים את כל החדר באוויר 🙌💎',
+      'כבוד ענק ל-{{USER}} על התמיכה המטורפת!! כולם לפרגן לו בלבבות בצ׳אט!',
+      'איזו כניסה מלכותית של {{USER}}! מרים את כל החדר באוויר!',
     ],
     effectivenessScore: 93,
     autoDispatchEnabled: true,
@@ -1746,18 +2530,365 @@ const DEFAULT_LEARNED_CHAT_PATTERNS: LearnedChatModeratorPattern[] = [
   },
 ];
 
+interface EnvSlotRuntimeStats {
+  autoScriptTriggersCount: number;
+  brainCommandsCount: number;
+  moderationsCount: number;
+  lastSentAtTs: number | null;
+  lastSentMessageHe: string | null;
+  lastTriggerReasonHe: string | null;
+  recentLogs: EnvModeratorSlotLogItem[];
+}
+
+const envSlotRuntimeMap = new Map<number, EnvSlotRuntimeStats>();
+
+function getEnvSlotRuntime(slotNumber: number): EnvSlotRuntimeStats {
+  let st = envSlotRuntimeMap.get(slotNumber);
+  if (!st) {
+    st = {
+      autoScriptTriggersCount: 0,
+      brainCommandsCount: 0,
+      moderationsCount: 0,
+      lastSentAtTs: null,
+      lastSentMessageHe: null,
+      lastTriggerReasonHe: null,
+      recentLogs: [],
+    };
+    envSlotRuntimeMap.set(slotNumber, st);
+  }
+  return st;
+}
+
+function inspectEnvModeratorSlotConfig(slotNumber: number): {
+  envSessionKeyName: string;
+  envIdcKeyName: string;
+  sessionConfiguredInEnv: boolean;
+  sessionMaskedStatusHe: string;
+  targetIdc: string;
+} {
+  const envSessionKeyName = `TIKTOK_MOD_${slotNumber}_SESSIONID`;
+  const envIdcKeyName = `TIKTOK_MOD_${slotNumber}_TARGET_IDC`;
+  const rawSid = String(process.env[envSessionKeyName] || '').trim();
+  const targetIdc = String(process.env[envIdcKeyName] || 'useast2a').trim() || 'useast2a';
+  const configured = rawSid.length > 6;
+  return {
+    envSessionKeyName,
+    envIdcKeyName,
+    sessionConfiguredInEnv: configured,
+    sessionMaskedStatusHe: configured
+      ? `מוגדר ב-.env (${rawSid.length} תווים · פעיל לשליחה ישירה)`
+      : 'ריק ב-.env · פועל דרך גשר WebSocket / תצוגת במה',
+    targetIdc,
+  };
+}
+
+function buildEnvSlotsActivitySnapshot(
+  accounts: CompanionAccountSlot[],
+  hasActiveExternalBridge = false
+): EnvModeratorSlotActivity[] {
+  const rows: EnvModeratorSlotActivity[] = [];
+  for (let slot = 1; slot <= 6; slot++) {
+    const envMeta = inspectEnvModeratorSlotConfig(slot);
+    const acc =
+      accounts.find((a) => a.slotNumber === slot) ||
+      accounts[slot - 1] ||
+      DEFAULT_COMPANION_ACCOUNTS[slot - 1];
+    const rt = getEnvSlotRuntime(slot);
+    const liveDeliveryState: EnvModeratorSlotActivity['liveDeliveryState'] = !acc.enabled
+      ? 'PAUSED'
+      : envMeta.sessionConfiguredInEnv
+        ? 'DIRECT_TIKTOK_AUTH'
+        : hasActiveExternalBridge
+          ? 'WS_BRIDGE_CONNECTED'
+          : 'STAGE_READY';
+
+    rows.push({
+      slotNumber: slot,
+      envSessionKeyName: envMeta.envSessionKeyName,
+      envIdcKeyName: envMeta.envIdcKeyName,
+      sessionConfiguredInEnv: envMeta.sessionConfiguredInEnv,
+      sessionMaskedStatusHe: envMeta.sessionMaskedStatusHe,
+      targetIdc: envMeta.targetIdc,
+      accountId: acc.id,
+      handle: acc.handle,
+      displayName: acc.displayName,
+      avatarUrl: acc.avatarUrl,
+      role: acc.role,
+      enabled: acc.enabled,
+      deployedRoomHandle: acc.deployedRoomHandle || null,
+      deployedRoomLive: Boolean(acc.deployedRoomLive),
+      liveDeliveryState,
+      messagesSentTotal: acc.messagesDispatched,
+      autoScriptTriggersCount: rt.autoScriptTriggersCount,
+      brainCommandsCount: rt.brainCommandsCount,
+      moderationsCount: acc.moderationsTriggered || rt.moderationsCount,
+      lastSentAtTs: rt.lastSentAtTs,
+      lastSentMessageHe: rt.lastSentMessageHe,
+      lastTriggerReasonHe: rt.lastTriggerReasonHe || acc.lastOrderHe || null,
+      recentLogs: rt.recentLogs.slice(0, 8),
+    });
+  }
+  return rows;
+}
+
+const DEFAULT_MODERATOR_AUTO_SCRIPTS: ModeratorAutoScriptRule[] = [
+  {
+    id: 'mscript_whale_1',
+    nameHe: 'תסריט מתנת לווייתן / VIP — פרגון מיידי והרמת לבבות',
+    descriptionHe: 'מופעל אוטומטית כשמתקבלת מתנה גדולה בלייב ומחלק תגובה טבעית בין סלוט #4 לסלוט #2.',
+    enabled: true,
+    triggerEventType: 'WHALE_GIFT',
+    minNumericValue: 100,
+    cooldownSec: 20,
+    steps: [
+      {
+        id: 'ms_w_1',
+        slotNumber: 4,
+        delaySec: 0.8,
+        messageTemplateHe: 'כבוד ענק ל-{{USER}} על {{GIFT}} ({{VALUE}} יהלומים)! תודה שאתה מרים את כל החדר!',
+      },
+      {
+        id: 'ms_w_2',
+        slotNumber: 2,
+        delaySec: 4.2,
+        messageTemplateHe: 'כולם בצ׳אט לפרגן ל-{{USER}} בלבבות — איזו תמיכה מטורפת ב-{{ROOM}}!',
+      },
+    ],
+    triggeredCount: 0,
+    lastTriggeredTs: 0,
+    lastTriggeredSummaryHe: null,
+  },
+  {
+    id: 'mscript_glove_2',
+    nameHe: 'תסריט פתיחת כפפה x5 — קריאת 5 שניות ראשונות והקשות',
+    descriptionHe: 'מופעל ברגע שזוהתה פתיחת כפפת בוסט (Glove x5) כדי למצות את חלון ה-30 שניות.',
+    enabled: true,
+    triggerEventType: 'GLOVE_OPENED',
+    minNumericValue: 0,
+    cooldownSec: 28,
+    steps: [
+      {
+        id: 'ms_g_1',
+        slotNumber: 1,
+        delaySec: 0,
+        messageTemplateHe: 'כפפה פתוחה 30 שניות עכשיו! כל מתנה קטנה או ורד ב-5 שניות הראשונות תופסת מכפיל x5!',
+      },
+      {
+        id: 'ms_g_2',
+        slotNumber: 5,
+        delaySec: 3.8,
+        messageTemplateHe: 'כולם אצבעות על המסך בהקשות כפולות בזמן הכפפה — כל נקודה שווה פי 5!',
+      },
+    ],
+    triggeredCount: 0,
+    lastTriggeredTs: 0,
+    lastTriggeredSummaryHe: null,
+  },
+  {
+    id: 'mscript_cloud_3',
+    nameHe: 'תסריט זיהוי ענן יריב — הרגעת קהל והכנת סנייפ',
+    descriptionHe: 'מופעל ברגע שרדאר ה-X-Ray מזהה שהיריב פתח ענן ערפל שמסתיר את הסקור.',
+    enabled: true,
+    triggerEventType: 'OPPONENT_CLOUD',
+    minNumericValue: 0,
+    cooldownSec: 25,
+    steps: [
+      {
+        id: 'ms_c_1',
+        slotNumber: 1,
+        delaySec: 0.5,
+        messageTemplateHe: 'היריב פתח ענן כי הוא בלחץ! לא לעצור הקשות — אנחנו עוקבים אחרי הסקור האמיתי!',
+      },
+      {
+        id: 'ms_c_2',
+        slotNumber: 6,
+        delaySec: 4.5,
+        messageTemplateHe: 'ממשיכים לצבור נקודות בשקט מתחת לענן ושומרים את המכה החזקה ל-8 שניות אחרונות!',
+      },
+    ],
+    triggeredCount: 0,
+    lastTriggeredTs: 0,
+    lastTriggeredSummaryHe: null,
+  },
+  {
+    id: 'mscript_speed_4',
+    nameHe: 'תסריט משימת מהירות (Battle Task) — גל הקשות מתואם',
+    descriptionHe: 'מופעל כשטיקטוק פותחת משימת מהירות על המסך לנקודות בונוס חינם.',
+    enabled: true,
+    triggerEventType: 'BATTLE_SPEED_TASK',
+    minNumericValue: 0,
+    cooldownSec: 30,
+    steps: [
+      {
+        id: 'ms_s_1',
+        slotNumber: 5,
+        delaySec: 0.5,
+        messageTemplateHe: 'נפתחה משימת מהירות על המסך! כל צופה נותן עכשיו 30 הקשות מהירות לנקודות בונוס!',
+      },
+      {
+        id: 'ms_s_2',
+        slotNumber: 6,
+        delaySec: 4.0,
+        messageTemplateHe: 'עוד טיפה ואנחנו סוגרים את היעד לפני היריב — שתפו לחבר ותקישו יחד!',
+      },
+    ],
+    triggeredCount: 0,
+    lastTriggeredTs: 0,
+    lastTriggeredSummaryHe: null,
+  },
+  {
+    id: 'mscript_snipe_5',
+    nameHe: 'תסריט 30 שניות אחרונות (חלון סנייפ) — נעילת ניצחון',
+    descriptionHe: 'מופעל אוטומטית בכניסה ל-30 השניות האחרונות של סיבוב הקרב.',
+    enabled: true,
+    triggerEventType: 'SNIPE_WINDOW_30S',
+    minNumericValue: 0,
+    cooldownSec: 40,
+    steps: [
+      {
+        id: 'ms_sn_1',
+        slotNumber: 1,
+        delaySec: 0,
+        messageTemplateHe: '30 שניות לסיום הקרב! להכין סנייפ מדויק ב-8 שניות אחרונות — לא לחשוף מוקדם!',
+      },
+      {
+        id: 'ms_sn_2',
+        slotNumber: 2,
+        delaySec: 4.0,
+        messageTemplateHe: 'כל החדר על המסך בשניות ההכרעה — בואו ניקח את הסיבוב הזה ביחד!',
+      },
+    ],
+    triggeredCount: 0,
+    lastTriggeredTs: 0,
+    lastTriggeredSummaryHe: null,
+  },
+  {
+    id: 'mscript_troll_6',
+    nameHe: 'תסריט בלימת טרול / ספאם — הצפה חיובית דו-שלבית',
+    descriptionHe: 'מופעל כשמגן הצ׳אט מזהה הודעה מורידת מורל מהחדר היריב או קישור ספאם.',
+    enabled: true,
+    triggerEventType: 'TROLL_OR_SPAM_CHAT',
+    minNumericValue: 0,
+    cooldownSec: 18,
+    steps: [
+      {
+        id: 'ms_tr_1',
+        slotNumber: 3,
+        delaySec: 0.4,
+        messageTemplateHe: 'רק אנרגיות טובות בחדר שלנו — כולם להציף לבבות ולהתרכז בניצחון!',
+      },
+      {
+        id: 'ms_tr_2',
+        slotNumber: 4,
+        delaySec: 3.2,
+        messageTemplateHe: 'הקהילה פה הכי חזקה שיש, ממשיכים דאבל טאפ על המסך בלי לעצור!',
+      },
+    ],
+    triggeredCount: 0,
+    lastTriggeredTs: 0,
+    lastTriggeredSummaryHe: null,
+  },
+];
+
+function buildDefaultBrainCommanderState(): CompanionBrainCommanderState {
+  return {
+    autonomousBrainEnabled: true,
+    activeTargetRoom: null,
+    activeTargetRoomLive: false,
+    currentDirectiveHe: 'מוח AI אחראי על 6 חשבונות המנחים — מוכן לפקודות, לאימון מהצ׳אט ולשליחה חיה ללייבים',
+    brainStatusHe: 'מחובר ל-6 מנחים מאומנים · ממתין לפריסה לחדר או פקודה',
+    trainingSessionsCount: 1,
+    lastTrainedAtTs: Date.now() - 30000,
+    lastTrainingSummaryHe: '6 המנחים אומנו על תזמון כפפה x5, הרגעת קהל בענן יריב, הנעת משימת מהירות, פרגון VIP וסינון טרולים.',
+    recentOrders: [],
+  };
+}
+
+function normalizeLoadedCompanionAccounts(rawAccounts: any[]): CompanionAccountSlot[] {
+  const normalized: CompanionAccountSlot[] = [];
+  for (let i = 0; i < rawAccounts.length; i++) {
+    const raw = rawAccounts[i] || {};
+    const slotNum = typeof raw.slotNumber === 'number' && raw.slotNumber > 0 ? raw.slotNumber : i + 1;
+    const def = DEFAULT_COMPANION_ACCOUNTS[i] || DEFAULT_COMPANION_ACCOUNTS[0];
+    const authReady = hasServerTikTokModSession(slotNum);
+    normalized.push({
+      id: String(raw.id || def.id || `comp_acc_${slotNum}`),
+      slotNumber: slotNum,
+      handle: String(raw.handle || def.handle),
+      displayName: String(raw.displayName || def.displayName),
+      avatarUrl: String(raw.avatarUrl || def.avatarUrl),
+      role: (raw.role as CompanionRoleId) || def.role,
+      enabled: raw.enabled !== false,
+      connectionStatus: authReady
+        ? 'TIKTOK_AUTH_LIVE'
+        : raw.connectionStatus === 'LIVE_ROOM_DEPLOYED' ||
+            raw.connectionStatus === 'TIKTOK_AUTH_LIVE' ||
+            raw.connectionStatus === 'WS_BRIDGE_ACTIVE'
+          ? raw.connectionStatus
+          : 'SLOT_READY',
+      hasServerTikTokAuth: authReady,
+      deployedRoomHandle: raw.deployedRoomHandle || null,
+      deployedRoomLive: Boolean(raw.deployedRoomLive),
+      trainingLevel:
+        typeof raw.trainingLevel === 'number' ? Math.max(50, Math.min(100, raw.trainingLevel)) : def.trainingLevel,
+      trainedSkillSummaryHe: String(raw.trainedSkillSummaryHe || def.trainedSkillSummaryHe),
+      trainedLinesHe:
+        Array.isArray(raw.trainedLinesHe) && raw.trainedLinesHe.length > 0
+          ? raw.trainedLinesHe.map((s: any) => String(s || '').trim()).filter(Boolean)
+          : [...def.trainedLinesHe],
+      lastOrderHe: raw.lastOrderHe || null,
+      externalWebhookOrWsTag: String(raw.externalWebhookOrWsTag || `tiktok-mod-slot-${slotNum}`),
+      toneNotesHe: String(raw.toneNotesHe || def.toneNotesHe),
+      messagesDispatched: Number(raw.messagesDispatched) || 0,
+      moderationsTriggered: Number(raw.moderationsTriggered) || 0,
+    });
+  }
+
+  // Ensure all 6 starter moderator accounts exist out-of-the-box if migrating from a 4-slot file
+  for (const def of DEFAULT_COMPANION_ACCOUNTS) {
+    const exists = normalized.some(
+      (a) => a.id === def.id || a.slotNumber === def.slotNumber || a.handle.toLowerCase() === def.handle.toLowerCase()
+    );
+    if (!exists && normalized.length < 6) {
+      normalized.push({ ...def, trainedLinesHe: [...def.trainedLinesHe] });
+    }
+  }
+  return normalized.sort((a, b) => a.slotNumber - b.slotNumber);
+}
+
 function loadPersistedChatCompanion(): {
   accounts: CompanionAccountSlot[];
   learnedPatterns: LearnedChatModeratorPattern[];
+  commanderBrain: CompanionBrainCommanderState;
+  autoScripts: ModeratorAutoScriptRule[];
+  autoEventScriptsEnabled: boolean;
 } {
   try {
     if (fs.existsSync(CHAT_COMPANION_FILE)) {
       const parsed = JSON.parse(fs.readFileSync(CHAT_COMPANION_FILE, 'utf8'));
       if (parsed && Array.isArray(parsed.accounts) && Array.isArray(parsed.learnedPatterns)) {
+        const defBrain = buildDefaultBrainCommanderState();
         return {
-          accounts: parsed.accounts.length > 0 ? parsed.accounts : DEFAULT_COMPANION_ACCOUNTS,
+          accounts: normalizeLoadedCompanionAccounts(
+            parsed.accounts.length > 0 ? parsed.accounts : DEFAULT_COMPANION_ACCOUNTS
+          ),
           learnedPatterns:
             parsed.learnedPatterns.length > 0 ? parsed.learnedPatterns : DEFAULT_LEARNED_CHAT_PATTERNS,
+          commanderBrain: {
+            ...defBrain,
+            ...(parsed.commanderBrain && typeof parsed.commanderBrain === 'object' ? parsed.commanderBrain : {}),
+            recentOrders: Array.isArray(parsed.commanderBrain?.recentOrders)
+              ? parsed.commanderBrain.recentOrders.slice(0, 12)
+              : [],
+          },
+          autoScripts:
+            Array.isArray(parsed.autoScripts) && parsed.autoScripts.length > 0
+              ? parsed.autoScripts
+              : DEFAULT_MODERATOR_AUTO_SCRIPTS.map((s) => ({
+                  ...s,
+                  steps: s.steps.map((st) => ({ ...st })),
+                })),
+          autoEventScriptsEnabled: parsed.autoEventScriptsEnabled !== false,
         };
       }
     }
@@ -1765,8 +2896,14 @@ function loadPersistedChatCompanion(): {
     // Ignore corrupt file
   }
   return {
-    accounts: DEFAULT_COMPANION_ACCOUNTS.map((a) => ({ ...a })),
+    accounts: DEFAULT_COMPANION_ACCOUNTS.map((a) => ({ ...a, trainedLinesHe: [...a.trainedLinesHe] })),
     learnedPatterns: DEFAULT_LEARNED_CHAT_PATTERNS.map((p) => ({ ...p, hebrewLines: [...p.hebrewLines] })),
+    commanderBrain: buildDefaultBrainCommanderState(),
+    autoScripts: DEFAULT_MODERATOR_AUTO_SCRIPTS.map((s) => ({
+      ...s,
+      steps: s.steps.map((st) => ({ ...st })),
+    })),
+    autoEventScriptsEnabled: true,
   };
 }
 
@@ -1777,8 +2914,14 @@ function savePersistedChatCompanion(state: ChatCompanionState) {
       CHAT_COMPANION_FILE,
       JSON.stringify(
         {
+          autoEventScriptsEnabled: state.autoEventScriptsEnabled,
           accounts: state.accounts,
+          autoScripts: state.autoScripts.slice(0, 40),
           learnedPatterns: state.learnedPatterns.slice(0, 40),
+          commanderBrain: {
+            ...state.commanderBrain,
+            recentOrders: state.commanderBrain.recentOrders.slice(0, 12),
+          },
         },
         null,
         2
@@ -1938,9 +3081,13 @@ const battleState: ServerBattleState = {
     autoCompanionEnabled: true,
     autoModerationShieldEnabled: true,
     autoLearnFromLiveChat: true,
+    autoEventScriptsEnabled: persistedCompanion.autoEventScriptsEnabled,
     chatVelocityPerMin: 6,
-    detectedRoomMoodHe: 'פעיל — עוקב אחר צ׳אט חי, לומד מנחים מלווים ומסנן רעשים',
+    detectedRoomMoodHe: 'פעיל — מוח AI אחראי על 6 חשבונות מנחים מאומנים ומוכנים לשליחה בלייב',
+    commanderBrain: persistedCompanion.commanderBrain,
     accounts: persistedCompanion.accounts,
+    envSlotsActivity: buildEnvSlotsActivitySnapshot(persistedCompanion.accounts, false),
+    autoScripts: persistedCompanion.autoScripts,
     learnedPatterns: persistedCompanion.learnedPatterns,
     moderationFlags: [],
     recentDispatches: [],
@@ -2738,6 +3885,11 @@ async function startServer() {
         } else {
           broadcast({ type: 'state:update', state: battleState });
         }
+        evaluateModeratorAutoScripts({
+          triggerType: 'GLOVE_OPENED',
+          userName: userLabel,
+          sourceRoom: battleState.chatCompanion.commanderBrain.activeTargetRoom,
+        });
         return { accepted: true, triggeredVfx: vidRes.instance?.effectId || res.instance?.effectId };
       }
 
@@ -2752,6 +3904,13 @@ async function startServer() {
         const isSnipe = payload.type === 'snipe_us' || battleState.snipeWindowActive;
 
         const whaleThreshold = battleState.countryCalibration.effectiveWhaleGiftThreshold || 299;
+        evaluateModeratorAutoScripts({
+          triggerType: added >= whaleThreshold ? 'WHALE_GIFT' : 'MEDIUM_GIFT',
+          userName: userLabel,
+          giftName: isSnipe ? 'מתנת סנייפ' : 'מתנת תמיכה',
+          numericValue: added,
+          sourceRoom: battleState.chatCompanion.commanderBrain.activeTargetRoom,
+        });
         recordStageParticipantAvatar({
           username: userLabel,
           displayName: userLabel,
@@ -3094,6 +4253,10 @@ async function startServer() {
             });
             broadcast({ type: 'ai:decision', decision: dec, state: battleState });
           }
+          evaluateModeratorAutoScripts({
+            triggerType: 'SNIPE_WINDOW_30S',
+            sourceRoom: battleState.chatCompanion.commanderBrain.activeTargetRoom,
+          });
         }
 
         if (
@@ -3180,112 +4343,7 @@ async function startServer() {
   const chatRecentTimestamps: number[] = [];
   const lastCompanionMomentTs = new Map<string, number>();
 
-  function describeRawWebcastEventHe(rawName: string): {
-    labelHe: string;
-    descriptionHe: string;
-    category: WsCollectedEventCategory;
-  } {
-    const lower = rawName.toLowerCase();
-    if (lower.includes('boostcard')) {
-      return {
-        labelHe: 'קלף האצת חשיפה (TikTok Boost Card)',
-        descriptionHe: 'אירוע פתיחת קלף בוסט צופים בחדר הלייב',
-        category: 'CARDS_BOOSTS',
-      };
-    }
-    if (lower.includes('battletask')) {
-      return {
-        labelHe: 'משימת מהירות / בונוס בקרב (Battle Task)',
-        descriptionHe: 'משימת בונוס קצובה בזמן במהלך קרב PK',
-        category: 'BATTLE_PK',
-      };
-    }
-    if (lower.includes('battlepunish')) {
-      return {
-        labelHe: 'סיום סיבוב קרב / זמן עונש (Battle Punish Finish)',
-        descriptionHe: 'מעבר מסיום הקרב לשלב התוצאה והעונש',
-        category: 'BATTLE_PK',
-      };
-    }
-    if (lower.includes('battleitemcard')) {
-      return {
-        labelHe: 'שימוש בקלף קרב חי (Battle Item Card)',
-        descriptionHe: 'כפפה, ענן ערפל, הארכת זמן או קלף מיוחד בקרב',
-        category: 'CARDS_BOOSTS',
-      };
-    }
-    if (lower.includes('linkmicbattle')) {
-      return {
-        labelHe: 'אירוע קרב PK חי (LinkMic Battle)',
-        descriptionHe: 'פתיחה או שינוי סטטוס קרב בין שדרנים',
-        category: 'BATTLE_PK',
-      };
-    }
-    if (lower.includes('linkmicarmies')) {
-      return {
-        labelHe: 'עדכון צבאות וניקוד קרב (Battle Armies)',
-        descriptionHe: 'זרם ניקוד חי ותומכים מובילים משני צידי הקרב',
-        category: 'BATTLE_PK',
-      };
-    }
-    if (lower.includes('giftbroadcast')) {
-      return {
-        labelHe: 'באנר מתנת-על גלובלית (Global Gift Broadcast)',
-        descriptionHe: 'הכרזת מתנת ענק חוצת-חדרים בטיקטוק',
-        category: 'GIFTS_DIAMONDS',
-      };
-    }
-    if (lower.includes('gift')) {
-      return {
-        labelHe: `אירוע מתנה ב-WebSocket (${rawName})`,
-        descriptionHe: 'שליחת מתנה/יהלומים בשידור החי',
-        category: 'GIFTS_DIAMONDS',
-      };
-    }
-    if (lower.includes('subnotify') || lower.includes('superfan')) {
-      return {
-        labelHe: `אירוע מנוי / SuperFan (${rawName})`,
-        descriptionHe: 'הצטרפות או פעילות של מנוי מועדון מעריצים בחדר',
-        category: 'CROWD_SOCIAL',
-      };
-    }
-    if (lower.includes('envelope') || lower.includes('capsule')) {
-      return {
-        labelHe: `תיבת אוצר / קפסולת פרסים (${rawName})`,
-        descriptionHe: 'חלוקת מטבעות או תיבת הפתעה בחדר',
-        category: 'RANKS_GOALS',
-      };
-    }
-    if (lower.includes('rank') || lower.includes('goal') || lower.includes('poll')) {
-      return {
-        labelHe: `אירוע דירוג / יעד / סקר (${rawName})`,
-        descriptionHe: 'עדכון מיקום בדירוג, התקדמות יעד או סקר קהל חי',
-        category: 'RANKS_GOALS',
-      };
-    }
-    if (
-      lower.includes('chat') ||
-      lower.includes('like') ||
-      lower.includes('member') ||
-      lower.includes('social') ||
-      lower.includes('emote') ||
-      lower.includes('barrage') ||
-      lower.includes('pin') ||
-      lower.includes('question') ||
-      lower.includes('roomuser')
-    ) {
-      return {
-        labelHe: `אירוע קהל ואינטראקציה (${rawName})`,
-        descriptionHe: 'פעילות צופים בזמן אמת מתוך צינור ה-WebSocket',
-        category: 'CROWD_SOCIAL',
-      };
-    }
-    return {
-      labelHe: `אירוע WebSocket שנתפס חי (${rawName})`,
-      descriptionHe: 'אירוע שזוהה אוטומטית מהאזנה חיה לזרם ה-WebSocket ומוכן לשיבוץ הפעלה',
-      category: 'EXTERNAL_CUSTOM',
-    };
-  }
+  // describeRawWebcastEventHe is defined at module top-level so both persisted loader and live sockets share it.
 
   function executeWsEventBinding(
     record: DiscoveredWsEventRecord,
@@ -3418,6 +4476,8 @@ async function startServer() {
     numericValue?: number;
     senderUser?: string;
     avatarUrl?: string;
+    sampleImageUrl?: string | null;
+    sampleAvatarUrl?: string | null;
     isMirroredRoom?: boolean;
     customLabelHe?: string;
     customCategory?: WsCollectedEventCategory;
@@ -3427,30 +4487,45 @@ async function startServer() {
     const now = Date.now();
     battleState.wsSniffer.totalPacketsCaptured += 1;
 
-    let record = battleState.wsSniffer.discoveredEvents.find((e) => e.eventKey === opts.eventKey);
+    const targetLower = opts.eventKey.toLowerCase();
+    let record = battleState.wsSniffer.discoveredEvents.find(
+      (e) => e.eventKey.toLowerCase() === targetLower
+    );
+    const unwrapForFields =
+      opts.payloadObj?.data && typeof opts.payloadObj.data === 'object'
+        ? opts.payloadObj.data
+        : opts.payloadObj;
     const extractedFields =
-      opts.payloadObj && typeof opts.payloadObj === 'object'
-        ? Object.keys(opts.payloadObj).filter((k) => k !== '$type').slice(0, 10)
+      unwrapForFields && typeof unwrapForFields === 'object'
+        ? Object.keys(unwrapForFields)
+            .filter((k) => k !== '$type' && k !== 'common')
+            .slice(0, 10)
         : [];
     let rawPreview = '{}';
     if (opts.payloadObj !== undefined) {
       try {
-        rawPreview = JSON.stringify(opts.payloadObj, (_k, val) => {
+        rawPreview = JSON.stringify(unwrapForFields ?? opts.payloadObj, (_k, val) => {
           if (typeof val === 'bigint') return val.toString();
           return val;
-        }).slice(0, 280);
+        }).slice(0, 320);
       } catch {
         rawPreview = '{"info":"binary_or_circular_frame"}';
       }
     }
 
+    const meta = describeRawWebcastEventHe(opts.eventKey || opts.rawEventName);
+
     if (!record) {
-      const meta = describeRawWebcastEventHe(opts.rawEventName || opts.eventKey);
       record = {
         eventKey: opts.eventKey,
         rawEventName: opts.rawEventName || opts.eventKey,
         labelHe: opts.customLabelHe || meta.labelHe,
         descriptionHe: meta.descriptionHe,
+        whatHappensInLiveHe: meta.whatHappensInLiveHe,
+        triggerAdviceHe: meta.triggerAdviceHe,
+        visualSceneTag: meta.visualSceneTag,
+        sampleImageUrl: opts.sampleImageUrl || null,
+        sampleAvatarUrl: opts.sampleAvatarUrl || null,
         category: opts.customCategory || meta.category,
         seenCount: 1,
         firstSeenTs: now,
@@ -3471,8 +4546,22 @@ async function startServer() {
       record.lastSeenTs = now;
       record.lastSourceLabel = opts.sourceLabel;
       record.lastSampleSummaryHe = opts.summaryHe.slice(0, 120);
+      if (!record.whatHappensInLiveHe) record.whatHappensInLiveHe = meta.whatHappensInLiveHe;
+      if (!record.triggerAdviceHe) record.triggerAdviceHe = meta.triggerAdviceHe;
+      if (!record.visualSceneTag) record.visualSceneTag = meta.visualSceneTag;
+      if (opts.sampleImageUrl) {
+        record.sampleImageUrl = opts.sampleImageUrl;
+      }
+      if (opts.sampleAvatarUrl) {
+        record.sampleAvatarUrl = opts.sampleAvatarUrl;
+      }
       if (extractedFields.length > 0) {
-        record.detectedFields = Array.from(new Set([...record.detectedFields, ...extractedFields])).slice(0, 12);
+        record.detectedFields = Array.from(
+          new Set([
+            ...record.detectedFields.filter((f) => f !== 'type' && f !== 'data'),
+            ...extractedFields,
+          ])
+        ).slice(0, 12);
       }
       if (rawPreview !== '{}') {
         record.lastPayloadPreview = rawPreview;
@@ -3490,6 +4579,29 @@ async function startServer() {
       avatarUrl: opts.avatarUrl,
       numericValue: opts.numericValue,
       isMirroredRoom: opts.isMirroredRoom,
+    });
+
+    // Trigger Moderator Auto-Response Scripts matching this live WebSocket event!
+    const evLower = record.eventKey.toLowerCase();
+    let mappedModTrigger: ModeratorTriggerEventType | null = null;
+    if (evLower.includes('giftmessage:whale')) mappedModTrigger = 'WHALE_GIFT';
+    else if (evLower.includes('giftmessage:medium')) mappedModTrigger = 'MEDIUM_GIFT';
+    else if (evLower.includes('battleitemcard')) mappedModTrigger = 'GLOVE_OPENED';
+    else if (evLower.includes('battletask')) mappedModTrigger = 'BATTLE_SPEED_TASK';
+    else if (evLower.includes('barrage')) mappedModTrigger = 'VIP_BARRAGE_JOIN';
+    else if (evLower.includes('socialmessage:share')) mappedModTrigger = 'SHARE_SPIKE';
+    else if (evLower.includes('socialmessage:follow')) mappedModTrigger = 'FOLLOW_NEW';
+    else if (evLower.includes('likemessage') && (opts.numericValue || 0) >= 25) {
+      mappedModTrigger = 'LIKE_BURST';
+    }
+
+    evaluateModeratorAutoScripts({
+      triggerType: mappedModTrigger || 'CUSTOM_WS_EVENT',
+      wsEventKey: record.eventKey,
+      userName: opts.senderUser,
+      giftName: opts.payloadObj?.giftName || undefined,
+      numericValue: opts.numericValue,
+      sourceRoom: opts.sourceLabel.replace(/^@/, ''),
     });
 
     const throttleMs = opts.throttleRecentPacketMs ?? 0;
@@ -3513,11 +4625,111 @@ async function startServer() {
     }
   }
 
+  const authenticatedModeratorConns = new Map<string, TikTokLiveConnection>();
+
+  function syncEnvSlotsActivity() {
+    const anyBridgeConnected = battleState.wsSniffer.externalBridges.some((b) => b.connected);
+    for (const acc of battleState.chatCompanion.accounts) {
+      acc.hasServerTikTokAuth = hasServerTikTokModSession(acc.slotNumber);
+      if (acc.hasServerTikTokAuth) {
+        acc.connectionStatus = 'TIKTOK_AUTH_LIVE';
+      }
+    }
+    battleState.chatCompanion.envSlotsActivity = buildEnvSlotsActivitySnapshot(
+      battleState.chatCompanion.accounts,
+      anyBridgeConnected
+    );
+  }
+
+  async function trySendLiveChatViaTikTokSession(
+    acc: CompanionAccountSlot,
+    targetRoomHandle: string,
+    messageText: string
+  ): Promise<{ sentDirectTikTok: boolean; deliveryNoteHe: string }> {
+    const cleanTarget = sanitizeTikTokHandle(targetRoomHandle);
+    if (!cleanTarget) {
+      return { sentDirectTikTok: false, deliveryNoteHe: 'שודר לבמה ולגשר מנחים' };
+    }
+    const managedRoom = activeSwarmRooms.get(cleanTarget.toLowerCase());
+    const liveRoomId = managedRoom?.summary?.roomId || undefined;
+    const sessionId = (process.env[`TIKTOK_MOD_${acc.slotNumber}_SESSIONID`] || '').trim();
+    const targetIdc = (process.env[`TIKTOK_MOD_${acc.slotNumber}_TARGET_IDC`] || 'useast2a').trim();
+
+    if (sessionId.length > 6 && liveRoomId) {
+      try {
+        const cacheKey = `${acc.slotNumber}:${cleanTarget.toLowerCase()}`;
+        let senderConn = authenticatedModeratorConns.get(cacheKey);
+        if (!senderConn) {
+          senderConn = new TikTokLiveConnection(cleanTarget, {
+            processInitialData: false,
+            fetchRoomInfoOnConnect: false,
+            authenticateWs: true,
+            sessionId,
+            ttTargetIdc: targetIdc,
+          } as any);
+          authenticatedModeratorConns.set(cacheKey, senderConn);
+        }
+        await senderConn.sendMessage(messageText, liveRoomId);
+        return {
+          sentDirectTikTok: true,
+          deliveryNoteHe: `נשלח ישירות לצ׳אט טיקטוק לייב של @${cleanTarget}`,
+        };
+      } catch {
+        // Fall through cleanly to WS bridge & live room stage feed
+      }
+    }
+
+    // Also push outbound JSON to any server-connected External WebSocket Bridges
+    let sentServerBridge = false;
+    const bridgePayload = JSON.stringify({
+      event: 'boostera_moderator_send',
+      slotNumber: acc.slotNumber,
+      accountId: acc.id,
+      accountHandle: acc.handle,
+      accountDisplayName: acc.displayName,
+      role: acc.role,
+      targetRoom: cleanTarget,
+      roomId: liveRoomId || null,
+      text: messageText,
+      ts: Date.now(),
+    });
+    for (const outSock of activeServerExternalWs.values()) {
+      if (outSock.readyState === WebSocket.OPEN) {
+        try {
+          outSock.send(bridgePayload);
+          sentServerBridge = true;
+        } catch {
+          // Ignore bridge send error
+        }
+      }
+    }
+
+    if (sentServerBridge) {
+      return {
+        sentDirectTikTok: false,
+        deliveryNoteHe: `שוגר לגשר WebSocket חי ולחדר @${cleanTarget}`,
+      };
+    }
+    if (managedRoom?.summary?.connected) {
+      return {
+        sentDirectTikTok: false,
+        deliveryNoteHe: `שוגר על חדר פעיל @${cleanTarget} + גשר מנחים`,
+      };
+    }
+    return {
+      sentDirectTikTok: false,
+      deliveryNoteHe: cleanTarget ? `שוגר עבור @${cleanTarget} (מוכן בלייב)` : 'שוגר לפיד הצ׳אט החי',
+    };
+  }
+
   function dispatchCompanionCrewAction(opts: {
     moment: ChatMomentType;
     momentLabelHe: string;
     preferredRole: CompanionRoleId;
-    kind: 'CHAT_VIBE_LINE' | 'MOD_CLEANUP';
+    kind: 'CHAT_VIBE_LINE' | 'MOD_CLEANUP' | 'BRAIN_COMMAND_STEP' | 'AUTO_EVENT_SCRIPT';
+    specificAccountId?: string;
+    specificSlotNumber?: number;
+    targetRoom?: string | null;
     customMessageHe?: string;
     userPlaceholder?: string;
     targetOffender?: string;
@@ -3534,9 +4746,21 @@ async function startServer() {
     const enabledAccounts = battleState.chatCompanion.accounts.filter((a) => a.enabled);
     if (enabledAccounts.length === 0) return null;
     const chosenAccount =
-      enabledAccounts.find((a) => a.role === opts.preferredRole) || enabledAccounts[0];
+      (opts.specificAccountId
+        ? battleState.chatCompanion.accounts.find((a) => a.id === opts.specificAccountId)
+        : undefined) ||
+      (opts.specificSlotNumber && opts.specificSlotNumber >= 1
+        ? enabledAccounts.find((a) => a.slotNumber === opts.specificSlotNumber) ||
+          battleState.chatCompanion.accounts.find((a) => a.slotNumber === opts.specificSlotNumber)
+        : undefined) ||
+      enabledAccounts.find((a) => a.role === opts.preferredRole) ||
+      enabledAccounts[0];
 
     let lineHe = opts.customMessageHe || '';
+    if (!lineHe && chosenAccount.trainedLinesHe && chosenAccount.trainedLinesHe.length > 0 && Math.random() < 0.55) {
+      lineHe =
+        chosenAccount.trainedLinesHe[Math.floor(Math.random() * chosenAccount.trainedLinesHe.length)];
+    }
     if (!lineHe) {
       const matchingPatterns = battleState.chatCompanion.learnedPatterns.filter(
         (p) => p.moment === opts.moment && p.autoDispatchEnabled && p.hebrewLines.length > 0
@@ -3549,7 +4773,7 @@ async function startServer() {
           pickedPattern.hebrewLines[Math.floor(Math.random() * pickedPattern.hebrewLines.length)];
         pickedPattern.usedCount += 1;
       } else {
-        lineHe = 'כולם ביחד בדאבל טאפ על המסך — שומרים על האנרגיה בחדר! 🔥';
+        lineHe = 'כולם ביחד בדאבל טאפ על המסך — שומרים על האנרגיה בחדר!';
       }
     }
 
@@ -3559,10 +4783,47 @@ async function startServer() {
       lineHe = lineHe.replace(/\{\{USER\}\}/g, 'התומך שלנו');
     }
 
+    const effectiveTargetRoom =
+      opts.targetRoom ||
+      chosenAccount.deployedRoomHandle ||
+      battleState.chatCompanion.commanderBrain.activeTargetRoom ||
+      battleState.tiktokRoom.targetUsername ||
+      null;
+
     chosenAccount.messagesDispatched += 1;
+    chosenAccount.lastOrderHe = opts.momentLabelHe;
     if (opts.kind === 'MOD_CLEANUP') {
       chosenAccount.moderationsTriggered += 1;
     }
+
+    // Record per-.env slot (1..6) activity telemetry
+    const slotNum = chosenAccount.slotNumber || 1;
+    const rt = getEnvSlotRuntime(slotNum);
+    if (opts.kind === 'AUTO_EVENT_SCRIPT') rt.autoScriptTriggersCount += 1;
+    else if (opts.kind === 'BRAIN_COMMAND_STEP') rt.brainCommandsCount += 1;
+    else if (opts.kind === 'MOD_CLEANUP') rt.moderationsCount += 1;
+    rt.lastSentAtTs = now;
+    rt.lastSentMessageHe = lineHe;
+    rt.lastTriggerReasonHe = opts.momentLabelHe;
+    const logEntry: EnvModeratorSlotLogItem = {
+      id: nextId('slotlog'),
+      ts: now,
+      targetRoom: effectiveTargetRoom,
+      messageHe: lineHe,
+      sourceKind:
+        opts.kind === 'AUTO_EVENT_SCRIPT'
+          ? 'AUTO_SCRIPT'
+          : opts.kind === 'BRAIN_COMMAND_STEP'
+            ? 'BRAIN_CMD'
+            : opts.kind === 'MOD_CLEANUP'
+              ? 'MOD_SHIELD'
+              : 'MANUAL',
+      sourceLabelHe: opts.momentLabelHe,
+      deliveryStatusHe: effectiveTargetRoom ? `שולח אל @${effectiveTargetRoom}...` : 'שודר לפיד ולגשר',
+    };
+    rt.recentLogs.unshift(logEntry);
+    if (rt.recentLogs.length > 12) rt.recentLogs.length = 12;
+    syncEnvSlotsActivity();
 
     const dispatchItem: CompanionDispatchActionItem = {
       id: nextId('comp_act'),
@@ -3574,13 +4835,17 @@ async function startServer() {
       kind: opts.kind,
       momentLabelHe: opts.momentLabelHe,
       messageTextHe: lineHe,
+      targetRoom: effectiveTargetRoom,
+      deliveryModeHe: effectiveTargetRoom
+        ? `שולח לחדר @${effectiveTargetRoom}...`
+        : 'שוגר לצ׳אט ולגשר המנחים',
       targetOffender: opts.targetOffender,
       dispatchedToBridge: true,
     };
 
     battleState.chatCompanion.recentDispatches.unshift(dispatchItem);
-    if (battleState.chatCompanion.recentDispatches.length > 35) {
-      battleState.chatCompanion.recentDispatches.length = 35;
+    if (battleState.chatCompanion.recentDispatches.length > 40) {
+      battleState.chatCompanion.recentDispatches.length = 40;
     }
 
     if (opts.injectIntoStagePreviewChat !== false) {
@@ -3588,7 +4853,7 @@ async function startServer() {
         user: `${chosenAccount.displayName}`,
         text: lineHe,
         ts: now,
-        source: 'מנחה מלווה',
+        source: effectiveTargetRoom ? `מנחה @${effectiveTargetRoom}` : 'מנחה מלווה',
         avatarUrl: chosenAccount.avatarUrl,
       });
       if (battleState.recentChatMessages.length > 24) {
@@ -3596,12 +4861,125 @@ async function startServer() {
       }
     }
 
+    void trySendLiveChatViaTikTokSession(
+      chosenAccount,
+      effectiveTargetRoom || '',
+      lineHe
+    ).then((resInfo) => {
+      dispatchItem.deliveryModeHe = resInfo.deliveryNoteHe;
+      logEntry.deliveryStatusHe = resInfo.deliveryNoteHe;
+      syncEnvSlotsActivity();
+      broadcast({
+        type: 'chat_companion:dispatch',
+        item: dispatchItem,
+        state: battleState,
+      });
+    });
+
     broadcast({
       type: 'chat_companion:dispatch',
       item: dispatchItem,
       state: battleState,
     });
     return dispatchItem;
+  }
+
+  function evaluateModeratorAutoScripts(opts: {
+    triggerType: ModeratorTriggerEventType;
+    wsEventKey?: string;
+    userName?: string;
+    giftName?: string;
+    numericValue?: number;
+    chatText?: string;
+    sourceRoom?: string | null;
+    forceTestRuleId?: string;
+  }): number {
+    if (!opts.forceTestRuleId) {
+      if (!battleState.chatCompanion.autoEventScriptsEnabled || !battleState.chatCompanion.autoCompanionEnabled) {
+        return 0;
+      }
+    }
+    const now = Date.now();
+    let firedRulesCount = 0;
+
+    for (const rule of battleState.chatCompanion.autoScripts) {
+      if (opts.forceTestRuleId) {
+        if (rule.id !== opts.forceTestRuleId) continue;
+      } else {
+        if (!rule.enabled) continue;
+        if (rule.triggerEventType === 'CUSTOM_WS_EVENT') {
+          if (
+            !rule.customWsEventKey ||
+            !opts.wsEventKey ||
+            rule.customWsEventKey.toLowerCase() !== opts.wsEventKey.toLowerCase()
+          ) {
+            continue;
+          }
+        } else if (rule.triggerEventType !== opts.triggerType) {
+          continue;
+        }
+
+        if (rule.minNumericValue > 0 && (opts.numericValue || 0) < rule.minNumericValue) {
+          continue;
+        }
+
+        if (rule.keywordFilter && rule.keywordFilter.trim()) {
+          const kw = rule.keywordFilter.trim().toLowerCase();
+          const hay = `${opts.chatText || ''} ${opts.giftName || ''}`.toLowerCase();
+          if (!hay.includes(kw)) continue;
+        }
+
+        const cdMs = Math.max(4, rule.cooldownSec || 18) * 1000;
+        if (now - (rule.lastTriggeredTs || 0) < cdMs) {
+          continue;
+        }
+      }
+
+      rule.lastTriggeredTs = now;
+      rule.triggeredCount += 1;
+      const effectiveUser = opts.userName || 'תומך VIP';
+      const effectiveGift = opts.giftName || 'מתנת לייב';
+      const effectiveVal = String(Math.round(opts.numericValue || 250));
+      const effectiveRoom =
+        sanitizeTikTokHandle(
+          opts.sourceRoom ||
+            battleState.chatCompanion.commanderBrain.activeTargetRoom ||
+            battleState.tiktokRoom.targetUsername ||
+            ''
+        ) || 'הלייב שלנו';
+
+      rule.lastTriggeredSummaryHe = `הופעל ע״י ${effectiveUser} (${rule.steps.length} הודעות מתוזמנות)`;
+      firedRulesCount += 1;
+
+      rule.steps.forEach((step, idx) => {
+        const waitMs = Math.max(0, Math.min(25000, Math.round((step.delaySec || 0) * 1000)));
+        const renderedText = String(step.messageTemplateHe || '')
+          .replace(/\{\{USER\}\}/gi, effectiveUser)
+          .replace(/\{\{GIFT\}\}/gi, effectiveGift)
+          .replace(/\{\{VALUE\}\}/gi, effectiveVal)
+          .replace(/\{\{ROOM\}\}/gi, `@${effectiveRoom.replace(/^@/, '')}`);
+
+        if (!renderedText.trim()) return;
+        setTimeout(() => {
+          dispatchCompanionCrewAction({
+            moment: 'DEAD_AIR_ICEBREAKER',
+            momentLabelHe: `תסריט אוטומטי: ${rule.nameHe} (שלב ${idx + 1}/${rule.steps.length})`,
+            preferredRole: 'VIBE_HYPE',
+            specificSlotNumber: step.slotNumber >= 1 && step.slotNumber <= 6 ? step.slotNumber : undefined,
+            targetRoom: opts.sourceRoom || battleState.chatCompanion.commanderBrain.activeTargetRoom,
+            kind: 'AUTO_EVENT_SCRIPT',
+            customMessageHe: renderedText,
+            bypassCooldown: true,
+          });
+        }, waitMs);
+      });
+    }
+
+    if (firedRulesCount > 0) {
+      savePersistedChatCompanion(battleState.chatCompanion);
+      broadcast({ type: 'state:update', state: battleState });
+    }
+    return firedRulesCount;
   }
 
   function inspectLiveChatForModerationAndCompanion(opts: {
@@ -3658,7 +5036,7 @@ async function startServer() {
         reasonHe,
         recommendedAction,
         counterFloodLineHe:
-          'רק אנרגיות שיא בחדר שלנו! כולם להציף לבבות כתומים ודאבל טאפ על המסך! 🧡🔥',
+          'רק אנרגיות שיא בחדר שלנו! כולם להציף לבבות כתומים ודאבל טאפ על המסך!',
         resolved: Boolean(battleState.chatCompanion.autoModerationShieldEnabled),
       };
 
@@ -3667,7 +5045,14 @@ async function startServer() {
         battleState.chatCompanion.moderationFlags.length = 30;
       }
 
-      if (battleState.chatCompanion.autoModerationShieldEnabled) {
+      const scriptHandled = evaluateModeratorAutoScripts({
+        triggerType: 'TROLL_OR_SPAM_CHAT',
+        userName: opts.sender,
+        chatText: text,
+        sourceRoom: opts.sourceRoom,
+      });
+
+      if (battleState.chatCompanion.autoModerationShieldEnabled && scriptHandled === 0) {
         dispatchCompanionCrewAction({
           moment: 'ANTI_TROLL_SHIELD',
           momentLabelHe: `סינון אוטומטי נגד ${opts.sender} (${reasonHe})`,
@@ -3679,6 +5064,14 @@ async function startServer() {
       }
       return;
     }
+
+    // Evaluate keyword-triggered moderator auto-response scripts on incoming live chat
+    evaluateModeratorAutoScripts({
+      triggerType: 'CHAT_KEYWORD_MATCH',
+      userName: opts.sender,
+      chatText: text,
+      sourceRoom: opts.sourceRoom,
+    });
 
     // 2. Detect Organic Moderator / Co-Host Hype Phrases in Live Rooms for Continuous Learning!
     if (
@@ -3842,6 +5235,10 @@ async function startServer() {
     triggerCameraKinetic('SNIPE_CREEP', 1.1, 2200, 'טריגר שובר-ענן: חשיפת סקור דרך חדר היריב');
     emitSoundCue('SND_SNIPE_LOCK', opts.reasonHe);
     activateTapStimulus(12, 'CLOUD X-RAY — PUSH SCORE!');
+    evaluateModeratorAutoScripts({
+      triggerType: 'OPPONENT_CLOUD',
+      sourceRoom: battleState.chatCompanion.commanderBrain.activeTargetRoom || oppClean || null,
+    });
 
     const dec = recordAiDecision({
       streamMode: battleState.streamMode,
@@ -4106,12 +5503,13 @@ async function startServer() {
       return;
     }
 
+    const slotIdParam = typeof req.query.slotId === 'string' ? req.query.slotId.trim() : '';
     const params = new URLSearchParams({
       client_key: clientKey!,
       scope: 'user.info.basic,user.info.profile,user.info.stats',
       response_type: 'code',
       redirect_uri: redirectUri,
-      state: `boostera_${Date.now()}`,
+      state: slotIdParam ? `boostera_slot_${slotIdParam}_${Date.now()}` : `boostera_${Date.now()}`,
     });
 
     res.json({
@@ -4124,6 +5522,9 @@ async function startServer() {
   const handleTikTokCallback = async (req: express.Request, res: express.Response) => {
     try {
       const code = String(req.query.code || '');
+      const stateStr = String(req.query.state || '');
+      const slotMatch = stateStr.match(/^boostera_slot_(.+)_\d+$/);
+      const targetSlotId = slotMatch ? slotMatch[1] : '';
       const clientKey = process.env.TIKTOK_CLIENT_KEY || '';
       const clientSecret = process.env.TIKTOK_CLIENT_SECRET || '';
       const redirectUri = `${resolveBaseAppUrl()}/auth/tiktok/callback`;
@@ -4153,6 +5554,18 @@ async function startServer() {
             data?: { user?: { open_id?: string; display_name?: string; username?: string; avatar_url?: string } };
           };
           const u = userJson.data?.user;
+          if (targetSlotId) {
+            const slotAcc = battleState.chatCompanion.accounts.find((a) => a.id === targetSlotId);
+            if (slotAcc) {
+              if (u?.username) slotAcc.handle = sanitizeTikTokHandle(u.username);
+              if (u?.display_name || u?.username) {
+                slotAcc.displayName = u.display_name || `@${u.username}`;
+              }
+              if (u?.avatar_url) slotAcc.avatarUrl = u.avatar_url;
+              slotAcc.connectionStatus = 'TIKTOK_AUTH_LIVE';
+              savePersistedChatCompanion(battleState.chatCompanion);
+            }
+          }
           battleState.tiktokRoom.oauthConnectedUser = {
             openId: u?.open_id || tokenJson.open_id || 'tiktok_user',
             displayName: u?.username || u?.display_name || 'חשבון טיקטוק מחובר',
@@ -4832,33 +6245,56 @@ Return JSON matching the schema:
     syncGlobalTikTokRoomSummary();
     broadcast({ type: 'state:update', state: battleState });
 
-    // 0. UNIVERSAL RAW WEBSOCKET SNIFFER: Captures 100% of decoded protobuf Webcast frames seen on the live socket!
+    // 0. UNIVERSAL RAW WEBSOCKET SNIFFER: Captures 100% of decoded protobuf Webcast frames + real gift/user visuals!
     conn.on(ControlEvent.DECODED_DATA, (rawType: string, decodedEvent: any) => {
       const cleanType = String(rawType || 'WebcastUnknownEvent').trim();
+      const inner =
+        decodedEvent?.data && typeof decodedEvent.data === 'object'
+          ? decodedEvent.data
+          : decodedEvent;
+
+      const userObj = inner?.user || inner?.fromUser || inner?.sendUser || inner?.anchorInfo;
       const sender = String(
-        decodedEvent?.user?.nickname ||
-          decodedEvent?.user?.uniqueId ||
-          decodedEvent?.anchorInfo?.nickname ||
+        userObj?.nickname ||
+          userObj?.uniqueId ||
+          userObj?.displayId ||
           `@${cleanUsername}`
       );
-      const avatarUrl = decodedEvent?.user ? extractTikTokUserAvatar(decodedEvent.user, sender) : undefined;
+      const avatarUrl = userObj ? extractTikTokUserAvatar(userObj, sender) : undefined;
+      const realHttpAvatar = extractRawTikTokHttpUserAvatar(userObj);
+      const eventImg = extractTikTokEventImageUrl(inner);
+
       const isHighFreq =
         /RoomUserSeq|LinkMicArmies|LikeMessage|ChatMessage/i.test(cleanType);
-      const brief =
-        decodedEvent?.comment
-          ? `${sender}: "${String(decodedEvent.comment).slice(0, 48)}"`
-          : decodedEvent?.giftDetails?.giftName
-            ? `${sender} שלח ${decodedEvent.giftDetails.giftName}`
-            : `נקלט פריים ${cleanType} מחדר @${cleanUsername}`;
+
+      const giftName = inner?.giftDetails?.giftName || inner?.gift?.name || inner?.giftName;
+      const repeatCount = Number(inner?.repeatCount || 1);
+      const unitDiamonds = Number(inner?.giftDetails?.diamondCount || inner?.gift?.diamondCount || 0);
+      const totalDiamonds = unitDiamonds > 0 ? unitDiamonds * Math.max(1, repeatCount) : 0;
+
+      const brief = inner?.comment
+        ? `${sender}: "${String(inner.comment).slice(0, 56)}"`
+        : giftName
+          ? `${sender} שלח ${giftName}${repeatCount > 1 ? ` x${repeatCount}` : ''}${totalDiamonds > 0 ? ` (${totalDiamonds} יהלומים)` : ''}`
+          : inner?.common?.describe
+            ? String(inner.common.describe).slice(0, 90)
+            : inner?.content && typeof inner.content === 'string'
+              ? `${sender}: ${inner.content.slice(0, 64)}`
+              : typeof inner?.viewerCount === 'number'
+                ? `${inner.viewerCount} צופים חיים כרגע בחדר @${cleanUsername}`
+                : `נקלט בשידור חי מחדר @${cleanUsername}`;
 
       captureWsEventFrame({
         eventKey: cleanType,
         rawEventName: cleanType,
         sourceLabel: `@${cleanUsername}`,
         summaryHe: brief,
-        payloadObj: decodedEvent,
+        payloadObj: inner,
+        numericValue: totalDiamonds || Number(inner?.likeCount || inner?.viewerCount || 0),
         senderUser: sender,
         avatarUrl,
+        sampleImageUrl: eventImg || realHttpAvatar || null,
+        sampleAvatarUrl: realHttpAvatar || null,
         isMirroredRoom: managed.summary.mirrorToStage,
         throttleRecentPacketMs: isHighFreq ? 4500 : 0,
       });
@@ -4987,6 +6423,9 @@ Return JSON matching the schema:
 
       pushSwarmFeedEvent(managed, 'GIFT', desc);
 
+      const giftImgUrl = extractTikTokEventImageUrl(data);
+      const realGifterHttpAvatar = extractRawTikTokHttpUserAvatar(data?.user);
+
       const whaleDiamondThreshold = Math.max(
         80,
         Math.round((battleState.countryCalibration.effectiveWhaleGiftThreshold || 299) / 3)
@@ -4997,10 +6436,12 @@ Return JSON matching the schema:
           rawEventName: 'gift',
           sourceLabel: `@${cleanUsername}`,
           summaryHe: `לווייתן: ${desc}`,
-          payloadObj: { giftName, repeatCount, diamonds, giver },
+          payloadObj: { giftName, repeatCount, diamonds, giver, giftImgUrl },
           numericValue: diamonds,
           senderUser: giver,
           avatarUrl,
+          sampleImageUrl: giftImgUrl || realGifterHttpAvatar || null,
+          sampleAvatarUrl: realGifterHttpAvatar || null,
           isMirroredRoom: managed.summary.mirrorToStage,
         });
         if (battleState.chatCompanion.autoCompanionEnabled) {
@@ -5018,10 +6459,12 @@ Return JSON matching the schema:
           rawEventName: 'gift',
           sourceLabel: `@${cleanUsername}`,
           summaryHe: desc,
-          payloadObj: { giftName, repeatCount, diamonds, giver },
+          payloadObj: { giftName, repeatCount, diamonds, giver, giftImgUrl },
           numericValue: diamonds,
           senderUser: giver,
           avatarUrl,
+          sampleImageUrl: giftImgUrl || realGifterHttpAvatar || null,
+          sampleAvatarUrl: realGifterHttpAvatar || null,
           isMirroredRoom: managed.summary.mirrorToStage,
         });
       }
@@ -7436,6 +8879,11 @@ Respond ONLY in JSON matching the schema, with all explanatory fields written in
         rawEventName: cleanKey,
         labelHe: typeof labelHe === 'string' && labelHe.trim() ? labelHe.trim() : meta.labelHe,
         descriptionHe: meta.descriptionHe,
+        whatHappensInLiveHe: meta.whatHappensInLiveHe,
+        triggerAdviceHe: meta.triggerAdviceHe,
+        visualSceneTag: meta.visualSceneTag,
+        sampleImageUrl: null,
+        sampleAvatarUrl: null,
         category: meta.category,
         seenCount: 0,
         firstSeenTs: Date.now(),
@@ -7596,10 +9044,286 @@ ${JSON.stringify(
   });
 
   // ============================================================================
-  // LIVE CHAT TRACKING, CO-HOST MODERATOR LEARNING & MULTI-ACCOUNT CREW ENDPOINTS
+  // CENTRAL AI BRAIN COMMANDER & 6-ACCOUNT TRAINABLE TIKTOK MODERATOR SQUAD
   // ============================================================================
+  function isValidCompanionRole(r: any): r is CompanionRoleId {
+    return (
+      r === 'TACTICAL_SNIPE' ||
+      r === 'VIBE_HYPE' ||
+      r === 'MOD_SHIELD' ||
+      r === 'WELCOME_VIP' ||
+      r === 'COMBO_PACER' ||
+      r === 'SCOUT_SUPPORT'
+    );
+  }
+
+  function collectLiveChatTrainingCorpus(customSample?: string): string[] {
+    const collected: string[] = [];
+    if (customSample) {
+      collected.push(`[הנחיית אימון ישירה מהבמאי]: ${customSample}`);
+    }
+    for (const room of activeSwarmRooms.values()) {
+      for (const c of room.chatSamples.slice(0, 18)) {
+        collected.push(`[@${room.username}] ${c}`);
+      }
+    }
+    for (const m of battleState.recentChatMessages.slice(0, 18)) {
+      collected.push(`[${m.source || 'חדר'}] ${m.user}: ${m.text}`);
+    }
+    for (const p of battleState.chatCompanion.learnedPatterns.slice(0, 6)) {
+      collected.push(`[תבנית שנלמדה - ${p.moment}]: ${p.whatObservedHe} | דוגמה: ${p.hebrewLines[0] || ''}`);
+    }
+    return collected;
+  }
+
+  function scheduleBrainSquadOrderExecution(order: BrainSquadOrderItem) {
+    battleState.chatCompanion.commanderBrain.recentOrders.unshift(order);
+    if (battleState.chatCompanion.commanderBrain.recentOrders.length > 12) {
+      battleState.chatCompanion.commanderBrain.recentOrders.length = 12;
+    }
+    battleState.chatCompanion.commanderBrain.currentDirectiveHe = order.commandHe;
+    battleState.chatCompanion.commanderBrain.brainStatusHe = `מבצע תוכנית מדורגת (${order.steps.length} הודעות מתוזמנות)${
+      order.targetRoom ? ` בחדר @${order.targetRoom}` : ''
+    }`;
+    savePersistedChatCompanion(battleState.chatCompanion);
+    broadcast({ type: 'state:update', state: battleState });
+
+    for (const step of order.steps) {
+      const waitMs = Math.max(0, Math.min(25000, Math.round((step.delaySec || 0) * 1000)));
+      setTimeout(() => {
+        step.status = 'SENT';
+        step.sentAtTs = Date.now();
+        dispatchCompanionCrewAction({
+          moment: 'DEAD_AIR_ICEBREAKER',
+          momentLabelHe: `פקודת מוח AI: ${step.tacticalPurposeHe || order.commandHe.slice(0, 36)}`,
+          preferredRole: step.role,
+          specificAccountId: step.accountId,
+          targetRoom: order.targetRoom,
+          kind: 'BRAIN_COMMAND_STEP',
+          customMessageHe: step.lineHe,
+          bypassCooldown: true,
+        });
+        const allSent = order.steps.every((s) => s.status === 'SENT');
+        if (allSent) {
+          battleState.chatCompanion.commanderBrain.brainStatusHe = order.targetRoom
+            ? `הפקודה הושלמה בחדר @${order.targetRoom} · עוקב אחר הצ׳אט החי`
+            : 'הפקודה הושלמה · המוח עוקב אחר תגובת הקהל בצ׳אט';
+          savePersistedChatCompanion(battleState.chatCompanion);
+          broadcast({ type: 'state:update', state: battleState });
+        }
+      }, waitMs);
+    }
+  }
+
+  async function executeCentralBrainCommandInternal(opts: {
+    commandHe: string;
+    targetRoomHandle?: string;
+    source: 'USER_COMMAND' | 'AUTONOMOUS_BRAIN';
+  }): Promise<BrainSquadOrderItem> {
+    const rawCmd = String(opts.commandHe || '').trim() || 'תרימו אווירה טבעית בצ׳אט ותניעו דאבל טאפ';
+    const handleInCmdMatch = rawCmd.match(/@([a-zA-Z0-9._]{3,30})/);
+    const requestedRoom = sanitizeTikTokHandle(
+      opts.targetRoomHandle ||
+        (handleInCmdMatch ? handleInCmdMatch[1] : '') ||
+        battleState.chatCompanion.commanderBrain.activeTargetRoom ||
+        battleState.tiktokRoom.targetUsername ||
+        ''
+    );
+
+    if (requestedRoom) {
+      const roomRes = await connectCreatorToSwarm(requestedRoom, {
+        addToWatchlist: true,
+        silentIfOffline: true,
+      });
+      battleState.chatCompanion.commanderBrain.activeTargetRoom = requestedRoom;
+      battleState.chatCompanion.commanderBrain.activeTargetRoomLive = Boolean(roomRes.connected);
+      for (const acc of battleState.chatCompanion.accounts) {
+        if (acc.enabled) {
+          acc.deployedRoomHandle = requestedRoom;
+          acc.deployedRoomLive = Boolean(roomRes.connected);
+          if (!acc.hasServerTikTokAuth) {
+            acc.connectionStatus = 'LIVE_ROOM_DEPLOYED';
+          }
+        }
+      }
+    }
+
+    const enabledAccounts = battleState.chatCompanion.accounts.filter((a) => a.enabled);
+    const activeAccounts =
+      enabledAccounts.length > 0 ? enabledAccounts : battleState.chatCompanion.accounts.slice(0, 4);
+    const chatCorpus = collectLiveChatTrainingCorpus();
+
+    try {
+      const ai = getGeminiClient();
+      const accountsBrief = activeAccounts
+        .map(
+          (a) =>
+            `- id="${a.id}" | @${a.handle} (${a.displayName}) | תפקיד=${a.role} | סגנון=${a.toneNotesHe} | משפטים שאומן עליהם=${a.trainedLinesHe.slice(0, 2).join(' / ')}`
+        )
+        .join('\n');
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-4-hydrogen',
+        contents: `אתה "המוח המרכזי" (Central AI Moderator Brain) שאחראי על צוות של ${activeAccounts.length} חשבונות מנחים מלווים אמיתיים בטיקטוק לייב (קהל יעד: ${battleState.countryCalibration.labelHe}).
+מצב החדר כרגע:
+- חדר יעד משודר: ${requestedRoom ? '@' + requestedRoom : 'במת השידור הפעילה'}
+- סקור קרב: אנחנו ${battleState.myScore} מול יריב ${battleState.opponentScore} | שלב: ${battleState.phase} | כפפה: ${battleState.gloveRemainingSec} שנ׳ | ענן יריב פתוח: ${battleState.cloudRadar.active ? 'כן!' : 'לא'}
+- קצב צ׳אט: ${battleState.chatCompanion.chatVelocityPerMin} הודעות/דקה
+
+צוות חשבונות המנחים שעומדים לפקודתך:
+${accountsBrief}
+
+מה שלמדנו מהצ׳אט החי בדקות האחרונות:
+${chatCorpus.slice(0, 20).join('\n')}
+
+הפקודה שקיבלת עכשיו לביצוע:
+"${rawCmd}"
+
+בנה תוכנית פעולה חכמה של 3 עד 5 צעדים מתוזמנים בין חשבונות שונים מהצוות:
+- חשוב מאוד: החשבונות חייבים להישמע כמו בני אדם אמיתיים ומנחים שמגיבים גם לקהל וגם זה לזה בהפרשי שניות טבעיים (למשל delaySec: 0, 2.5, 5.5, 8.5) — לעולם לא רובוטיים ולעולם לא אותו טקסט!
+- השתמש ב-accountId המדויק מתוך הרשימה למעלה.`,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              brainReasoningHe: { type: Type.STRING },
+              steps: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    accountId: { type: Type.STRING },
+                    delaySec: { type: Type.NUMBER },
+                    lineHe: { type: Type.STRING },
+                    tacticalPurposeHe: { type: Type.STRING },
+                  },
+                  required: ['accountId', 'delaySec', 'lineHe', 'tacticalPurposeHe'],
+                },
+              },
+            },
+            required: ['brainReasoningHe', 'steps'],
+          },
+        },
+      });
+
+      const parsed = JSON.parse((response.text ?? '{}').trim());
+      const rawSteps = Array.isArray(parsed.steps) ? parsed.steps.slice(0, 6) : [];
+      const builtSteps: BrainSquadOrderStep[] = [];
+
+      for (let i = 0; i < rawSteps.length; i++) {
+        const rs = rawSteps[i];
+        const line = String(rs?.lineHe || '').trim();
+        if (!line) continue;
+        const matchedAcc =
+          activeAccounts.find((a) => a.id === rs.accountId) ||
+          activeAccounts[i % activeAccounts.length];
+        builtSteps.push({
+          stepIndex: builtSteps.length + 1,
+          accountId: matchedAcc.id,
+          accountHandle: matchedAcc.handle,
+          accountDisplayName: matchedAcc.displayName,
+          role: matchedAcc.role,
+          delaySec:
+            typeof rs.delaySec === 'number'
+              ? Math.max(0, Math.min(22, Number(rs.delaySec.toFixed(1))))
+              : builtSteps.length * 2.8,
+          lineHe: line,
+          tacticalPurposeHe: String(rs?.tacticalPurposeHe || 'הנחיית צ׳אט מתוזמנת').trim(),
+          status: 'QUEUED',
+        });
+      }
+
+      if (builtSteps.length > 0) {
+        const order: BrainSquadOrderItem = {
+          id: nextId('brain_ord'),
+          ts: Date.now(),
+          source: opts.source,
+          commandHe: rawCmd,
+          brainReasoningHe:
+            String(parsed.brainReasoningHe || '').trim() ||
+            'חלוקת תפקידים טבעית ומדורגת בין המנחים ליצירת מומנטום בצ׳אט.',
+          targetRoom: requestedRoom || null,
+          steps: builtSteps,
+        };
+        scheduleBrainSquadOrderExecution(order);
+        return order;
+      }
+    } catch {
+      // Deterministic smart fallback if Gemini quota/network hiccups so commands ALWAYS execute live
+    }
+
+    const fallbackSteps: BrainSquadOrderStep[] = activeAccounts.slice(0, 3).map((acc, idx) => ({
+      stepIndex: idx + 1,
+      accountId: acc.id,
+      accountHandle: acc.handle,
+      accountDisplayName: acc.displayName,
+      role: acc.role,
+      delaySec: Number((idx * 2.6).toFixed(1)),
+      lineHe:
+        acc.trainedLinesHe[0] ||
+        'יאללה חברים כולנו על המסך בדאבל טאפ — מרימים את החדר עכשיו!',
+      tacticalPurposeHe: `ביצוע פקודה מתפקיד ${acc.role}`,
+      status: 'QUEUED',
+    }));
+
+    const fallbackOrder: BrainSquadOrderItem = {
+      id: nextId('brain_ord'),
+      ts: Date.now(),
+      source: opts.source,
+      commandHe: rawCmd,
+      brainReasoningHe: 'תיאום מדורג אוטומטי בין המנחים הפעילים על בסיס הפלייבוק המאומן.',
+      targetRoom: requestedRoom || null,
+      steps: fallbackSteps,
+    };
+    scheduleBrainSquadOrderExecution(fallbackOrder);
+    return fallbackOrder;
+  }
+
+  // Autonomous Brain Coordinator Heartbeat: manages chat organically from learned patterns when active
+  let lastAutonomousBrainActionTs = Date.now();
+  setInterval(() => {
+    const brain = battleState.chatCompanion.commanderBrain;
+    if (!brain.autonomousBrainEnabled || !battleState.chatCompanion.autoCompanionEnabled) return;
+    const now = Date.now();
+    if (now - lastAutonomousBrainActionTs < 38000) return;
+
+    const hasLiveTarget =
+      Boolean(brain.activeTargetRoom) ||
+      activeSwarmRooms.size > 0 ||
+      battleState.gloveRemainingSec > 0 ||
+      battleState.cloudRadar.active;
+    if (!hasLiveTarget) return;
+
+    let autoDirective = '';
+    if (battleState.cloudRadar.active) {
+      autoDirective = 'היריב פתח ענן הסתרה — הרגיעו את הצ׳אט, שמרו על דאבל טאפ והכינו סנייפ מסודר';
+    } else if (battleState.gloveRemainingSec > 10) {
+      autoDirective = 'חלון כפפה x5 פתוח עכשיו — הניעו מתנות קטנות והקשות מהירות לתפיסת המכפיל';
+    } else if (battleState.snipeWindowActive) {
+      autoDirective = 'חלון 30 שניות אחרונות לקרב — קראו לסנייפ מדויק ולסגירת פער';
+    } else if (battleState.chatCompanion.chatVelocityPerMin < 4 && activeSwarmRooms.size > 0) {
+      autoDirective = 'הצ׳אט שקט כרגע — פתחו שיחה טבעית קצרה בין 2 מנחים ושאלה לקהל להרמת האלגוריתם';
+    }
+
+    if (autoDirective) {
+      lastAutonomousBrainActionTs = now;
+      void executeCentralBrainCommandInternal({
+        commandHe: autoDirective,
+        targetRoomHandle: brain.activeTargetRoom || undefined,
+        source: 'AUTONOMOUS_BRAIN',
+      });
+    }
+  }, 16000);
+
   app.post('/api/chat-companion/config', (req, res) => {
-    const { autoCompanionEnabled, autoModerationShieldEnabled, autoLearnFromLiveChat } = req.body || {};
+    const {
+      autoCompanionEnabled,
+      autoModerationShieldEnabled,
+      autoLearnFromLiveChat,
+      autonomousBrainEnabled,
+      autoEventScriptsEnabled,
+    } = req.body || {};
     if (typeof autoCompanionEnabled === 'boolean') {
       battleState.chatCompanion.autoCompanionEnabled = autoCompanionEnabled;
     }
@@ -7609,33 +9333,221 @@ ${JSON.stringify(
     if (typeof autoLearnFromLiveChat === 'boolean') {
       battleState.chatCompanion.autoLearnFromLiveChat = autoLearnFromLiveChat;
     }
+    if (typeof autonomousBrainEnabled === 'boolean') {
+      battleState.chatCompanion.commanderBrain.autonomousBrainEnabled = autonomousBrainEnabled;
+    }
+    if (typeof autoEventScriptsEnabled === 'boolean') {
+      battleState.chatCompanion.autoEventScriptsEnabled = autoEventScriptsEnabled;
+    }
+    syncEnvSlotsActivity();
+    savePersistedChatCompanion(battleState.chatCompanion);
     broadcast({ type: 'state:update', state: battleState });
     res.json({ ok: true, state: battleState });
   });
 
+  app.post('/api/chat-companion/reload-env-status', (_req, res) => {
+    authenticatedModeratorConns.clear();
+    syncEnvSlotsActivity();
+    savePersistedChatCompanion(battleState.chatCompanion);
+    broadcast({ type: 'state:update', state: battleState });
+    res.json({
+      ok: true,
+      configuredCount: battleState.chatCompanion.envSlotsActivity.filter((s) => s.sessionConfiguredInEnv).length,
+      envSlotsActivity: battleState.chatCompanion.envSlotsActivity,
+      state: battleState,
+    });
+  });
+
+  const VALID_SCRIPT_TRIGGERS = new Set<ModeratorTriggerEventType>([
+    'WHALE_GIFT',
+    'MEDIUM_GIFT',
+    'GLOVE_OPENED',
+    'OPPONENT_CLOUD',
+    'BATTLE_SPEED_TASK',
+    'SNIPE_WINDOW_30S',
+    'VIP_BARRAGE_JOIN',
+    'SHARE_SPIKE',
+    'FOLLOW_NEW',
+    'LIKE_BURST',
+    'TROLL_OR_SPAM_CHAT',
+    'CHAT_KEYWORD_MATCH',
+    'CUSTOM_WS_EVENT',
+  ]);
+
+  app.post('/api/chat-companion/script/upsert', (req, res) => {
+    const {
+      id,
+      nameHe,
+      descriptionHe,
+      enabled,
+      triggerEventType,
+      customWsEventKey,
+      keywordFilter,
+      minNumericValue,
+      cooldownSec,
+      steps,
+    } = req.body || {};
+
+    let existing = id
+      ? battleState.chatCompanion.autoScripts.find((s) => s.id === String(id))
+      : undefined;
+
+    const cleanTrigger: ModeratorTriggerEventType = VALID_SCRIPT_TRIGGERS.has(triggerEventType)
+      ? triggerEventType
+      : existing?.triggerEventType || 'WHALE_GIFT';
+
+    const parsedSteps: ModeratorScriptStep[] = Array.isArray(steps)
+      ? steps
+          .map((st: any, idx: number) => ({
+            id: String(st?.id || nextId(`mstep_${idx}`)),
+            slotNumber:
+              typeof st?.slotNumber === 'number' && st.slotNumber >= 0 && st.slotNumber <= 6
+                ? Math.round(st.slotNumber)
+                : 1,
+            delaySec:
+              typeof st?.delaySec === 'number'
+                ? Math.max(0, Math.min(25, Number(st.delaySec.toFixed(1))))
+                : idx * 3.5,
+            messageTemplateHe: String(st?.messageTemplateHe || '').trim(),
+          }))
+          .filter((st: ModeratorScriptStep) => st.messageTemplateHe.length > 0)
+      : existing?.steps || [];
+
+    if (!existing) {
+      if (parsedSteps.length === 0) {
+        res.status(400).json({ error: 'יש להגדיר לפחות שורת תגובה אחת בתסריט האוטומטי.' });
+        return;
+      }
+      existing = {
+        id: nextId('mscript'),
+        nameHe: String(nameHe || 'תסריט תגובה אוטומטי חדש').trim(),
+        descriptionHe: String(descriptionHe || 'מופעל אוטומטית בזיהוי אירוע בלייב.').trim(),
+        enabled: enabled !== false,
+        triggerEventType: cleanTrigger,
+        customWsEventKey:
+          cleanTrigger === 'CUSTOM_WS_EVENT' && typeof customWsEventKey === 'string'
+            ? customWsEventKey.trim()
+            : undefined,
+        keywordFilter: typeof keywordFilter === 'string' ? keywordFilter.trim() : undefined,
+        minNumericValue:
+          typeof minNumericValue === 'number' ? Math.max(0, Math.round(minNumericValue)) : 0,
+        cooldownSec:
+          typeof cooldownSec === 'number' ? Math.max(4, Math.min(300, Math.round(cooldownSec))) : 20,
+        steps: parsedSteps,
+        triggeredCount: 0,
+        lastTriggeredTs: 0,
+        lastTriggeredSummaryHe: null,
+      };
+      battleState.chatCompanion.autoScripts.unshift(existing);
+    } else {
+      if (typeof nameHe === 'string' && nameHe.trim()) existing.nameHe = nameHe.trim();
+      if (typeof descriptionHe === 'string') existing.descriptionHe = descriptionHe.trim();
+      if (typeof enabled === 'boolean') existing.enabled = enabled;
+      if (triggerEventType && VALID_SCRIPT_TRIGGERS.has(triggerEventType)) {
+        existing.triggerEventType = triggerEventType;
+      }
+      if (typeof customWsEventKey === 'string') {
+        existing.customWsEventKey = customWsEventKey.trim() || undefined;
+      }
+      if (typeof keywordFilter === 'string') {
+        existing.keywordFilter = keywordFilter.trim() || undefined;
+      }
+      if (typeof minNumericValue === 'number') {
+        existing.minNumericValue = Math.max(0, Math.round(minNumericValue));
+      }
+      if (typeof cooldownSec === 'number') {
+        existing.cooldownSec = Math.max(4, Math.min(300, Math.round(cooldownSec)));
+      }
+      if (Array.isArray(steps) && parsedSteps.length > 0) {
+        existing.steps = parsedSteps;
+      }
+    }
+
+    savePersistedChatCompanion(battleState.chatCompanion);
+    broadcast({ type: 'state:update', state: battleState });
+    res.json({ ok: true, script: existing, state: battleState });
+  });
+
+  app.post('/api/chat-companion/script/delete', (req, res) => {
+    const id = String(req.body?.id || '').trim();
+    battleState.chatCompanion.autoScripts = battleState.chatCompanion.autoScripts.filter(
+      (s) => s.id !== id
+    );
+    savePersistedChatCompanion(battleState.chatCompanion);
+    broadcast({ type: 'state:update', state: battleState });
+    res.json({ ok: true, state: battleState });
+  });
+
+  app.post('/api/chat-companion/script/test', (req, res) => {
+    const id = String(req.body?.id || '').trim();
+    const rule = battleState.chatCompanion.autoScripts.find((s) => s.id === id);
+    if (!rule) {
+      res.status(404).json({ error: 'התסריט המבוקש לא נמצא.' });
+      return;
+    }
+    const fired = evaluateModeratorAutoScripts({
+      triggerType: rule.triggerEventType,
+      wsEventKey: rule.customWsEventKey,
+      userName: 'אלמוג_VIP',
+      giftName: 'אריה אש מלכותי',
+      numericValue: Math.max(rule.minNumericValue || 0, 500),
+      sourceRoom: battleState.chatCompanion.commanderBrain.activeTargetRoom,
+      forceTestRuleId: rule.id,
+    });
+    res.json({ ok: true, fired, script: rule, state: battleState });
+  });
+
   app.post('/api/chat-companion/account/upsert', (req, res) => {
-    const { id, handle, displayName, role, enabled, externalWebhookOrWsTag, toneNotesHe, connectionStatus } =
-      req.body || {};
+    const {
+      id,
+      slotNumber,
+      handle,
+      displayName,
+      role,
+      enabled,
+      externalWebhookOrWsTag,
+      toneNotesHe,
+      connectionStatus,
+      trainedLinesHe,
+    } = req.body || {};
     const cleanHandle = sanitizeTikTokHandle(handle || displayName || 'companion_live') || 'companion_live';
-    const validRole: CompanionRoleId =
-      role === 'TACTICAL_SNIPE' || role === 'VIBE_HYPE' || role === 'MOD_SHIELD' || role === 'WELCOME_VIP'
-        ? role
-        : 'VIBE_HYPE';
+    const validRole: CompanionRoleId = isValidCompanionRole(role) ? role : 'VIBE_HYPE';
 
     let acc = id
       ? battleState.chatCompanion.accounts.find((a) => a.id === id)
-      : battleState.chatCompanion.accounts.find((a) => a.handle.toLowerCase() === cleanHandle.toLowerCase());
+      : typeof slotNumber === 'number'
+        ? battleState.chatCompanion.accounts.find((a) => a.slotNumber === slotNumber)
+        : battleState.chatCompanion.accounts.find((a) => a.handle.toLowerCase() === cleanHandle.toLowerCase());
 
     if (!acc) {
+      const nextSlot =
+        typeof slotNumber === 'number' && slotNumber >= 1
+          ? slotNumber
+          : battleState.chatCompanion.accounts.reduce((mx, a) => Math.max(mx, a.slotNumber || 0), 0) + 1;
+      const authReady = hasServerTikTokModSession(nextSlot);
       acc = {
         id: nextId('comp_acc'),
+        slotNumber: nextSlot,
         handle: cleanHandle,
         displayName: String(displayName || `@${cleanHandle}`).trim(),
-        avatarUrl: buildBroadcastAvatarCrestUri(displayName || cleanHandle, battleState.chatCompanion.accounts.length),
+        avatarUrl: buildBroadcastAvatarCrestUri(displayName || cleanHandle, nextSlot),
         role: validRole,
         enabled: enabled !== false,
-        connectionStatus: connectionStatus === 'WS_BRIDGE_ACTIVE' ? 'WS_BRIDGE_ACTIVE' : 'SLOT_READY',
-        externalWebhookOrWsTag: String(externalWebhookOrWsTag || `ws://companion-${cleanHandle}`).trim(),
+        connectionStatus: authReady
+          ? 'TIKTOK_AUTH_LIVE'
+          : battleState.chatCompanion.commanderBrain.activeTargetRoom
+            ? 'LIVE_ROOM_DEPLOYED'
+            : 'SLOT_READY',
+        hasServerTikTokAuth: authReady,
+        deployedRoomHandle: battleState.chatCompanion.commanderBrain.activeTargetRoom || null,
+        deployedRoomLive: battleState.chatCompanion.commanderBrain.activeTargetRoomLive,
+        trainingLevel: 82,
+        trainedSkillSummaryHe: 'מוכן לאימון אישי מתוך דגימות הצ׳אט החי של השידור',
+        trainedLinesHe: Array.isArray(trainedLinesHe) && trainedLinesHe.length > 0
+          ? trainedLinesHe.map((s: any) => String(s || '').trim()).filter(Boolean)
+          : ['יאללה חברים כולם בדאבל טאפ על המסך — מרימים את החדר!'],
+        lastOrderHe: null,
+        externalWebhookOrWsTag: String(externalWebhookOrWsTag || `tiktok-mod-slot-${nextSlot}`).trim(),
         toneNotesHe: String(toneNotesHe || 'מנחה מלווה ליצירת אווירה, מענה לקהל ושמירה על אנרגיה חיובית בצ׳אט.').trim(),
         messagesDispatched: 0,
         moderationsTriggered: 0,
@@ -7644,15 +9556,25 @@ ${JSON.stringify(
     } else {
       if (handle) acc.handle = cleanHandle;
       if (displayName) acc.displayName = String(displayName).trim();
-      if (role) acc.role = validRole;
+      if (role && isValidCompanionRole(role)) acc.role = role;
       if (typeof enabled === 'boolean') acc.enabled = enabled;
       if (typeof externalWebhookOrWsTag === 'string') acc.externalWebhookOrWsTag = externalWebhookOrWsTag.trim();
       if (typeof toneNotesHe === 'string') acc.toneNotesHe = toneNotesHe.trim();
-      if (connectionStatus === 'WS_BRIDGE_ACTIVE' || connectionStatus === 'SLOT_READY') {
+      if (Array.isArray(trainedLinesHe)) {
+        const cleaned = trainedLinesHe.map((s: any) => String(s || '').trim()).filter(Boolean);
+        if (cleaned.length > 0) acc.trainedLinesHe = cleaned;
+      }
+      if (
+        connectionStatus === 'WS_BRIDGE_ACTIVE' ||
+        connectionStatus === 'SLOT_READY' ||
+        connectionStatus === 'LIVE_ROOM_DEPLOYED' ||
+        connectionStatus === 'TIKTOK_AUTH_LIVE'
+      ) {
         acc.connectionStatus = connectionStatus;
       }
     }
 
+    syncEnvSlotsActivity();
     savePersistedChatCompanion(battleState.chatCompanion);
     broadcast({ type: 'state:update', state: battleState });
     res.json({ ok: true, account: acc, state: battleState });
@@ -7661,13 +9583,238 @@ ${JSON.stringify(
   app.post('/api/chat-companion/account/delete', (req, res) => {
     const id = String(req.body?.id || '').trim();
     battleState.chatCompanion.accounts = battleState.chatCompanion.accounts.filter((a) => a.id !== id);
+    syncEnvSlotsActivity();
     savePersistedChatCompanion(battleState.chatCompanion);
     broadcast({ type: 'state:update', state: battleState });
     res.json({ ok: true, state: battleState });
   });
 
+  app.post('/api/chat-companion/deploy-squad', async (req, res) => {
+    try {
+      const rawRoom = String(req.body?.targetRoomHandle || '').trim();
+      const sendEntryGreeting = req.body?.sendEntryGreeting !== false;
+      const cleanRoom = sanitizeTikTokHandle(rawRoom);
+      if (!cleanRoom) {
+        res.status(400).json({ error: 'יש להזין @username של לייב טיקטוק כדי לשלוח אליו את צוות המנחים.' });
+        return;
+      }
+
+      const swarmResult = await connectCreatorToSwarm(cleanRoom, {
+        addToWatchlist: true,
+        silentIfOffline: true,
+      });
+
+      battleState.chatCompanion.commanderBrain.activeTargetRoom = cleanRoom;
+      battleState.chatCompanion.commanderBrain.activeTargetRoomLive = Boolean(swarmResult.connected);
+      battleState.chatCompanion.commanderBrain.brainStatusHe = swarmResult.connected
+        ? `הצוות פרוס בחדר חי @${cleanRoom} · המוח מאזין לצ׳אט ומנהל את המנחים`
+        : `הצוות הוצב על @${cleanRoom} (ממתין שהיוצר יעלה ללייב / מוכן לשליחה)`;
+
+      let deployedCount = 0;
+      for (const acc of battleState.chatCompanion.accounts) {
+        if (acc.enabled) {
+          acc.deployedRoomHandle = cleanRoom;
+          acc.deployedRoomLive = Boolean(swarmResult.connected);
+          if (!acc.hasServerTikTokAuth) {
+            acc.connectionStatus = 'LIVE_ROOM_DEPLOYED';
+          }
+          deployedCount += 1;
+        }
+      }
+
+      syncEnvSlotsActivity();
+      savePersistedChatCompanion(battleState.chatCompanion);
+      broadcast({ type: 'state:update', state: battleState });
+
+      let entryOrder: BrainSquadOrderItem | null = null;
+      if (sendEntryGreeting) {
+        entryOrder = await executeCentralBrainCommandInternal({
+          commandHe: `כניסת צוות מנחים מתואמת וטבעית לחדר של @${cleanRoom} — הרימו אווירה בלי להיראות מתואמים מדי`,
+          targetRoomHandle: cleanRoom,
+          source: 'USER_COMMAND',
+        });
+      }
+
+      res.json({
+        ok: true,
+        deployedCount,
+        targetRoom: cleanRoom,
+        roomConnected: swarmResult.connected,
+        entryOrder,
+        state: battleState,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'שגיאה בשליחת צוות המנחים לחדר הלייב';
+      res.status(500).json({ error: msg });
+    }
+  });
+
+  app.post('/api/chat-companion/train-squad', async (req, res) => {
+    try {
+      const customNotes = typeof req.body?.customChatSample === 'string' ? req.body.customChatSample.trim() : '';
+      const corpus = collectLiveChatTrainingCorpus(customNotes);
+      const accounts = battleState.chatCompanion.accounts;
+
+      const ai = getGeminiClient();
+      const accountsPromptList = accounts
+        .map(
+          (a) =>
+            `- id="${a.id}" | סלוט #${a.slotNumber} (@${a.handle} - ${a.displayName}) | תפקיד=${a.role} | אופי=${a.toneNotesHe}`
+        )
+        .join('\n');
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-4-hydrogen',
+        contents: `אתה מאמן המנחים הראשי והמוח של צוות ${accounts.length} חשבונות טיקטוק לייב (קהל: ${battleState.countryCalibration.labelHe}).
+אמן עכשיו כל אחד מחשבונות המנחים שלנו בנפרד על סמך מה שלמדנו מהצ׳אט החי ומהלייבים המחוברים:
+
+דגימות צ׳אט חי ותובנות שנאספו מהשטח:
+${corpus.slice(0, 38).join('\n')}
+
+רשימת חשבונות המנחים לאימון אישי:
+${accountsPromptList}
+
+דרישות:
+1. לכל חשבון (לפי accountId המדויק שלו) תן:
+   - trainedSkillSummaryHe: מה היכולת הספציפית שהוא שדרג עכשיו מהצ׳אט החי (משפט קצר וברור).
+   - trainedLinesHe: 3 משפטי צ׳אט טבעיים, חדים, אנושיים בעברית שמותאמים בדיוק לאופי ולתפקיד שלו (ללא ספאם רובוטי!).
+2. צור גם תבנית כללית אחת חדשה (newPattern) שנלמדה מהצ׳אט וסיכום אימון קצר עבור המוח הראשי (trainingSummaryHe).`,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              trainingSummaryHe: { type: Type.STRING },
+              accountTrainings: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    accountId: { type: Type.STRING },
+                    trainedSkillSummaryHe: { type: Type.STRING },
+                    trainedLinesHe: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING },
+                    },
+                  },
+                  required: ['accountId', 'trainedSkillSummaryHe', 'trainedLinesHe'],
+                },
+              },
+              newPattern: {
+                type: Type.OBJECT,
+                properties: {
+                  moment: { type: Type.STRING },
+                  role: { type: Type.STRING },
+                  whatObservedHe: { type: Type.STRING },
+                  hebrewLines: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                },
+                required: ['moment', 'role', 'whatObservedHe', 'hebrewLines'],
+              },
+            },
+            required: ['trainingSummaryHe', 'accountTrainings'],
+          },
+        },
+      });
+
+      const parsed = JSON.parse((response.text ?? '{}').trim());
+      let trainedAccountsCount = 0;
+
+      if (Array.isArray(parsed.accountTrainings)) {
+        for (const item of parsed.accountTrainings) {
+          const acc = accounts.find((a) => a.id === item.accountId);
+          if (!acc) continue;
+          const lines = Array.isArray(item.trainedLinesHe)
+            ? item.trainedLinesHe.map((s: any) => String(s || '').trim()).filter(Boolean)
+            : [];
+          if (item.trainedSkillSummaryHe) {
+            acc.trainedSkillSummaryHe = String(item.trainedSkillSummaryHe).trim();
+          }
+          if (lines.length > 0) {
+            acc.trainedLinesHe = lines.slice(0, 4);
+          }
+          acc.trainingLevel = Math.min(100, (acc.trainingLevel || 85) + 3);
+          trainedAccountsCount += 1;
+        }
+      }
+
+      if (parsed.newPattern && Array.isArray(parsed.newPattern.hebrewLines)) {
+        const patLines = parsed.newPattern.hebrewLines
+          .map((s: any) => String(s || '').trim())
+          .filter(Boolean);
+        if (patLines.length > 0) {
+          battleState.chatCompanion.learnedPatterns.unshift({
+            id: nextId('cpat'),
+            moment: 'DEAD_AIR_ICEBREAKER',
+            role: isValidCompanionRole(parsed.newPattern.role) ? parsed.newPattern.role : 'VIBE_HYPE',
+            sourceStreamHe:
+              activeSwarmRooms.size > 0
+                ? `אימון צוות מצ׳אט חי (${Array.from(activeSwarmRooms.keys()).slice(0, 3).map((u) => '@' + u).join(', ')})`
+                : 'אימון מוח AI מצ׳אט השידור',
+            whatObservedHe: String(parsed.newPattern.whatObservedHe || 'טקטיקת צ׳אט חיה שאומנה לצוות').trim(),
+            hebrewLines: patLines.slice(0, 4),
+            effectivenessScore: 96,
+            autoDispatchEnabled: true,
+            usedCount: 0,
+            updatedAtTs: Date.now(),
+          });
+        }
+      }
+
+      battleState.chatCompanion.commanderBrain.trainingSessionsCount += 1;
+      battleState.chatCompanion.commanderBrain.lastTrainedAtTs = Date.now();
+      battleState.chatCompanion.commanderBrain.lastTrainingSummaryHe =
+        String(parsed.trainingSummaryHe || '').trim() ||
+        `כל ${trainedAccountsCount || accounts.length} חשבונות המנחים אומנו בהצלחה ממה שנלמד בצ׳אט החי!`;
+      battleState.chatCompanion.detectedRoomMoodHe =
+        battleState.chatCompanion.commanderBrain.lastTrainingSummaryHe.slice(0, 130);
+
+      savePersistedChatCompanion(battleState.chatCompanion);
+      broadcast({ type: 'state:update', state: battleState });
+      res.json({
+        ok: true,
+        trainedAccountsCount: trainedAccountsCount || accounts.length,
+        trainingSummaryHe: battleState.chatCompanion.commanderBrain.lastTrainingSummaryHe,
+        state: battleState,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'שגיאה באימון צוות המנחים מהצ׳אט';
+      res.status(500).json({ error: msg });
+    }
+  });
+
+  app.post('/api/chat-companion/brain-command', async (req, res) => {
+    try {
+      const commandHe = String(req.body?.commandHe || '').trim();
+      const targetRoomHandle =
+        typeof req.body?.targetRoomHandle === 'string' ? req.body.targetRoomHandle.trim() : undefined;
+      if (!commandHe) {
+        res.status(400).json({ error: 'יש להזין פקודה עבור מוח ה-AI של המנחים.' });
+        return;
+      }
+
+      const order = await executeCentralBrainCommandInternal({
+        commandHe,
+        targetRoomHandle,
+        source: 'USER_COMMAND',
+      });
+
+      res.json({
+        ok: true,
+        order,
+        state: battleState,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'שגיאה בביצוע פקודת מוח AI למנחים';
+      res.status(500).json({ error: msg });
+    }
+  });
+
   app.post('/api/chat-companion/dispatch-now', (req, res) => {
-    const { moment, customMessageHe, preferredRole, kind, targetOffender } = req.body || {};
+    const { moment, customMessageHe, preferredRole, kind, targetOffender, accountId, targetRoom } =
+      req.body || {};
     const validMoment: ChatMomentType =
       moment === 'OPENING_WARMUP' ||
       moment === 'DEAD_AIR_ICEBREAKER' ||
@@ -7679,18 +9826,16 @@ ${JSON.stringify(
         ? moment
         : 'DEAD_AIR_ICEBREAKER';
 
-    const validRole: CompanionRoleId =
-      preferredRole === 'TACTICAL_SNIPE' ||
-      preferredRole === 'VIBE_HYPE' ||
-      preferredRole === 'MOD_SHIELD' ||
-      preferredRole === 'WELCOME_VIP'
-        ? preferredRole
-        : 'VIBE_HYPE';
+    const validRole: CompanionRoleId = isValidCompanionRole(preferredRole)
+      ? preferredRole
+      : 'VIBE_HYPE';
 
     const item = dispatchCompanionCrewAction({
       moment: validMoment,
-      momentLabelHe: 'שליחת הודעת מנחה מלווה לצ׳אט ולגשר החשבונות',
+      momentLabelHe: 'שליחת הודעת מנחה יזומה לחדר הלייב',
       preferredRole: validRole,
+      specificAccountId: typeof accountId === 'string' && accountId.trim() ? accountId.trim() : undefined,
+      targetRoom: typeof targetRoom === 'string' && targetRoom.trim() ? targetRoom.trim() : undefined,
       kind: kind === 'MOD_CLEANUP' ? 'MOD_CLEANUP' : 'CHAT_VIBE_LINE',
       customMessageHe: typeof customMessageHe === 'string' && customMessageHe.trim() ? customMessageHe.trim() : undefined,
       targetOffender: typeof targetOffender === 'string' ? targetOffender : undefined,
@@ -7725,18 +9870,7 @@ ${JSON.stringify(
   app.post('/api/chat-companion/learn-now', async (req, res) => {
     try {
       const customNotes = typeof req.body?.customChatSample === 'string' ? req.body.customChatSample.trim() : '';
-      const collectedLiveChat: string[] = [];
-      for (const room of activeSwarmRooms.values()) {
-        for (const c of room.chatSamples.slice(0, 15)) {
-          collectedLiveChat.push(`[@${room.username}] ${c}`);
-        }
-      }
-      for (const m of battleState.recentChatMessages.slice(0, 15)) {
-        collectedLiveChat.push(`[${m.source || 'חדר'}] ${m.user}: ${m.text}`);
-      }
-      if (customNotes) {
-        collectedLiveChat.unshift(`[חומר ידני לניתוח מנחים]: ${customNotes}`);
-      }
+      const collectedLiveChat = collectLiveChatTrainingCorpus(customNotes);
 
       const ai = getGeminiClient();
       const response = await ai.models.generateContent({
@@ -7786,7 +9920,6 @@ ${collectedLiveChat.slice(0, 35).join('\n') || 'אין עדיין דגימות �
         'VIP_THANK_YOU',
         'ANTI_TROLL_SHIELD',
       ]);
-      const validRoles = new Set(['TACTICAL_SNIPE', 'VIBE_HYPE', 'MOD_SHIELD', 'WELCOME_VIP']);
 
       let addedCount = 0;
       if (Array.isArray(parsed.patterns)) {
@@ -7798,7 +9931,7 @@ ${collectedLiveChat.slice(0, 35).join('\n') || 'אין עדיין דגימות �
           const newPat: LearnedChatModeratorPattern = {
             id: nextId('cpat'),
             moment: (validMoments.has(p.moment) ? p.moment : 'DEAD_AIR_ICEBREAKER') as ChatMomentType,
-            role: (validRoles.has(p.role) ? p.role : 'VIBE_HYPE') as CompanionRoleId,
+            role: isValidCompanionRole(p.role) ? p.role : 'VIBE_HYPE',
             sourceStreamHe:
               activeSwarmRooms.size > 0
                 ? `נלמד מצ׳אט חי (${Array.from(activeSwarmRooms.keys()).slice(0, 3).map((u) => '@' + u).join(', ')})`
