@@ -1,128 +1,170 @@
 {
+  "playbookVersion": 2,
   "autoEventScriptsEnabled": true,
+  "allowLocalSimulationWhenDisconnected": false,
   "accounts": [
     {
       "id": "comp_tactical_1",
       "slotNumber": 1,
       "handle": "kobi_pk_commander",
-      "displayName": "קובי · קצין קרב וסנייפ",
+      "displayName": "קובי · פותח הפיתיון והדילמה",
       "avatarUrl": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2232%25%22%20r%3D%2270%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%231E1508%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230B0E14%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2246%22%20fill%3D%22url(%23g)%22%20stroke%3D%22%23F59E0B%22%20stroke-width%3D%223.5%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2239%22%20fill%3D%22none%22%20stroke%3D%22%23F59E0B%22%20stroke-opacity%3D%220.32%22%20stroke-width%3D%221.2%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2228%22%20fill%3D%22%23FDE68A%22%3E%D7%A7%D7%91%3C%2Ftext%3E%3C%2Fsvg%3E",
       "role": "TACTICAL_SNIPE",
       "enabled": true,
-      "connectionStatus": "LIVE_ROOM_DEPLOYED",
+      "connectionStatus": "DISCONNECTED_NO_AUTH",
       "hasServerTikTokAuth": false,
-      "deployedRoomHandle": "q39p._",
+      "isTrulyConnected": false,
+      "lastConnectionErrorHe": null,
+      "deployedRoomHandle": "boostera_demo_live",
       "deployedRoomLive": false,
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "selectedForChatCrew": true,
+      "assignedCrewRole": "CONVERSATION_HOST",
+      "verifiedChannel": "NONE",
+      "lastVerifiedAtTs": null,
       "trainingLevel": 92,
-      "trainedSkillSummaryHe": "תזמון פתיחת כפפה x5 ב-5 השניות הראשונות והכנת קהל לסנייפ בשנייה ה-8",
+      "trainedSkillSummaryHe": "זורק דילמה חצויה (50/50) או התערבות שמחייבת צופים לענות — לעולם לא סיסמה יבשה",
       "trainedLinesHe": [
-        "כפפה באוויר 30 שניות — כל ורד קטן עכשיו תופס מכפיל x5, כולם ביחד!",
-        "לשמור תחמושת חברים, סנייפ מדויק ב-8 שניות אחרונות סוגר את הסיבוב!",
-        "היריב פתח ענן מלחץ — ממשיכים נקודות בשקט ולא עוצרים לשנייה!"
+        "רגע התערבות פה בצ׳אט: אנחנו סוגרים אותו לפני הכפפה או שרק בסנייפ בשנייה 6?",
+        "אני היחיד ששם לב שכל פעם שהסקור זז היריב בודק את הצ׳אט שלו מרוב לחץ?",
+        "בכנות תגידו רגע — לשחק פה פני פוקר בשקט או לפתוח פער על ההתחלה?"
       ],
       "lastOrderHe": "פקודת מוח AI: ביצוע פקודה מתפקיד TACTICAL_SNIPE",
       "externalWebhookOrWsTag": "ws://companion-slot-1",
-      "toneNotesHe": "חד, טקטי, סופר שניות לכפפה, מתריע מיד על ענן יריב ומדרבן בשניות ההכרעה.",
-      "messagesDispatched": 7,
+      "toneNotesHe": "תפקיד #1 בשרשרת: זורק את הניצוץ/הפיתיון הראשוני (התערבות או שאלת 50/50) שפותח שיחה ארוכה.",
+      "messagesDispatched": 0,
       "moderationsTriggered": 0
     },
     {
       "id": "comp_hype_2",
       "slotNumber": 2,
       "handle": "maya_vibe_boost",
-      "displayName": "מאיה · הרמת אווירה וצ׳אט",
+      "displayName": "מאיה · מציתת הוויכוח הידידותי",
       "avatarUrl": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2232%25%22%20r%3D%2270%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%230A1926%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230B0E14%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2246%22%20fill%3D%22url(%23g)%22%20stroke%3D%22%2338BDF8%22%20stroke-width%3D%223.5%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2239%22%20fill%3D%22none%22%20stroke%3D%22%2338BDF8%22%20stroke-opacity%3D%220.32%22%20stroke-width%3D%221.2%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2228%22%20fill%3D%22%23BAE6FD%22%3E%D7%9E%D7%99%3C%2Ftext%3E%3C%2Fsvg%3E",
       "role": "VIBE_HYPE",
       "enabled": true,
-      "connectionStatus": "LIVE_ROOM_DEPLOYED",
+      "connectionStatus": "DISCONNECTED_NO_AUTH",
       "hasServerTikTokAuth": false,
-      "deployedRoomHandle": "q39p._",
+      "isTrulyConnected": false,
+      "lastConnectionErrorHe": null,
+      "deployedRoomHandle": "boostera_demo_live",
       "deployedRoomLive": false,
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "selectedForChatCrew": true,
+      "assignedCrewRole": "COMMUNITY_MANAGER",
+      "verifiedChannel": "NONE",
+      "lastVerifiedAtTs": null,
       "trainingLevel": 90,
-      "trainedSkillSummaryHe": "שבירת שתיקות בצ׳אט עם שאלות קצרות שמקפיצות חשיפה באלגוריתם הלייב",
+      "trainedSkillSummaryHe": "עונה לסלוט #1 בדעה הפוכה בחיוך אחרי 3.5 שנ׳ — הסוד שגורם לצופים לקפוץ להכריע מי צודק",
       "trainedLinesHe": [
-        "בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב?",
-        "איזה אנרגיות יש בחדר הערב!! כל מי שכאן תנו \"1\" בצ׳אט ונרים את המסך!",
-        "יאללה משפחה לא להוריד רגל מהגז, החדר שלנו בוער היום!"
+        "חחח אין סיכוי אחי, ראית איך הוא שמר כפפה סיבוב קודם? בלי סנייפ שקט בסוף זה לא נגמר",
+        "פני פוקר קל!! פעם שעברה שפתחנו מוקדם הוא התעורר עלינו בדקה האחרונה חחח",
+        "יואו לא מאמינה שהוא באמת לקח את האתגר הזה עכשיו חחח הולך להיות פה בלאגן"
       ],
       "lastOrderHe": "פקודת מוח AI: ביצוע פקודה מתפקיד VIBE_HYPE",
       "externalWebhookOrWsTag": "ws://companion-slot-2",
-      "toneNotesHe": "אנרגטית, חמה, שוברת שתיקות עם שאלות לקהל ומרימה רצפי דאבל-טאפ ושיתופים.",
-      "messagesDispatched": 9,
+      "toneNotesHe": "תפקיד #2 בשרשרת: חולקת בידידות על סלוט #1 כדי לייצר פינג-פונג אנושי שגורר צופים לקחת צד.",
+      "messagesDispatched": 0,
       "moderationsTriggered": 0
     },
     {
       "id": "comp_shield_3",
       "slotNumber": 3,
       "handle": "ori_room_shield",
-      "displayName": "אורי · מגן חדר וניקוי רעשים",
+      "displayName": "אורי · מסובב נרטיב (\"אנחנו מולם\")",
       "avatarUrl": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2232%25%22%20r%3D%2270%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%231B0F26%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230B0E14%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2246%22%20fill%3D%22url(%23g)%22%20stroke%3D%22%23A855F7%22%20stroke-width%3D%223.5%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2239%22%20fill%3D%22none%22%20stroke%3D%22%23A855F7%22%20stroke-opacity%3D%220.32%22%20stroke-width%3D%221.2%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2228%22%20fill%3D%22%23E9D5FF%22%3E%D7%90%D7%A8%3C%2Ftext%3E%3C%2Fsvg%3E",
       "role": "MOD_SHIELD",
       "enabled": true,
-      "connectionStatus": "LIVE_ROOM_DEPLOYED",
+      "connectionStatus": "DISCONNECTED_NO_AUTH",
       "hasServerTikTokAuth": false,
-      "deployedRoomHandle": "q39p._",
+      "isTrulyConnected": false,
+      "lastConnectionErrorHe": null,
+      "deployedRoomHandle": "boostera_demo_live",
       "deployedRoomLive": false,
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "selectedForChatCrew": true,
+      "assignedCrewRole": "BATTLE_ANALYST",
+      "verifiedChannel": "NONE",
+      "lastVerifiedAtTs": null,
       "trainingLevel": 94,
-      "trainedSkillSummaryHe": "ניטרול טרולים מחדר יריב ע״י הצפה חיובית מתואמת בלי לתת להם במה",
+      "trainedSkillSummaryHe": "הופך עקיצות מהיריב או ענן הסתרה לסיפור \"מבצע סודי של החדר שלנו\" במקום נזיפות שוטר",
       "trainedLinesHe": [
-        "מתרכזים אך ורק בניצחון שלנו — להציף לבבות כתומים בצ׳אט ולדחוף קדימה!",
-        "אף רעש מבחוץ לא עוצר את המשפחה הזאת, כולנו על המסך בדאבל טאפ!",
-        "שומרים על צ׳אט נקי ואנרגיה גבוהה, כל החדר איתך עד הסוף!"
+        "בדוק שנכנסו לפה עכשיו 3 מרגלים מהחדר שלו לבדוק אם יש לנו כפפה חחח אל תגלו כלום",
+        "ששש אל תכתבו בצ׳אט מה המתנה של הסוף, שהצד השני לא יקלוט לפני ה-30 שניות!",
+        "שקט תעשייתי חברים, מתחת לענן כל נקודה שלנו כואבת לו כפול כשהענן יתפזר!"
       ],
       "lastOrderHe": "פקודת מוח AI: ביצוע פקודה מתפקיד MOD_SHIELD",
       "externalWebhookOrWsTag": "ws://companion-slot-3",
-      "toneNotesHe": "מזהה טרולים מהחדר היריב, הודעות שליליות וספאם — מסמן להשתקה ומציף אנרגיה חיובית.",
-      "messagesDispatched": 6,
-      "moderationsTriggered": 4
+      "toneNotesHe": "תפקיד #3 בשרשרת: הופך לחץ, טרולים או ענן יריב לאחוות חדר סודית שמדליקה את הצ׳אט.",
+      "messagesDispatched": 0,
+      "moderationsTriggered": 0
     },
     {
       "id": "comp_vip_4",
       "slotNumber": 4,
       "handle": "shir_vip_hostess",
-      "displayName": "שיר · קבלת פנים ותודות VIP",
+      "displayName": "שיר · מגנט שמות וחיבור צופים",
       "avatarUrl": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2232%25%22%20r%3D%2270%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23092218%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230B0E14%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2246%22%20fill%3D%22url(%23g)%22%20stroke%3D%22%2310B981%22%20stroke-width%3D%223.5%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2239%22%20fill%3D%22none%22%20stroke%3D%22%2310B981%22%20stroke-opacity%3D%220.32%22%20stroke-width%3D%221.2%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2228%22%20fill%3D%22%23A7F3D0%22%3E%D7%A9%D7%A8%3C%2Ftext%3E%3C%2Fsvg%3E",
       "role": "WELCOME_VIP",
       "enabled": true,
-      "connectionStatus": "LIVE_ROOM_DEPLOYED",
+      "connectionStatus": "DISCONNECTED_NO_AUTH",
       "hasServerTikTokAuth": false,
+      "isTrulyConnected": false,
+      "lastConnectionErrorHe": null,
       "deployedRoomHandle": "q39p._",
       "deployedRoomLive": false,
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "selectedForChatCrew": true,
+      "assignedCrewRole": "CREATIVE_ENGAGEMENT",
+      "verifiedChannel": "NONE",
+      "lastVerifiedAtTs": null,
       "trainingLevel": 89,
-      "trainedSkillSummaryHe": "יחס אישי לתומכים תוך 2 שניות מהמתנה ליצירת נאמנות ומתנות המשך",
+      "trainedSkillSummaryHe": "תופסת צופה או תומך בשמו ושואלת אותו שאלה אישית ישירה שמחייבת תשובה בצ׳אט",
       "trainedLinesHe": [
-        "כבוד ענק ל-{{USER}} על התמיכה המטורפת! כולם לפרגן לו בצ׳אט!",
-        "ברוכים הבאים לכל מי שנכנס עכשיו ללייב — הגעתם בדיוק לרגע השיא!",
-        "איזו כניסה מלכותית של התומכים שלנו, מרימים את כל החדר באוויר!"
+        "{{USER}} יא אלוף איזה טיימינג שנכנסת — תעשה לנו סדר רגע בוויכוח, פותחים עכשיו או שומרים?",
+        "מי פה פעם ראשונה בשידור היום? תרשמו \"אני\" תכף תבינו על מה כולם מתווכחים פה!",
+        "כל מי שהיה פה בסיבוב הקודם תאשרו לנו רגע בצ׳אט — בכמה הפרש לקחנו בסוף?"
       ],
       "lastOrderHe": "תודת VIP אוטומטית על מתנת מתנה",
       "externalWebhookOrWsTag": "ws://companion-slot-4",
-      "toneNotesHe": "נותנת כבוד אישי לתומכים, מברכת מצטרפים חדשים וגורמת לכל תומך להרגיש מלך בחדר.",
-      "messagesDispatched": 6,
+      "toneNotesHe": "תפקיד #4 בשרשרת: שואבת צופים אמיתיים ותומכים לתוך הוויכוח באמצעות פנייה אישית ושאלה פתוחה.",
+      "messagesDispatched": 0,
       "moderationsTriggered": 0
     },
     {
       "id": "comp_acc_1794743543953_609",
       "slotNumber": 5,
       "handle": "eden_hype_live",
-      "displayName": "עדן · מלווה לייב ואווירה",
+      "displayName": "דן · סופר ההצבעות והמתח החי",
       "avatarUrl": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2232%25%22%20r%3D%2270%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%231E1508%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230B0E14%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2246%22%20fill%3D%22url(%23g)%22%20stroke%3D%22%23F59E0B%22%20stroke-width%3D%223.5%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2239%22%20fill%3D%22none%22%20stroke%3D%22%23F59E0B%22%20stroke-opacity%3D%220.32%22%20stroke-width%3D%221.2%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2228%22%20fill%3D%22%23FDE68A%22%3E%D7%A2%D7%93%3C%2Ftext%3E%3C%2Fsvg%3E",
       "role": "VIBE_HYPE",
       "enabled": true,
-      "connectionStatus": "LIVE_ROOM_DEPLOYED",
+      "connectionStatus": "DISCONNECTED_NO_AUTH",
       "hasServerTikTokAuth": false,
+      "isTrulyConnected": false,
+      "lastConnectionErrorHe": null,
       "deployedRoomHandle": "q39p._",
       "deployedRoomLive": false,
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "selectedForChatCrew": false,
+      "assignedCrewRole": null,
+      "verifiedChannel": "NONE",
+      "lastVerifiedAtTs": null,
       "trainingLevel": 88,
-      "trainedSkillSummaryHe": "הנעת גלי הקשות (Speed Challenge / 3,000 לייקים בנקודות חינם) וסגירת משימות קרב",
+      "trainedSkillSummaryHe": "מתרגם את הוויכוח להצבעת 1 מול 2 וסופר פער קטן בלייב שגורם לקהל להקליד מיד",
       "trainedLinesHe": [
-        "כולם אצבעות על המסך עכשיו — סוגרים את משימת המהירות לנקודות בונוס חינם!",
-        "עוד דחיפה קטנה בהקשות ואנחנו פותחים את מד האנרגיה עד הסוף!",
-        "כל צופה נותן 30 הקשות מהירות עכשיו — בואו נראה את הקומבו עף!"
+        "יואו תיקו בצ׳אט כרגע!! מי שאומר לשמור לסוף שיכתוב 1, מי שאומר לפרק עכשיו שיכתוב 2!",
+        "בדיקה אמיתית ל-15 שניות: נראה אם יש פה 7 אנשים ערים שיכתבו מאיזה אזור הם בארץ!",
+        "מי שעובד איתנו עכשיו מתחת לענן שיכתוב \"בפנים\" ויתן 30 הקשות מהירות עד שמתבהר!"
       ],
       "lastOrderHe": null,
       "externalWebhookOrWsTag": "ws://companion-eden_hype_live",
-      "toneNotesHe": "מרים את הצ׳אט בחרוזים וקריאות דאבל-טאפ מהירות",
+      "toneNotesHe": "תפקיד #5 בשרשרת: מייצר דחיפות, סופר קולות 1 מול 2 ומפעיל יעדי מיקרו של 15 שניות.",
       "messagesDispatched": 0,
       "moderationsTriggered": 0
     },
@@ -130,49 +172,234 @@
       "id": "comp_scout_6",
       "slotNumber": 6,
       "handle": "noam_live_scout",
-      "displayName": "נועם · מלווה תצפית ושיתופי לייב",
+      "displayName": "נועם · מאריך השרשרת והקליפהאנגר",
       "avatarUrl": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2232%25%22%20r%3D%2270%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%230A1926%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230B0E14%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2246%22%20fill%3D%22url(%23g)%22%20stroke%3D%22%2338BDF8%22%20stroke-width%3D%223.5%22%2F%3E%3Ccircle%20cx%3D%2248%22%20cy%3D%2248%22%20r%3D%2239%22%20fill%3D%22none%22%20stroke%3D%22%2338BDF8%22%20stroke-opacity%3D%220.32%22%20stroke-width%3D%221.2%22%2F%3E%3Ctext%20x%3D%2248%22%20y%3D%2256%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22800%22%20font-size%3D%2228%22%20fill%3D%22%23BAE6FD%22%3E%D7%A0%D7%A2%3C%2Ftext%3E%3C%2Fsvg%3E",
       "role": "SCOUT_SUPPORT",
       "enabled": true,
-      "connectionStatus": "LIVE_ROOM_DEPLOYED",
+      "connectionStatus": "DISCONNECTED_NO_AUTH",
       "hasServerTikTokAuth": false,
+      "isTrulyConnected": false,
+      "lastConnectionErrorHe": null,
       "deployedRoomHandle": "q39p._",
       "deployedRoomLive": false,
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "selectedForChatCrew": false,
+      "assignedCrewRole": null,
+      "verifiedChannel": "NONE",
+      "lastVerifiedAtTs": null,
       "trainingLevel": 87,
-      "trainedSkillSummaryHe": "שיח דו-שיחי טבעי עם שאר המנחים והנעת שיתופי לייב להבאת צופים חדשים",
+      "trainedSkillSummaryHe": "נכנס בסוף הגל ומשאיר משפט סקרנות פתוח לצופים חדשים מהפור-יו כדי שהשיחה תמשיך",
       "trainedLinesHe": [
-        "שיתפתי עכשיו ל-3 חברים, בואו נביא עוד גל צופים מהפור-יו לתוך הקרב!",
-        "לגמרי, רואים שהמומנטום עובר אלינו — רק להמשיך לשתף ולהקיש!",
-        "מי שעוד לא עשה עוקב לשידור זה הזמן, הולך להיות פה סיום מטורף!"
+        "חכו חכו מי שנכנס עכשיו מהפור-יו עוד לא מבין איזה מהפך מתבשל פה בדקה האחרונה...",
+        "רגע נכנסתי לפני דקה — זה כבר ניצחון שלישי ברצף שלנו הערב או שאני מתבלבל?",
+        "חחח הצ׳אט חצוי לגמרי, חכו תראו מה יקרה ברגע שתיפתח הכפפה הראשונה..."
       ],
       "lastOrderHe": null,
       "externalWebhookOrWsTag": "tiktok-mod-slot-6",
-      "toneNotesHe": "משלים שיחה טבעית מול שאר המנחים כדי לייצר תחושת קהילה חיה ומניע שיתופים ועוקבים.",
-      "messagesDispatched": 2,
+      "toneNotesHe": "תפקיד #6 בשרשרת: לעולם לא סוגר נושא — זורק קליפהאנגר או שאלת ספק שפותחת גל תגובות נוסף.",
+      "messagesDispatched": 0,
       "moderationsTriggered": 0
     }
   ],
   "autoScripts": [
     {
-      "id": "mscript_whale_1",
-      "nameHe": "תסריט מתנת לווייתן / VIP — פרגון מיידי והרמת לבבות",
-      "descriptionHe": "מופעל אוטומטית כשמתקבלת מתנה גדולה בלייב ומחלק תגובה טבעית בין סלוט #4 לסלוט #2.",
+      "id": "mscript_chain_v2_1",
+      "nameHe": "שיטת \"הוויכוח הידידותי 50/50\" (פינג-פונג שסוחף קהל)",
+      "descriptionHe": "במקום לבקש תגובות — שני חשבונות מתווכחים בחיוך על מהלך בלייב והקהל נכנס להכריע (25–45 שניות של שיחה מתגלגלת + הצבעות של צופים אמיתיים)",
+      "enabled": true,
+      "triggerEventType": "LIKE_BURST",
+      "minNumericValue": 0,
+      "cooldownSec": 26,
+      "steps": [
+        {
+          "id": "ms_v2_1_1",
+          "slotNumber": 1,
+          "delaySec": 0,
+          "messageTemplateHe": "בכנות תגידו רגע — עדיף לפתוח פער על ההתחלה להלחיץ אותו או לשחק פני פוקר עד השנייה האחרונה?",
+          "roleActionWhyHe": "זורק דילמה חצויה"
+        },
+        {
+          "id": "ms_v2_1_2",
+          "slotNumber": 2,
+          "delaySec": 3.6,
+          "messageTemplateHe": "פני פוקר קל!! פעם שעברה שפתחנו מוקדם הוא התעורר עלינו בדקה האחרונה חחח מה אתה אומר סתם",
+          "roleActionWhyHe": "חולקת עליו בחיוך"
+        },
+        {
+          "id": "ms_v2_1_3",
+          "slotNumber": 3,
+          "delaySec": 7.4,
+          "messageTemplateHe": "תסתכלו על הפנים שלו אבל, כל פעם שהסקור זז הוא בודק את הצ׳אט שלו מרוב לחץ",
+          "roleActionWhyHe": "מוסיף זווית על היריב"
+        },
+        {
+          "id": "ms_v2_1_4",
+          "slotNumber": 5,
+          "delaySec": 11.2,
+          "messageTemplateHe": "יאללה הצ׳אט מחליט עכשיו: 1 = מרדימים אותו עד הסוף, 2 = שוברים אותו מעכשיו! תכתבו!",
+          "roleActionWhyHe": "פותח הצבעה מהירה"
+        },
+        {
+          "id": "ms_v2_1_5",
+          "slotNumber": 4,
+          "delaySec": 15,
+          "messageTemplateHe": "{{USER}} מה אומר אחי? אתה בצד של ה-1 השקטים או 2 בכל הכוח?",
+          "roleActionWhyHe": "מושכת צופה בשם להכריע"
+        },
+        {
+          "id": "ms_v2_1_6",
+          "slotNumber": 6,
+          "delaySec": 19,
+          "messageTemplateHe": "חחח הצ׳אט חצוי לגמרי, חכו תראו מה יקרה ברגע שתיפתח הכפפה הראשונה...",
+          "roleActionWhyHe": "משאיר מתח פתוח"
+        }
+      ],
+      "triggeredCount": 0,
+      "lastTriggeredTs": 0,
+      "lastTriggeredSummaryHe": null
+    },
+    {
+      "id": "mscript_chain_v2_2",
+      "nameHe": "שיטת \"פיתיון התיקון\" (שאלה תמימה שכולם קופצים לענות לה)",
+      "descriptionHe": "חשבון אחד \"מתבלבל\" בפרט קטן מהלייב — וצופים שקטים מתעוררים מיד לתקן אותו (30+ שניות של תיקונים, תשובות והתערבות צופים שקטים)",
+      "enabled": true,
+      "triggerEventType": "FOLLOW_NEW",
+      "minNumericValue": 0,
+      "cooldownSec": 26,
+      "steps": [
+        {
+          "id": "ms_v2_2_1",
+          "slotNumber": 6,
+          "delaySec": 0,
+          "messageTemplateHe": "רגע נכנסתי לפני דקה — זה כבר ניצחון שלישי ברצף שלנו הערב או שאני מתבלבל?",
+          "roleActionWhyHe": "זורק שאלה \"מבולבלת\""
+        },
+        {
+          "id": "ms_v2_2_2",
+          "slotNumber": 2,
+          "delaySec": 3.4,
+          "messageTemplateHe": "נראה לי רביעי אפילו לא?? מישהו שהיה פה מההתחלה זוכר כמה עשינו מול הקודם?",
+          "roleActionWhyHe": "מגבירה את הספק"
+        },
+        {
+          "id": "ms_v2_2_3",
+          "slotNumber": 1,
+          "delaySec": 7.2,
+          "messageTemplateHe": "הקודם נגמר בסנייפ של השנייה האחרונה, זה הסיבוב שקובע אם שומרים על הרצף",
+          "roleActionWhyHe": "מתקן חלקית ופותח דיון"
+        },
+        {
+          "id": "ms_v2_2_4",
+          "slotNumber": 4,
+          "delaySec": 11,
+          "messageTemplateHe": "כל מי שהיה פה בסיבוב הקודם תאשרו לנו רגע בצ׳אט — כמה נגמר בסוף?",
+          "roleActionWhyHe": "פונה לוותיקים ולמצטרפים"
+        },
+        {
+          "id": "ms_v2_2_5",
+          "slotNumber": 5,
+          "delaySec": 15,
+          "messageTemplateHe": "לא משנה כמה היה — אם סוגרים גם את זה ב-2 דקות הקרובות זה רצף משוגע, תישארו לראות!",
+          "roleActionWhyHe": "מחבר למומנטום הנוכחי"
+        }
+      ],
+      "triggeredCount": 0,
+      "lastTriggeredTs": 0,
+      "lastTriggeredSummaryHe": null
+    },
+    {
+      "id": "mscript_chain_v2_3",
+      "nameHe": "שיטת \"קליפהאנגר פור-יו\" (עצירת צופים חדשים מסקרנות)",
+      "descriptionHe": "יוצרים בצ׳אט תחושה שקרה עכשיו משהו מטורף ושומרים סוד לדקה האחרונה (זינוק בזמן שהייה (Watch Time) + שאלות סקרנות מצופים חדשים)",
+      "enabled": true,
+      "triggerEventType": "SHARE_SPIKE",
+      "minNumericValue": 0,
+      "cooldownSec": 26,
+      "steps": [
+        {
+          "id": "ms_v2_3_1",
+          "slotNumber": 2,
+          "delaySec": 0,
+          "messageTemplateHe": "יואו לא מאמינה שהוא באמת לקח את האתגר הזה עכשיו חחח הולך להיות פה בלאגן",
+          "roleActionWhyHe": "פותחת תגובת הפתעה"
+        },
+        {
+          "id": "ms_v2_3_2",
+          "slotNumber": 3,
+          "delaySec": 3.5,
+          "messageTemplateHe": "ששש אל תכתבו בצ׳אט מה המתנה של הסוף, שהצד השני לא יקלוט לפני ה-30 שניות!",
+          "roleActionWhyHe": "יוצר מסתורין בצ׳אט"
+        },
+        {
+          "id": "ms_v2_3_3",
+          "slotNumber": 6,
+          "delaySec": 7.5,
+          "messageTemplateHe": "וואי כל מי שנכנס עכשיו מהפור-יו נפל בדיוק על הדקה הכי מתוחה של הלילה",
+          "roleActionWhyHe": "מדליק את המצטרפים החדשים"
+        },
+        {
+          "id": "ms_v2_3_4",
+          "slotNumber": 4,
+          "delaySec": 11.5,
+          "messageTemplateHe": "מי פה פעם ראשונה בשידור של {{ROOM}}? תרשמו \"אני\" תכף תבינו על מה כולם מדברים!",
+          "roleActionWhyHe": "מזמינה חדשים להגיב"
+        },
+        {
+          "id": "ms_v2_3_5",
+          "slotNumber": 1,
+          "delaySec": 15.5,
+          "messageTemplateHe": "רק לשמור על הקצב על המסך בשקט עוד דקה אחת... תראו לבד מה יקרה",
+          "roleActionWhyHe": "מחזיק את המתח פתוח"
+        }
+      ],
+      "triggeredCount": 0,
+      "lastTriggeredTs": 0,
+      "lastTriggeredSummaryHe": null
+    },
+    {
+      "id": "mscript_chain_v2_4",
+      "nameHe": "שיטת \"הכתרת התומך/הצופה למוביל המהלך\" (פרגון שגורר שיחה)",
+      "descriptionHe": "במקום \"תודה\" גנרית שסוגרת עניין — בונים סביב התומך דיון שלם שמדליק עוד תומכים (מעורבות ישירה של תומכי VIP + הכפלת סיכוי למתנת המשך)",
       "enabled": true,
       "triggerEventType": "WHALE_GIFT",
       "minNumericValue": 100,
-      "cooldownSec": 20,
+      "cooldownSec": 26,
       "steps": [
         {
-          "id": "ms_w_1",
+          "id": "ms_v2_4_1",
           "slotNumber": 4,
-          "delaySec": 0.8,
-          "messageTemplateHe": "כבוד ענק ל-{{USER}} על {{GIFT}} ({{VALUE}} יהלומים)! תודה שאתה מרים את כל החדר!"
+          "delaySec": 0.6,
+          "messageTemplateHe": "עצרו הכל רגע — ראיתם את הטיימינג של {{USER}} עם ה-{{GIFT}}?! איזו כניסה מדויקת!",
+          "roleActionWhyHe": "פותחת בכבוד חד לתומך"
         },
         {
-          "id": "ms_w_2",
+          "id": "ms_v2_4_2",
+          "slotNumber": 1,
+          "delaySec": 4,
+          "messageTemplateHe": "{{USER}} שינית את כל התמונה של הסיבוב אחי, מה אומר — לוחצים עכשיו או שומרים עוד מכה לסוף?",
+          "roleActionWhyHe": "נותן לתומך סמכות בצ׳אט"
+        },
+        {
+          "id": "ms_v2_4_3",
           "slotNumber": 2,
-          "delaySec": 4.2,
-          "messageTemplateHe": "כולם בצ׳אט לפרגן ל-{{USER}} בלבבות — איזו תמיכה מטורפת ב-{{ROOM}}!"
+          "delaySec": 7.8,
+          "messageTemplateHe": "איך היריב החליף צבע בשנייה ש-{{USER}} נכנס חחח כולם בצ׳אט להרים לו על המהלך הזה!",
+          "roleActionWhyHe": "מדליקה את הקהל סביבו"
+        },
+        {
+          "id": "ms_v2_4_4",
+          "slotNumber": 5,
+          "delaySec": 11.8,
+          "messageTemplateHe": "חברים לא משאירים את {{USER}} לבד במערכה — כל צופה נותן גיבוי בהקשות ותגובה בצ׳אט עכשיו!",
+          "roleActionWhyHe": "מגייס את הקהל החינמי להשלים"
+        },
+        {
+          "id": "ms_v2_4_5",
+          "slotNumber": 6,
+          "delaySec": 15.8,
+          "messageTemplateHe": "מי מצטרף ל-{{USER}} בראש הטבלה של הסיבוב הזה לפני שנסגר השעון?",
+          "roleActionWhyHe": "פותח אתגר לתומך הבא"
         }
       ],
       "triggeredCount": 0,
@@ -180,51 +407,48 @@
       "lastTriggeredSummaryHe": null
     },
     {
-      "id": "mscript_glove_2",
-      "nameHe": "תסריט פתיחת כפפה x5 — קריאת 5 שניות ראשונות והקשות",
-      "descriptionHe": "מופעל ברגע שזוהתה פתיחת כפפת בוסט (Glove x5) כדי למצות את חלון ה-30 שניות.",
-      "enabled": true,
-      "triggerEventType": "GLOVE_OPENED",
-      "minNumericValue": 0,
-      "cooldownSec": 28,
-      "steps": [
-        {
-          "id": "ms_g_1",
-          "slotNumber": 1,
-          "delaySec": 0,
-          "messageTemplateHe": "כפפה פתוחה 30 שניות עכשיו! כל מתנה קטנה או ורד ב-5 שניות הראשונות תופסת מכפיל x5!"
-        },
-        {
-          "id": "ms_g_2",
-          "slotNumber": 5,
-          "delaySec": 3.8,
-          "messageTemplateHe": "כולם אצבעות על המסך בהקשות כפולות בזמן הכפפה — כל נקודה שווה פי 5!"
-        }
-      ],
-      "triggeredCount": 1,
-      "lastTriggeredTs": 1794748300385,
-      "lastTriggeredSummaryHe": "הופעל ע״י אלמוג_VIP (2 הודעות מתוזמנות)"
-    },
-    {
-      "id": "mscript_cloud_3",
-      "nameHe": "תסריט זיהוי ענן יריב — הרגעת קהל והכנת סנייפ",
-      "descriptionHe": "מופעל ברגע שרדאר ה-X-Ray מזהה שהיריב פתח ענן ערפל שמסתיר את הסקור.",
+      "id": "mscript_chain_v2_5",
+      "nameHe": "שיטת \"מבצע שקט מתחת לענן / כפפה\" (הפיכת אירוע קרב לדרמה)",
+      "descriptionHe": "כשהיריב פותח ענן או נפתחת כפפה x5 — מתאמים \"מבצע חשאי\" שגורם לכל הצ׳אט לדווח חי (שמירה על רצף תגובות מלא לאורך כל 30 שניות הענן/הכפפה)",
       "enabled": true,
       "triggerEventType": "OPPONENT_CLOUD",
       "minNumericValue": 0,
-      "cooldownSec": 25,
+      "cooldownSec": 26,
       "steps": [
         {
-          "id": "ms_c_1",
+          "id": "ms_v2_5_1",
           "slotNumber": 1,
-          "delaySec": 0.5,
-          "messageTemplateHe": "היריב פתח ענן כי הוא בלחץ! לא לעצור הקשות — אנחנו עוקבים אחרי הסקור האמיתי!"
+          "delaySec": 0.4,
+          "messageTemplateHe": "חחח הוא פתח ענן הסתרה מרוב לחץ! אל תגלו לו שאנחנו רואים את הקצב האמיתי מהצד",
+          "roleActionWhyHe": "חושף שהענן נפתח מפחד"
         },
         {
-          "id": "ms_c_2",
+          "id": "ms_v2_5_2",
+          "slotNumber": 3,
+          "delaySec": 3.8,
+          "messageTemplateHe": "שקט תעשייתי חברים, מתחת לענן כל נקודה שלנו כואבת לו כפול כשהענן יתפזר!",
+          "roleActionWhyHe": "בונה אחוות חדר סודית"
+        },
+        {
+          "id": "ms_v2_5_3",
+          "slotNumber": 2,
+          "delaySec": 7.6,
+          "messageTemplateHe": "איזה פרצוף הולך להיות לו עוד 15 שניות כשהמספרים ייחשפו על המסך יואוו",
+          "roleActionWhyHe": "מכניסה הומור ומתח"
+        },
+        {
+          "id": "ms_v2_5_4",
+          "slotNumber": 5,
+          "delaySec": 11.4,
+          "messageTemplateHe": "מי שעובד איתנו עכשיו מתחת לענן שיכתוב \"בפנים\" ויתן 30 הקשות מהירות עד שמתבהר!",
+          "roleActionWhyHe": "מפעיל ספירת הקשות בערפל"
+        },
+        {
+          "id": "ms_v2_5_5",
           "slotNumber": 6,
-          "delaySec": 4.5,
-          "messageTemplateHe": "ממשיכים לצבור נקודות בשקט מתחת לענן ושומרים את המכה החזקה ל-8 שניות אחרונות!"
+          "delaySec": 15.5,
+          "messageTemplateHe": "להיות מוכנים על הכפתור ברגע שהענן יורד — שם סוגרים את הסיפור בבום!",
+          "roleActionWhyHe": "מכין את הקליימקס לסנייפ"
         }
       ],
       "triggeredCount": 0,
@@ -232,77 +456,48 @@
       "lastTriggeredSummaryHe": null
     },
     {
-      "id": "mscript_speed_4",
-      "nameHe": "תסריט משימת מהירות (Battle Task) — גל הקשות מתואם",
-      "descriptionHe": "מופעל כשטיקטוק פותחת משימת מהירות על המסך לנקודות בונוס חינם.",
+      "id": "mscript_chain_v2_6",
+      "nameHe": "שיטת \"מדרגת 7 התגובות\" (משימת מיקרו קטנטנה שמציתה גל)",
+      "descriptionHe": "כשיש שקט מוחלט בחדר — מבקשים יעד זעיר ומדויק וסופרים אחורה בלייב (שובר שתיקה תוך 8 שניות ומעלה מהירות צ׳אט מ-0 ל-15+ הודעות בדקה)",
       "enabled": true,
       "triggerEventType": "BATTLE_SPEED_TASK",
       "minNumericValue": 0,
-      "cooldownSec": 30,
+      "cooldownSec": 26,
       "steps": [
         {
-          "id": "ms_s_1",
+          "id": "ms_v2_6_1",
           "slotNumber": 5,
-          "delaySec": 0.5,
-          "messageTemplateHe": "נפתחה משימת מהירות על המסך! כל צופה נותן עכשיו 30 הקשות מהירות לנקודות בונוס!"
-        },
-        {
-          "id": "ms_s_2",
-          "slotNumber": 6,
-          "delaySec": 4,
-          "messageTemplateHe": "עוד טיפה ואנחנו סוגרים את היעד לפני היריב — שתפו לחבר ותקישו יחד!"
-        }
-      ],
-      "triggeredCount": 0,
-      "lastTriggeredTs": 0,
-      "lastTriggeredSummaryHe": null
-    },
-    {
-      "id": "mscript_snipe_5",
-      "nameHe": "תסריט 30 שניות אחרונות (חלון סנייפ) — נעילת ניצחון",
-      "descriptionHe": "מופעל אוטומטית בכניסה ל-30 השניות האחרונות של סיבוב הקרב.",
-      "enabled": true,
-      "triggerEventType": "SNIPE_WINDOW_30S",
-      "minNumericValue": 0,
-      "cooldownSec": 40,
-      "steps": [
-        {
-          "id": "ms_sn_1",
-          "slotNumber": 1,
           "delaySec": 0,
-          "messageTemplateHe": "30 שניות לסיום הקרב! להכין סנייפ מדויק ב-8 שניות אחרונות — לא לחשוף מוקדם!"
+          "messageTemplateHe": "בדיקה אמיתית ל-15 שניות: נראה אם יש פה 7 אנשים ערים שיכולים לכתוב מילה אחת — מאיזה אזור אתם בארץ?",
+          "roleActionWhyHe": "מציב יעד קטן וקל להשגה"
         },
         {
-          "id": "ms_sn_2",
+          "id": "ms_v2_6_2",
           "slotNumber": 2,
-          "delaySec": 4,
-          "messageTemplateHe": "כל החדר על המסך בשניות ההכרעה — בואו ניקח את הסיבוב הזה ביחד!"
-        }
-      ],
-      "triggeredCount": 0,
-      "lastTriggeredTs": 0,
-      "lastTriggeredSummaryHe": null
-    },
-    {
-      "id": "mscript_troll_6",
-      "nameHe": "תסריט בלימת טרול / ספאם — הצפה חיובית דו-שלבית",
-      "descriptionHe": "מופעל כשמגן הצ׳אט מזהה הודעה מורידת מורל מהחדר היריב או קישור ספאם.",
-      "enabled": true,
-      "triggerEventType": "TROLL_OR_SPAM_CHAT",
-      "minNumericValue": 0,
-      "cooldownSec": 18,
-      "steps": [
-        {
-          "id": "ms_tr_1",
-          "slotNumber": 3,
-          "delaySec": 0.4,
-          "messageTemplateHe": "רק אנרגיות טובות בחדר שלנו — כולם להציף לבבות ולהתרכז בניצחון!"
+          "delaySec": 3.2,
+          "messageTemplateHe": "מרכז פה וערה כמו אמצע היום חחח נראה אם הצפון או הדרום לוקחים היום בצ׳אט!",
+          "roleActionWhyHe": "שוברת את הקרח ראשונה"
         },
         {
-          "id": "ms_tr_2",
+          "id": "ms_v2_6_3",
+          "slotNumber": 6,
+          "delaySec": 6.8,
+          "messageTemplateHe": "בדוק שהדרום ברוב הערב, כל לייב לילי הדרום משתלטים על התגובות",
+          "roleActionWhyHe": "מצטרף לתחרות אזורים"
+        },
+        {
+          "id": "ms_v2_6_4",
           "slotNumber": 4,
-          "delaySec": 3.2,
-          "messageTemplateHe": "הקהילה פה הכי חזקה שיש, ממשיכים דאבל טאפ על המסך בלי לעצור!"
+          "delaySec": 10.6,
+          "messageTemplateHe": "אין מצב שנתתם לדרום לקחת ככה בקלות חחח איפה כל השאר בצ׳אט?",
+          "roleActionWhyHe": "מזמינה את השקטים להוכיח"
+        },
+        {
+          "id": "ms_v2_6_5",
+          "slotNumber": 1,
+          "delaySec": 14.5,
+          "messageTemplateHe": "אוהב שהצ׳אט התעורר ככה — לשמור את אותו קצב גם על המסך עכשיו!",
+          "roleActionWhyHe": "מחבר חזרה לאנרגיית הקרב"
         }
       ],
       "triggeredCount": 0,
@@ -312,272 +507,60 @@
   ],
   "learnedPatterns": [
     {
-      "id": "cpat_glove_1",
-      "moment": "GLOVE_X5_PUSH",
-      "role": "TACTICAL_SNIPE",
-      "sourceStreamHe": "נלמד ממנחי באטלים מובילים",
-      "whatObservedHe": "מנחה מלווה לא כותב סתם \"תזרקו\" — הוא מבקש להכין ורדים/מתנות קטנות ב-5 השניות הראשונות של הכפפה כדי לפתוח מכפיל x5.",
+      "id": "cpat_debate_1",
+      "moment": "DEAD_AIR_ICEBREAKER",
+      "role": "VIBE_HYPE",
+      "sourceStreamHe": "שיטת הוויכוח הידידותי 50/50",
+      "whatObservedHe": "סיסמאות של מנחה (\"תרימו את הצ׳אט\") מקבלות 0 מענה. כשחשבון #1 זורק דילמה וחשבון #2 חולק עליו בחיוך, הקהל קופץ להכריע מי צודק.",
       "hebrewLines": [
-        "כפפה פתוחה 30 שניות!! כולם לזרוק אפילו ורד אחד עכשיו לתפוס מכפיל x5! 🥊🔥",
-        "חלון x5 באוויר! כל לחיצה וכל מתנה קטנה עכשיו שווה פי 5 — בואו נפתח פער!"
+        "עדיף לפתוח פער על ההתחלה להלחיץ אותו או לשחק פני פוקר עד השנייה האחרונה?",
+        "פני פוקר קל!! פעם שעברה שפתחנו מוקדם הוא התעורר בדקה האחרונה חחח"
       ],
-      "effectivenessScore": 96,
+      "effectivenessScore": 98,
       "autoDispatchEnabled": true,
-      "usedCount": 3,
-      "updatedAtTs": 1794743454839
+      "usedCount": 0,
+      "updatedAtTs": 1794759553930
     },
     {
       "id": "cpat_cloud_2",
       "moment": "CLOUD_DEFENSE",
       "role": "TACTICAL_SNIPE",
-      "sourceStreamHe": "נלמד מהגנות ענן בזירות PK",
-      "whatObservedHe": "כשהיריב פותח ענן הסתרת סקור, הקהל נוטה לקפוא מחוסר ודאות. מנחה חזק מרגיע מיד ומכוון לשמירת תחמושת לסנייפ.",
+      "sourceStreamHe": "שיטת מבצע חשאי מתחת לענן",
+      "whatObservedHe": "כשהיריב פותח ענן, הופכים את הלחץ לסיפור ש\"הוא מפחד מאיתנו\" ומבקשים מהקהל לכתוב \"בפנים\" תוך כדי הקשות שקטות.",
       "hebrewLines": [
-        "היריב פתח ענן כי הוא בלחץ! אנחנו רואים את הסקור האמיתי — להמשיך דאבל טאפ ולשמור סנייפ ל-8 שניות אחרונות! 🎯⚡",
-        "לא לעצור בגלל הענן חברים! כל נקודה נספרת עכשיו בשקט — תנו עבודה על המסך!"
+        "חחח הוא פתח ענן הסתרה מרוב לחץ! אל תגלו לו שאנחנו רואים את הקצב האמיתי מהצד",
+        "מי שעובד איתנו עכשיו מתחת לענן שיכתוב \"בפנים\" ויתן 30 הקשות עד שמתבהר!"
       ],
-      "effectivenessScore": 95,
+      "effectivenessScore": 96,
       "autoDispatchEnabled": true,
-      "usedCount": 2,
-      "updatedAtTs": 1794743464839
+      "usedCount": 0,
+      "updatedAtTs": 1794759563930
     },
     {
-      "id": "cpat_deadair_3",
-      "moment": "DEAD_AIR_ICEBREAKER",
-      "role": "VIBE_HYPE",
-      "sourceStreamHe": "נלמד ממרימי אווירה בלייבים",
-      "whatObservedHe": "ברגע שהצ׳אט מאט ל-15 שניות, שאלת מיקרו קצרה (מאיפה צופים / דירוג 1-10) מקפיצה את האלגוריתם של טיקטוק פי 3.",
-      "hebrewLines": [
-        "בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב? תכתבו! 👇🔥",
-        "כל מי שאיתנו בחדר תנו \"1\" בצ׳אט ושיתוף אחד לחבר, בואו נראה כמה כוח יש פה הערב! 🚀"
-      ],
-      "effectivenessScore": 91,
-      "autoDispatchEnabled": true,
-      "usedCount": 4,
-      "updatedAtTs": 1794743474839
-    },
-    {
-      "id": "cpat_shield_4",
-      "moment": "ANTI_TROLL_SHIELD",
-      "role": "MOD_SHIELD",
-      "sourceStreamHe": "נלמד ממודרטורים בזירות תחרותיות",
-      "whatObservedHe": "כשנכנסים צופים של היריב להוריד מורל, לא עונים להם ישירות (זה מעלה להם חשיפה) — מסמנים להשתקה ומציפים מיד 2 שורות חיוביות.",
-      "hebrewLines": [
-        "רק אנרגיות טובות בחדר שלנו 👑 כולם להציף לבבות כתומים בצ׳אט ולדחוף קדימה! 🧡🔥",
-        "המשפחה פה הכי חזקה שיש — מתרכזים אך ורק בניצחון ובדאבל טאפ על המסך! 💪✨"
-      ],
-      "effectivenessScore": 94,
-      "autoDispatchEnabled": true,
-      "usedCount": 3,
-      "updatedAtTs": 1794743484839
-    },
-    {
-      "id": "cpat_vip_5",
+      "id": "cpat_vip_3",
       "moment": "VIP_THANK_YOU",
       "role": "WELCOME_VIP",
-      "sourceStreamHe": "נלמד מחדרי VIP במפרץ ובישראל",
-      "whatObservedHe": "אזכור שם התומך בצ׳אט תוך 2 שניות מהמתנה גורם ל-40% יותר מתנות המשך באותו סיבוב.",
+      "sourceStreamHe": "שיטת הכתרת התומך למוביל הטקטיקה",
+      "whatObservedHe": "במקום \"תודה ל-X\" שסוגר את הנושא, שואלים את התומך בשמו מה המהלך הבא לדעתו — הוא עונה בצ׳אט ונשאר לעוד סיבובים.",
       "hebrewLines": [
-        "כבוד ענק ל-{{USER}} על התמיכה המטורפת!! כולם לפרגן לו בלבבות בצ׳אט! 👑🔥",
-        "איזו כניסה מלכותית של {{USER}}! מרים את כל החדר באוויר 🙌💎"
+        "עצרו הכל רגע — ראיתם את הטיימינג של {{USER}}?! שינית את כל התמונה אחי!",
+        "{{USER}} אתה קובע עכשיו: לוחצים עליו מעכשיו או שומרים עוד מכה לשנייה ה-8?"
       ],
-      "effectivenessScore": 93,
+      "effectivenessScore": 97,
       "autoDispatchEnabled": true,
-      "usedCount": 3,
-      "updatedAtTs": 1794743494839
+      "usedCount": 0,
+      "updatedAtTs": 1794759573930
     }
   ],
   "commanderBrain": {
     "autonomousBrainEnabled": true,
-    "activeTargetRoom": "q39p._",
+    "activeTargetRoom": "boostera_demo_live",
     "activeTargetRoomLive": false,
-    "currentDirectiveHe": "חלון 30 שניות אחרונות לקרב — קראו לסנייפ מדויק ולסגירת פער",
-    "brainStatusHe": "הפקודה הושלמה בחדר @q39p._ · עוקב אחר הצ׳אט החי",
+    "currentDirectiveHe": "מוח הרצת צ׳אט ארוך — מנהל אוטומטית את חשבונות ה-TikTok שנבחרו לצוות המנחים מול מערכת הטלפונים והלייב הפעיל",
+    "brainStatusHe": "בחר 3–4 חשבונות TikTok בדשבורד ושייך אותם ללייב · כל שדות החיבור אופציונליים ואינם חוסמים את BOOSTERA",
     "trainingSessionsCount": 1,
-    "lastTrainedAtTs": 1794746242575,
-    "lastTrainingSummaryHe": "6 המנחים אומנו על תזמון כפפה x5, הרגעת קהל בענן יריב, הנעת משימת מהירות, פרגון VIP וסינון טרולים.",
-    "recentOrders": [
-      {
-        "id": "brain_ord_1794748040358_129",
-        "ts": 1794748040358,
-        "source": "AUTONOMOUS_BRAIN",
-        "commandHe": "חלון 30 שניות אחרונות לקרב — קראו לסנייפ מדויק ולסגירת פער",
-        "brainReasoningHe": "תיאום מדורג אוטומטי בין המנחים הפעילים על בסיס הפלייבוק המאומן.",
-        "targetRoom": "q39p._",
-        "steps": [
-          {
-            "stepIndex": 1,
-            "accountId": "comp_tactical_1",
-            "accountHandle": "kobi_pk_commander",
-            "accountDisplayName": "קובי · קצין קרב וסנייפ",
-            "role": "TACTICAL_SNIPE",
-            "delaySec": 0,
-            "lineHe": "כפפה באוויר 30 שניות — כל ורד קטן עכשיו תופס מכפיל x5, כולם ביחד!",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד TACTICAL_SNIPE",
-            "status": "SENT",
-            "sentAtTs": 1794748040362
-          },
-          {
-            "stepIndex": 2,
-            "accountId": "comp_hype_2",
-            "accountHandle": "maya_vibe_boost",
-            "accountDisplayName": "מאיה · הרמת אווירה וצ׳אט",
-            "role": "VIBE_HYPE",
-            "delaySec": 2.6,
-            "lineHe": "בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב?",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד VIBE_HYPE",
-            "status": "SENT",
-            "sentAtTs": 1794748042962
-          },
-          {
-            "stepIndex": 3,
-            "accountId": "comp_shield_3",
-            "accountHandle": "ori_room_shield",
-            "accountDisplayName": "אורי · מגן חדר וניקוי רעשים",
-            "role": "MOD_SHIELD",
-            "delaySec": 5.2,
-            "lineHe": "מתרכזים אך ורק בניצחון שלנו — להציף לבבות כתומים בצ׳אט ולדחוף קדימה!",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד MOD_SHIELD",
-            "status": "SENT",
-            "sentAtTs": 1794748045561
-          }
-        ]
-      },
-      {
-        "id": "brain_ord_1794747800900_81",
-        "ts": 1794747800900,
-        "source": "AUTONOMOUS_BRAIN",
-        "commandHe": "חלון 30 שניות אחרונות לקרב — קראו לסנייפ מדויק ולסגירת פער",
-        "brainReasoningHe": "תיאום מדורג אוטומטי בין המנחים הפעילים על בסיס הפלייבוק המאומן.",
-        "targetRoom": "q39p._",
-        "steps": [
-          {
-            "stepIndex": 1,
-            "accountId": "comp_tactical_1",
-            "accountHandle": "kobi_pk_commander",
-            "accountDisplayName": "קובי · קצין קרב וסנייפ",
-            "role": "TACTICAL_SNIPE",
-            "delaySec": 0,
-            "lineHe": "כפפה באוויר 30 שניות — כל ורד קטן עכשיו תופס מכפיל x5, כולם ביחד!",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד TACTICAL_SNIPE",
-            "status": "SENT",
-            "sentAtTs": 1794747800904
-          },
-          {
-            "stepIndex": 2,
-            "accountId": "comp_hype_2",
-            "accountHandle": "maya_vibe_boost",
-            "accountDisplayName": "מאיה · הרמת אווירה וצ׳אט",
-            "role": "VIBE_HYPE",
-            "delaySec": 2.6,
-            "lineHe": "בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב?",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד VIBE_HYPE",
-            "status": "SENT",
-            "sentAtTs": 1794747803503
-          },
-          {
-            "stepIndex": 3,
-            "accountId": "comp_shield_3",
-            "accountHandle": "ori_room_shield",
-            "accountDisplayName": "אורי · מגן חדר וניקוי רעשים",
-            "role": "MOD_SHIELD",
-            "delaySec": 5.2,
-            "lineHe": "מתרכזים אך ורק בניצחון שלנו — להציף לבבות כתומים בצ׳אט ולדחוף קדימה!",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד MOD_SHIELD",
-            "status": "SENT",
-            "sentAtTs": 1794747806103
-          }
-        ]
-      },
-      {
-        "id": "brain_ord_1794747560542_33",
-        "ts": 1794747560542,
-        "source": "AUTONOMOUS_BRAIN",
-        "commandHe": "חלון 30 שניות אחרונות לקרב — קראו לסנייפ מדויק ולסגירת פער",
-        "brainReasoningHe": "תיאום מדורג אוטומטי בין המנחים הפעילים על בסיס הפלייבוק המאומן.",
-        "targetRoom": "q39p._",
-        "steps": [
-          {
-            "stepIndex": 1,
-            "accountId": "comp_tactical_1",
-            "accountHandle": "kobi_pk_commander",
-            "accountDisplayName": "קובי · קצין קרב וסנייפ",
-            "role": "TACTICAL_SNIPE",
-            "delaySec": 0,
-            "lineHe": "כפפה באוויר 30 שניות — כל ורד קטן עכשיו תופס מכפיל x5, כולם ביחד!",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד TACTICAL_SNIPE",
-            "status": "SENT",
-            "sentAtTs": 1794747560546
-          },
-          {
-            "stepIndex": 2,
-            "accountId": "comp_hype_2",
-            "accountHandle": "maya_vibe_boost",
-            "accountDisplayName": "מאיה · הרמת אווירה וצ׳אט",
-            "role": "VIBE_HYPE",
-            "delaySec": 2.6,
-            "lineHe": "בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב?",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד VIBE_HYPE",
-            "status": "SENT",
-            "sentAtTs": 1794747563145
-          },
-          {
-            "stepIndex": 3,
-            "accountId": "comp_shield_3",
-            "accountHandle": "ori_room_shield",
-            "accountDisplayName": "אורי · מגן חדר וניקוי רעשים",
-            "role": "MOD_SHIELD",
-            "delaySec": 5.2,
-            "lineHe": "מתרכזים אך ורק בניצחון שלנו — להציף לבבות כתומים בצ׳אט ולדחוף קדימה!",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד MOD_SHIELD",
-            "status": "SENT",
-            "sentAtTs": 1794747565745
-          }
-        ]
-      },
-      {
-        "id": "brain_ord_1794746284228_207",
-        "ts": 1794746284228,
-        "source": "USER_COMMAND",
-        "commandHe": "תפתחו שיחה טבעית בין המנחים ותרימו הקשות על המסך",
-        "brainReasoningHe": "תיאום מדורג אוטומטי בין המנחים הפעילים על בסיס הפלייבוק המאומן.",
-        "targetRoom": "q39p._",
-        "steps": [
-          {
-            "stepIndex": 1,
-            "accountId": "comp_tactical_1",
-            "accountHandle": "kobi_pk_commander",
-            "accountDisplayName": "קובי · קצין קרב וסנייפ",
-            "role": "TACTICAL_SNIPE",
-            "delaySec": 0,
-            "lineHe": "כפפה באוויר 30 שניות — כל ורד קטן עכשיו תופס מכפיל x5, כולם ביחד!",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד TACTICAL_SNIPE",
-            "status": "QUEUED"
-          },
-          {
-            "stepIndex": 2,
-            "accountId": "comp_hype_2",
-            "accountHandle": "maya_vibe_boost",
-            "accountDisplayName": "מאיה · הרמת אווירה וצ׳אט",
-            "role": "VIBE_HYPE",
-            "delaySec": 2.6,
-            "lineHe": "בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב?",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד VIBE_HYPE",
-            "status": "QUEUED"
-          },
-          {
-            "stepIndex": 3,
-            "accountId": "comp_shield_3",
-            "accountHandle": "ori_room_shield",
-            "accountDisplayName": "אורי · מגן חדר וניקוי רעשים",
-            "role": "MOD_SHIELD",
-            "delaySec": 5.2,
-            "lineHe": "מתרכזים אך ורק בניצחון שלנו — להציף לבבות כתומים בצ׳אט ולדחוף קדימה!",
-            "tacticalPurposeHe": "ביצוע פקודה מתפקיד MOD_SHIELD",
-            "status": "QUEUED"
-          }
-        ]
-      }
-    ]
+    "lastTrainedAtTs": 1794759583933,
+    "lastTrainingSummaryHe": "נטענו 6 שיטות פסיכולוגיות להארכת צ׳אט בלייב — מתואמות תחת המוח המרכזי והטלפונים המחוברים.",
+    "recentOrders": []
   }
 }

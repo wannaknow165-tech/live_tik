@@ -1,0 +1,677 @@
+{
+  "accounts": [
+    {
+      "id": "TIKTOK_ACCOUNT_1",
+      "labelHe": "חשבון TikTok #1 (מארח שיחה / ראשי)",
+      "tiktokUsername": "kobi_pk_commander",
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "androidProfileId": "0",
+      "storageIsolationMode": "SEPARATE_APPS",
+      "loginStatus": "UNVERIFIED",
+      "identityVerifiedAtTs": null,
+      "liveRole": "IDLE",
+      "permissions": {
+        "canWatchLive": true,
+        "canSendChat": true,
+        "canRequestGuest": true,
+        "canJoinCoHost": true,
+        "canManageBattleMatch": true,
+        "canModerateChat": true,
+        "canManageModerators": true
+      },
+      "activityStatus": "ACTIVE",
+      "isActiveSelected": true,
+      "currentLiveHost": null,
+      "assignedSkillIds": [
+        "tiktok.open",
+        "tiktok.account.switch",
+        "tiktok.live.join_viewer",
+        "tiktok.chat.read",
+        "tiktok.chat.reply",
+        "boostera.effects.trigger",
+        "tiktok.live.request_guest",
+        "tiktok.live.accept_invitation",
+        "tiktok.moderator.manage"
+      ],
+      "actionHistory": []
+    },
+    {
+      "id": "TIKTOK_ACCOUNT_2",
+      "labelHe": "חשבון TikTok #2 (מנהל קהילה / משני)",
+      "tiktokUsername": "maya_vibe_boost",
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "androidProfileId": "10",
+      "storageIsolationMode": "ANDROID_PROFILES",
+      "loginStatus": "UNVERIFIED",
+      "identityVerifiedAtTs": null,
+      "liveRole": "IDLE",
+      "permissions": {
+        "canWatchLive": true,
+        "canSendChat": true,
+        "canRequestGuest": true,
+        "canJoinCoHost": false,
+        "canManageBattleMatch": false,
+        "canModerateChat": true,
+        "canManageModerators": false
+      },
+      "activityStatus": "STANDBY",
+      "isActiveSelected": false,
+      "currentLiveHost": null,
+      "assignedSkillIds": [
+        "tiktok.open",
+        "tiktok.account.switch",
+        "tiktok.live.join_viewer",
+        "tiktok.chat.read",
+        "tiktok.chat.reply",
+        "boostera.effects.trigger",
+        "tiktok.live.match.detect"
+      ],
+      "actionHistory": []
+    },
+    {
+      "id": "TIKTOK_ACCOUNT_3",
+      "labelHe": "חשבון TikTok #3 (אנליסט קרב)",
+      "tiktokUsername": "ori_room_shield",
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "androidProfileId": "11",
+      "storageIsolationMode": "ANDROID_PROFILES",
+      "loginStatus": "UNVERIFIED",
+      "identityVerifiedAtTs": null,
+      "liveRole": "IDLE",
+      "permissions": {
+        "canWatchLive": true,
+        "canSendChat": true,
+        "canRequestGuest": true,
+        "canJoinCoHost": false,
+        "canManageBattleMatch": false,
+        "canModerateChat": true,
+        "canManageModerators": false
+      },
+      "activityStatus": "STANDBY",
+      "isActiveSelected": false,
+      "currentLiveHost": null,
+      "assignedSkillIds": [
+        "tiktok.open",
+        "tiktok.account.switch",
+        "tiktok.live.join_viewer",
+        "tiktok.chat.read",
+        "tiktok.chat.reply",
+        "boostera.effects.trigger",
+        "tiktok.live.match.detect"
+      ],
+      "actionHistory": []
+    },
+    {
+      "id": "TIKTOK_ACCOUNT_4",
+      "labelHe": "חשבון TikTok #4 (מעורבות יצירתית ותוכן)",
+      "tiktokUsername": "shir_vip_hostess",
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "androidProfileId": "12",
+      "storageIsolationMode": "ANDROID_PROFILES",
+      "loginStatus": "UNVERIFIED",
+      "identityVerifiedAtTs": null,
+      "liveRole": "IDLE",
+      "permissions": {
+        "canWatchLive": true,
+        "canSendChat": true,
+        "canRequestGuest": true,
+        "canJoinCoHost": false,
+        "canManageBattleMatch": false,
+        "canModerateChat": true,
+        "canManageModerators": false
+      },
+      "activityStatus": "STANDBY",
+      "isActiveSelected": false,
+      "currentLiveHost": null,
+      "assignedSkillIds": [
+        "tiktok.open",
+        "tiktok.account.switch",
+        "tiktok.live.join_viewer",
+        "tiktok.chat.read",
+        "tiktok.chat.reply",
+        "boostera.effects.trigger",
+        "tiktok.live.match.detect"
+      ],
+      "actionHistory": []
+    },
+    {
+      "id": "TIKTOK_ACCOUNT_5",
+      "labelHe": "חשבון TikTok #5 (עתודה / הצבעות)",
+      "tiktokUsername": "eden_hype_live",
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "androidProfileId": "13",
+      "storageIsolationMode": "ANDROID_PROFILES",
+      "loginStatus": "UNVERIFIED",
+      "identityVerifiedAtTs": null,
+      "liveRole": "IDLE",
+      "permissions": {
+        "canWatchLive": true,
+        "canSendChat": true,
+        "canRequestGuest": true,
+        "canJoinCoHost": false,
+        "canManageBattleMatch": false,
+        "canModerateChat": true,
+        "canManageModerators": false
+      },
+      "activityStatus": "STANDBY",
+      "isActiveSelected": false,
+      "currentLiveHost": null,
+      "assignedSkillIds": [
+        "tiktok.open",
+        "tiktok.account.switch",
+        "tiktok.live.join_viewer",
+        "tiktok.chat.read",
+        "tiktok.chat.reply",
+        "boostera.effects.trigger",
+        "tiktok.live.match.detect"
+      ],
+      "actionHistory": []
+    },
+    {
+      "id": "TIKTOK_ACCOUNT_6",
+      "labelHe": "חשבון TikTok #6 (עתודה / מעקב)",
+      "tiktokUsername": "noam_live_scout",
+      "geelarkDeviceId": null,
+      "appPackageId": "com.zhiliaoapp.musically",
+      "androidProfileId": "14",
+      "storageIsolationMode": "ANDROID_PROFILES",
+      "loginStatus": "UNVERIFIED",
+      "identityVerifiedAtTs": null,
+      "liveRole": "IDLE",
+      "permissions": {
+        "canWatchLive": true,
+        "canSendChat": true,
+        "canRequestGuest": true,
+        "canJoinCoHost": false,
+        "canManageBattleMatch": false,
+        "canModerateChat": true,
+        "canManageModerators": false
+      },
+      "activityStatus": "STANDBY",
+      "isActiveSelected": false,
+      "currentLiveHost": null,
+      "assignedSkillIds": [
+        "tiktok.open",
+        "tiktok.account.switch",
+        "tiktok.live.join_viewer",
+        "tiktok.chat.read",
+        "tiktok.chat.reply",
+        "boostera.effects.trigger",
+        "tiktok.live.match.detect"
+      ],
+      "actionHistory": []
+    }
+  ],
+  "activeAccountId": "TIKTOK_ACCOUNT_1",
+  "skills": [
+    {
+      "id": "tiktok.open",
+      "nameHe": "פתיחת אפליקציית TikTok בטלפון הענן",
+      "descriptionHe": "פותח את חבילת ה-TikTok המשויכת לחשבון הפעיל ומאמת עליית מסך.",
+      "status": "VERIFIED_ACTIVE",
+      "version": 1,
+      "createdFromSequenceId": null,
+      "variables": [
+        {
+          "name": "accountId",
+          "descriptionHe": "חשבון יעד (1 או 2)",
+          "required": true,
+          "defaultValue": "TIKTOK_ACCOUNT_1"
+        }
+      ],
+      "preconditionsHe": [
+        "מכשיר GeeLark מחובר ופעיל",
+        "חבילת האפליקציה מוגדרת לחשבון"
+      ],
+      "successConditionsHe": [
+        "תהליך האפליקציה רץ בחזית המסך ללא הודעת שגיאה"
+      ],
+      "workflowSteps": [
+        {
+          "stepOrder": 1,
+          "operation": "VERIFY_ACCOUNT_IDENTITY",
+          "descriptionHe": "וידוא שיוך החשבון והפרופיל",
+          "paramsTemplate": {}
+        },
+        {
+          "stepOrder": 2,
+          "operation": "GEELARK_OPEN_APP",
+          "descriptionHe": "הפעלת חבילת TikTok במכשיר הענן",
+          "paramsTemplate": {}
+        }
+      ],
+      "generatedTypeScriptCode": "// Deterministic Skill: tiktok.open (Zero AI / Zero Secrets)\nexport async function run_tiktok_open(runner: DeterministicStepContext, vars: { accountId: string }) {\n  // Step 1: וידוא שיוך החשבון והפרופיל\n  await runner.execStep('VERIFY_ACCOUNT_IDENTITY', {}, vars);\n  // Step 2: הפעלת חבילת TikTok במכשיר הענן\n  await runner.execStep('GEELARK_OPEN_APP', {}, vars);\n  return { status: 'SUCCESS' as const, skillId: 'tiktok.open' };\n}",
+      "generatedPythonCode": "# Deterministic Skill: tiktok.open (No tokens or credentials stored)\ndef run_tiktok_open(runner, variables: dict) -> dict:\n    for k in ['accountId']:\n        assert k in variables, f\"Missing {k}\"\n    # Step 1: וידוא שיוך החשבון והפרופיל\n    runner.exec_step(\"VERIFY_ACCOUNT_IDENTITY\", {}, variables)\n    # Step 2: הפעלת חבילת TikTok במכשיר הענן\n    runner.exec_step(\"GEELARK_OPEN_APP\", {}, variables)\n    return {\"status\": \"SUCCESS\", \"skill_id\": \"tiktok.open\"}",
+      "runsWithoutAi": true,
+      "testStatus": "PASSED",
+      "lastTestedAtTs": 1794759613946,
+      "runCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "lastRunAtTs": null,
+      "lastRunStatus": null,
+      "recoveryProposal": null
+    },
+    {
+      "id": "tiktok.account.switch",
+      "nameHe": "מעבר מאומת בין שני חשבונות TikTok",
+      "descriptionHe": "מבצע מעבר בין TIKTOK_ACCOUNT_1 ל-TIKTOK_ACCOUNT_2 לפי פרופיל/אפליקציה/מחליף חשבונות ומאמת זהות.",
+      "status": "VERIFIED_ACTIVE",
+      "version": 1,
+      "createdFromSequenceId": null,
+      "variables": [
+        {
+          "name": "targetAccountId",
+          "descriptionHe": "מזהה החשבון להפעלה",
+          "required": true,
+          "defaultValue": "TIKTOK_ACCOUNT_1"
+        }
+      ],
+      "preconditionsHe": [
+        "שני החשבונות רשומים במערכת"
+      ],
+      "successConditionsHe": [
+        "החשבון הנבחר מסומן כפעיל וזהותו מאומתת לפני המשך פעולות"
+      ],
+      "workflowSteps": [
+        {
+          "stepOrder": 1,
+          "operation": "GEELARK_SWITCH_PROFILE",
+          "descriptionHe": "החלפת חשבון/פרופיל פעיל ואימות שם משתמש",
+          "paramsTemplate": {}
+        }
+      ],
+      "generatedTypeScriptCode": "// Deterministic Skill: tiktok.account.switch (Zero AI / Zero Secrets)\nexport async function run_tiktok_account_switch(runner: DeterministicStepContext, vars: { targetAccountId: string }) {\n  // Step 1: החלפת חשבון/פרופיל פעיל ואימות שם משתמש\n  await runner.execStep('GEELARK_SWITCH_PROFILE', {}, vars);\n  return { status: 'SUCCESS' as const, skillId: 'tiktok.account.switch' };\n}",
+      "generatedPythonCode": "# Deterministic Skill: tiktok.account.switch (No tokens or credentials stored)\ndef run_tiktok_account_switch(runner, variables: dict) -> dict:\n    for k in ['targetAccountId']:\n        assert k in variables, f\"Missing {k}\"\n    # Step 1: החלפת חשבון/פרופיל פעיל ואימות שם משתמש\n    runner.exec_step(\"GEELARK_SWITCH_PROFILE\", {}, variables)\n    return {\"status\": \"SUCCESS\", \"skill_id\": \"tiktok.account.switch\"}",
+      "runsWithoutAi": true,
+      "testStatus": "PASSED",
+      "lastTestedAtTs": 1794759613946,
+      "runCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "lastRunAtTs": null,
+      "lastRunStatus": null,
+      "recoveryProposal": null
+    },
+    {
+      "id": "tiktok.live.join_viewer",
+      "nameHe": "כניסה לשידור LIVE כצופה וחיבור ניטור אירועים",
+      "descriptionHe": "מאתר משתמש שמשדר LIVE, נכנס לשידור כצופה ומחבר את הזרם למנוע האפקטים של BOOSTERA.",
+      "status": "VERIFIED_ACTIVE",
+      "version": 1,
+      "createdFromSequenceId": null,
+      "variables": [
+        {
+          "name": "hostUsername",
+          "descriptionHe": "@username של בעל הלייב",
+          "required": true,
+          "defaultValue": ""
+        }
+      ],
+      "preconditionsHe": [
+        "שם משתמש תקין ב-TikTok",
+        "המשתמש משדר LIVE כעת או זמין בניטור"
+      ],
+      "successConditionsHe": [
+        "מחובר לחדר הלייב ומקבל אירועי צופים, צ׳אט ומתנות"
+      ],
+      "workflowSteps": [
+        {
+          "stepOrder": 1,
+          "operation": "VERIFY_ACCOUNT_IDENTITY",
+          "descriptionHe": "וידוא זהות החשבון הפעיל",
+          "paramsTemplate": {}
+        },
+        {
+          "stepOrder": 2,
+          "operation": "LIVE_CONNECTOR_SEARCH",
+          "descriptionHe": "בדיקת סטטוס LIVE של היוצר",
+          "paramsTemplate": {}
+        },
+        {
+          "stepOrder": 3,
+          "operation": "LIVE_CONNECTOR_JOIN_STREAM",
+          "descriptionHe": "כניסה לחדר הלייב וחיבור זרם האירועים",
+          "paramsTemplate": {}
+        }
+      ],
+      "generatedTypeScriptCode": "// Deterministic Skill: tiktok.live.join_viewer (Zero AI / Zero Secrets)\nexport async function run_tiktok_live_join_viewer(runner: DeterministicStepContext, vars: { hostUsername: string }) {\n  // Step 1: וידוא זהות החשבון הפעיל\n  await runner.execStep('VERIFY_ACCOUNT_IDENTITY', {}, vars);\n  // Step 2: בדיקת סטטוס LIVE של היוצר\n  await runner.execStep('LIVE_CONNECTOR_SEARCH', {}, vars);\n  // Step 3: כניסה לחדר הלייב וחיבור זרם האירועים\n  await runner.execStep('LIVE_CONNECTOR_JOIN_STREAM', {}, vars);\n  return { status: 'SUCCESS' as const, skillId: 'tiktok.live.join_viewer' };\n}",
+      "generatedPythonCode": "# Deterministic Skill: tiktok.live.join_viewer (No tokens or credentials stored)\ndef run_tiktok_live_join_viewer(runner, variables: dict) -> dict:\n    for k in ['hostUsername']:\n        assert k in variables, f\"Missing {k}\"\n    # Step 1: וידוא זהות החשבון הפעיל\n    runner.exec_step(\"VERIFY_ACCOUNT_IDENTITY\", {}, variables)\n    # Step 2: בדיקת סטטוס LIVE של היוצר\n    runner.exec_step(\"LIVE_CONNECTOR_SEARCH\", {}, variables)\n    # Step 3: כניסה לחדר הלייב וחיבור זרם האירועים\n    runner.exec_step(\"LIVE_CONNECTOR_JOIN_STREAM\", {}, variables)\n    return {\"status\": \"SUCCESS\", \"skill_id\": \"tiktok.live.join_viewer\"}",
+      "runsWithoutAi": true,
+      "testStatus": "PASSED",
+      "lastTestedAtTs": 1794759613947,
+      "runCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "lastRunAtTs": null,
+      "lastRunStatus": null,
+      "recoveryProposal": null
+    },
+    {
+      "id": "tiktok.live.request_guest",
+      "nameHe": "שליחת בקשת הצטרפות כאורח (Multi-Guest)",
+      "descriptionHe": "מבקש לעלות כאורח בלייב פעיל — כפוף לאישור מפורש של המפעיל והרשאות החשבון.",
+      "status": "VERIFIED_ACTIVE",
+      "version": 1,
+      "createdFromSequenceId": null,
+      "variables": [
+        {
+          "name": "hostUsername",
+          "descriptionHe": "@username של בעל השידור",
+          "required": true,
+          "defaultValue": ""
+        }
+      ],
+      "preconditionsHe": [
+        "החשבון צופה בלייב פעיל",
+        "הרשאת canRequestGuest פעילה",
+        "אישור מפעיל מפורש"
+      ],
+      "successConditionsHe": [
+        "בקשת ההצטרפות כאורח נשלחה לחדר ואומתה"
+      ],
+      "workflowSteps": [
+        {
+          "stepOrder": 1,
+          "operation": "VERIFY_ACCOUNT_IDENTITY",
+          "descriptionHe": "אימות זהות החשבון והרשאת אורח",
+          "paramsTemplate": {}
+        },
+        {
+          "stepOrder": 2,
+          "operation": "LIVE_PARTICIPANT_REQUEST",
+          "descriptionHe": "שליחת בקשת הצטרפות כאורח בלייב",
+          "paramsTemplate": {
+            "requestKind": "GUEST"
+          },
+          "requiresOperatorApproval": true
+        }
+      ],
+      "generatedTypeScriptCode": "// Deterministic Skill: tiktok.live.request_guest (Zero AI / Zero Secrets)\nexport async function run_tiktok_live_request_guest(runner: DeterministicStepContext, vars: { hostUsername: string }) {\n  // Step 1: אימות זהות החשבון והרשאת אורח\n  await runner.execStep('VERIFY_ACCOUNT_IDENTITY', {}, vars);\n  // Step 2: שליחת בקשת הצטרפות כאורח בלייב\n  await runner.execStep('LIVE_PARTICIPANT_REQUEST', {\"requestKind\":\"GUEST\"}, vars);\n  return { status: 'SUCCESS' as const, skillId: 'tiktok.live.request_guest' };\n}",
+      "generatedPythonCode": "# Deterministic Skill: tiktok.live.request_guest (No tokens or credentials stored)\ndef run_tiktok_live_request_guest(runner, variables: dict) -> dict:\n    for k in ['hostUsername']:\n        assert k in variables, f\"Missing {k}\"\n    # Step 1: אימות זהות החשבון והרשאת אורח\n    runner.exec_step(\"VERIFY_ACCOUNT_IDENTITY\", {}, variables)\n    # Step 2: שליחת בקשת הצטרפות כאורח בלייב\n    runner.exec_step(\"LIVE_PARTICIPANT_REQUEST\", {\"requestKind\":\"GUEST\"}, variables)\n    return {\"status\": \"SUCCESS\", \"skill_id\": \"tiktok.live.request_guest\"}",
+      "runsWithoutAi": true,
+      "testStatus": "PASSED",
+      "lastTestedAtTs": 1794759613947,
+      "runCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "lastRunAtTs": null,
+      "lastRunStatus": null,
+      "recoveryProposal": null
+    },
+    {
+      "id": "tiktok.live.accept_invitation",
+      "nameHe": "קבלת הזמנת Co-host או LIVE Match",
+      "descriptionHe": "מאשר הזמנה נכנסת לשותפות שידור או קרב באטל לאחר אישור המפעיל.",
+      "status": "VERIFIED_ACTIVE",
+      "version": 1,
+      "createdFromSequenceId": null,
+      "variables": [
+        {
+          "name": "invitationId",
+          "descriptionHe": "מזהה ההזמנה הנכנסת",
+          "required": true,
+          "defaultValue": ""
+        }
+      ],
+      "preconditionsHe": [
+        "קיימת הזמנה פתוחה בחדר",
+        "התקבל אישור מפעיל"
+      ],
+      "successConditionsHe": [
+        "ההזמנה אושרה ומצב ההשתתפות עודכן ל-Co-host או Battle"
+      ],
+      "workflowSteps": [
+        {
+          "stepOrder": 1,
+          "operation": "VERIFY_ACCOUNT_IDENTITY",
+          "descriptionHe": "וידוא החשבון המוזמן",
+          "paramsTemplate": {}
+        },
+        {
+          "stepOrder": 2,
+          "operation": "LIVE_PARTICIPANT_REQUEST",
+          "descriptionHe": "אישור הזמנת Co-host / Match",
+          "paramsTemplate": {
+            "requestKind": "ACCEPT_INVITE"
+          },
+          "requiresOperatorApproval": true
+        }
+      ],
+      "generatedTypeScriptCode": "// Deterministic Skill: tiktok.live.accept_invitation (Zero AI / Zero Secrets)\nexport async function run_tiktok_live_accept_invitation(runner: DeterministicStepContext, vars: { invitationId: string }) {\n  // Step 1: וידוא החשבון המוזמן\n  await runner.execStep('VERIFY_ACCOUNT_IDENTITY', {}, vars);\n  // Step 2: אישור הזמנת Co-host / Match\n  await runner.execStep('LIVE_PARTICIPANT_REQUEST', {\"requestKind\":\"ACCEPT_INVITE\"}, vars);\n  return { status: 'SUCCESS' as const, skillId: 'tiktok.live.accept_invitation' };\n}",
+      "generatedPythonCode": "# Deterministic Skill: tiktok.live.accept_invitation (No tokens or credentials stored)\ndef run_tiktok_live_accept_invitation(runner, variables: dict) -> dict:\n    for k in ['invitationId']:\n        assert k in variables, f\"Missing {k}\"\n    # Step 1: וידוא החשבון המוזמן\n    runner.exec_step(\"VERIFY_ACCOUNT_IDENTITY\", {}, variables)\n    # Step 2: אישור הזמנת Co-host / Match\n    runner.exec_step(\"LIVE_PARTICIPANT_REQUEST\", {\"requestKind\":\"ACCEPT_INVITE\"}, variables)\n    return {\"status\": \"SUCCESS\", \"skill_id\": \"tiktok.live.accept_invitation\"}",
+      "runsWithoutAi": true,
+      "testStatus": "PASSED",
+      "lastTestedAtTs": 1794759613947,
+      "runCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "lastRunAtTs": null,
+      "lastRunStatus": null,
+      "recoveryProposal": null
+    },
+    {
+      "id": "tiktok.live.match.detect",
+      "nameHe": "זיהוי התחלה וסיום של LIVE Match / Battle וניקוד",
+      "descriptionHe": "מנטר בזמן אמת פתיחת באטל, כפפות x5, סקור דו-צדדי וחלון סנייפ ומעדכן את BOOSTERA.",
+      "status": "VERIFIED_ACTIVE",
+      "version": 1,
+      "createdFromSequenceId": null,
+      "variables": [],
+      "preconditionsHe": [
+        "מחובר לחדר LIVE פעיל"
+      ],
+      "successConditionsHe": [
+        "מצב הבאטל והניקוד מסונכרנים מול מנוע BOOSTERA"
+      ],
+      "workflowSteps": [
+        {
+          "stepOrder": 1,
+          "operation": "LIVE_CHAT_READ",
+          "descriptionHe": "קריאת מטא-דאטה של קרב וניקוד חי",
+          "paramsTemplate": {}
+        },
+        {
+          "stepOrder": 2,
+          "operation": "BOOSTERA_TRIGGER_EFFECT",
+          "descriptionHe": "סנכרון שכבות הבמה למצב הבאטל",
+          "paramsTemplate": {
+            "effectId": "ROUND_START_PORTAL"
+          }
+        }
+      ],
+      "generatedTypeScriptCode": "// Deterministic Skill: tiktok.live.match.detect (Zero AI / Zero Secrets)\nexport async function run_tiktok_live_match_detect(runner: DeterministicStepContext, vars: Record<string, string>) {\n  // Step 1: קריאת מטא-דאטה של קרב וניקוד חי\n  await runner.execStep('LIVE_CHAT_READ', {}, vars);\n  // Step 2: סנכרון שכבות הבמה למצב הבאטל\n  await runner.execStep('BOOSTERA_TRIGGER_EFFECT', {\"effectId\":\"ROUND_START_PORTAL\"}, vars);\n  return { status: 'SUCCESS' as const, skillId: 'tiktok.live.match.detect' };\n}",
+      "generatedPythonCode": "# Deterministic Skill: tiktok.live.match.detect (No tokens or credentials stored)\ndef run_tiktok_live_match_detect(runner, variables: dict) -> dict:\n    pass\n    # Step 1: קריאת מטא-דאטה של קרב וניקוד חי\n    runner.exec_step(\"LIVE_CHAT_READ\", {}, variables)\n    # Step 2: סנכרון שכבות הבמה למצב הבאטל\n    runner.exec_step(\"BOOSTERA_TRIGGER_EFFECT\", {\"effectId\":\"ROUND_START_PORTAL\"}, variables)\n    return {\"status\": \"SUCCESS\", \"skill_id\": \"tiktok.live.match.detect\"}",
+      "runsWithoutAi": true,
+      "testStatus": "PASSED",
+      "lastTestedAtTs": 1794759613947,
+      "runCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "lastRunAtTs": null,
+      "lastRunStatus": null,
+      "recoveryProposal": null
+    },
+    {
+      "id": "tiktok.chat.read",
+      "nameHe": "קריאה וסיווג הודעות צ׳אט ממקור מורשה",
+      "descriptionHe": "קורא הודעות צ׳אט חיות, מזהה שאלות, תומכים, ספאם והטרדות ומכין הצעות תגובה.",
+      "status": "VERIFIED_ACTIVE",
+      "version": 1,
+      "createdFromSequenceId": null,
+      "variables": [],
+      "preconditionsHe": [
+        "מקור נתוני צ׳אט מחובר"
+      ],
+      "successConditionsHe": [
+        "הודעות הצ׳אט מסווגות ומוצגות בממשק ללא הצפה"
+      ],
+      "workflowSteps": [
+        {
+          "stepOrder": 1,
+          "operation": "LIVE_CHAT_READ",
+          "descriptionHe": "שליפת הודעות אחרונות וסיווג מהיר",
+          "paramsTemplate": {}
+        }
+      ],
+      "generatedTypeScriptCode": "// Deterministic Skill: tiktok.chat.read (Zero AI / Zero Secrets)\nexport async function run_tiktok_chat_read(runner: DeterministicStepContext, vars: Record<string, string>) {\n  // Step 1: שליפת הודעות אחרונות וסיווג מהיר\n  await runner.execStep('LIVE_CHAT_READ', {}, vars);\n  return { status: 'SUCCESS' as const, skillId: 'tiktok.chat.read' };\n}",
+      "generatedPythonCode": "# Deterministic Skill: tiktok.chat.read (No tokens or credentials stored)\ndef run_tiktok_chat_read(runner, variables: dict) -> dict:\n    pass\n    # Step 1: שליפת הודעות אחרונות וסיווג מהיר\n    runner.exec_step(\"LIVE_CHAT_READ\", {}, variables)\n    return {\"status\": \"SUCCESS\", \"skill_id\": \"tiktok.chat.read\"}",
+      "runsWithoutAi": true,
+      "testStatus": "PASSED",
+      "lastTestedAtTs": 1794759613947,
+      "runCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "lastRunAtTs": null,
+      "lastRunStatus": null,
+      "recoveryProposal": null
+    },
+    {
+      "id": "tiktok.chat.reply",
+      "nameHe": "שליחת תגובה מאושרת לצ׳אט ה-LIVE (מוגן הצפה)",
+      "descriptionHe": "שולח תגובה מאושרת מהחשבון הפעיל תוך אכיפת מרווח אנטי-ספאם ואימות זהות.",
+      "status": "VERIFIED_ACTIVE",
+      "version": 1,
+      "createdFromSequenceId": null,
+      "variables": [
+        {
+          "name": "messageText",
+          "descriptionHe": "תוכן ההודעה המאושרת לשליחה",
+          "required": true,
+          "defaultValue": "תודה על התמיכה בלייב!"
+        }
+      ],
+      "preconditionsHe": [
+        "החשבון בעל הרשאת צ׳אט",
+        "עבר זמן הצינון למניעת הצפה"
+      ],
+      "successConditionsHe": [
+        "ההודעה נשלחה לצ׳אט החי או לגשר המאומת ונרשמה ביומן"
+      ],
+      "workflowSteps": [
+        {
+          "stepOrder": 1,
+          "operation": "VERIFY_ACCOUNT_IDENTITY",
+          "descriptionHe": "אימות זהות החשבון השולח",
+          "paramsTemplate": {}
+        },
+        {
+          "stepOrder": 2,
+          "operation": "LIVE_CHAT_REPLY",
+          "descriptionHe": "שליחת תגובה מבוקרת לצ׳אט",
+          "paramsTemplate": {}
+        }
+      ],
+      "generatedTypeScriptCode": "// Deterministic Skill: tiktok.chat.reply (Zero AI / Zero Secrets)\nexport async function run_tiktok_chat_reply(runner: DeterministicStepContext, vars: { messageText: string }) {\n  // Step 1: אימות זהות החשבון השולח\n  await runner.execStep('VERIFY_ACCOUNT_IDENTITY', {}, vars);\n  // Step 2: שליחת תגובה מבוקרת לצ׳אט\n  await runner.execStep('LIVE_CHAT_REPLY', {}, vars);\n  return { status: 'SUCCESS' as const, skillId: 'tiktok.chat.reply' };\n}",
+      "generatedPythonCode": "# Deterministic Skill: tiktok.chat.reply (No tokens or credentials stored)\ndef run_tiktok_chat_reply(runner, variables: dict) -> dict:\n    for k in ['messageText']:\n        assert k in variables, f\"Missing {k}\"\n    # Step 1: אימות זהות החשבון השולח\n    runner.exec_step(\"VERIFY_ACCOUNT_IDENTITY\", {}, variables)\n    # Step 2: שליחת תגובה מבוקרת לצ׳אט\n    runner.exec_step(\"LIVE_CHAT_REPLY\", {}, variables)\n    return {\"status\": \"SUCCESS\", \"skill_id\": \"tiktok.chat.reply\"}",
+      "runsWithoutAi": true,
+      "testStatus": "PASSED",
+      "lastTestedAtTs": 1794759613947,
+      "runCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "lastRunAtTs": null,
+      "lastRunStatus": null,
+      "recoveryProposal": null
+    },
+    {
+      "id": "tiktok.moderator.manage",
+      "nameHe": "ניהול מנחים והרשאות בחדר ה-LIVE (בכפוף לאישור)",
+      "descriptionHe": "מציג מנחים קיימים ומבצע הוספה או הסרה של מנחה אך ורק לאחר אישור מפורש של המפעיל.",
+      "status": "VERIFIED_ACTIVE",
+      "version": 1,
+      "createdFromSequenceId": null,
+      "variables": [
+        {
+          "name": "moderatorUsername",
+          "descriptionHe": "@username של המנחה",
+          "required": true,
+          "defaultValue": ""
+        },
+        {
+          "name": "operation",
+          "descriptionHe": "ADD או REMOVE או PROPOSE",
+          "required": true,
+          "defaultValue": "PROPOSE"
+        }
+      ],
+      "preconditionsHe": [
+        "החשבון בעל הרשאת ניהול מנחים",
+        "אישור מפעיל מפורש לשינוי הרשאה"
+      ],
+      "successConditionsHe": [
+        "פעולת הניהול תועדה ביומן הביקורת ובוצעה בהתאם להרשאה"
+      ],
+      "workflowSteps": [
+        {
+          "stepOrder": 1,
+          "operation": "LIVE_MODERATOR_UPDATE",
+          "descriptionHe": "בדיקת אישור מפעיל ועדכון רשימת המנחים",
+          "paramsTemplate": {},
+          "requiresOperatorApproval": true
+        }
+      ],
+      "generatedTypeScriptCode": "// Deterministic Skill: tiktok.moderator.manage (Zero AI / Zero Secrets)\nexport async function run_tiktok_moderator_manage(runner: DeterministicStepContext, vars: { moderatorUsername: string; operation: string }) {\n  // Step 1: בדיקת אישור מפעיל ועדכון רשימת המנחים\n  await runner.execStep('LIVE_MODERATOR_UPDATE', {}, vars);\n  return { status: 'SUCCESS' as const, skillId: 'tiktok.moderator.manage' };\n}",
+      "generatedPythonCode": "# Deterministic Skill: tiktok.moderator.manage (No tokens or credentials stored)\ndef run_tiktok_moderator_manage(runner, variables: dict) -> dict:\n    for k in ['moderatorUsername', 'operation']:\n        assert k in variables, f\"Missing {k}\"\n    # Step 1: בדיקת אישור מפעיל ועדכון רשימת המנחים\n    runner.exec_step(\"LIVE_MODERATOR_UPDATE\", {}, variables)\n    return {\"status\": \"SUCCESS\", \"skill_id\": \"tiktok.moderator.manage\"}",
+      "runsWithoutAi": true,
+      "testStatus": "PASSED",
+      "lastTestedAtTs": 1794759613947,
+      "runCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "lastRunAtTs": null,
+      "lastRunStatus": null,
+      "recoveryProposal": null
+    },
+    {
+      "id": "boostera.effects.trigger",
+      "nameHe": "הפעלת אפקט חכם ושכבת סטודיו במנוע BOOSTERA",
+      "descriptionHe": "מפעיל אפקט וידאו/אנימציה/סאונד במנוע BOOSTERA הקיים תוך שמירה על סדר שכבות ובקרת עומס חזותי.",
+      "status": "VERIFIED_ACTIVE",
+      "version": 1,
+      "createdFromSequenceId": null,
+      "variables": [
+        {
+          "name": "effectId",
+          "descriptionHe": "מזהה האפקט בספריית BOOSTERA",
+          "required": true,
+          "defaultValue": "GIFT_299_BOXING_GLOVES"
+        }
+      ],
+      "preconditionsHe": [
+        "האפקט קיים בקטלוג BOOSTERA",
+        "העומס החזותי מתחת לתקרה המותרת"
+      ],
+      "successConditionsHe": [
+        "האפקט שודר לשכבת BACK/FRONT המתאימה בסטודיו וב-OBS"
+      ],
+      "workflowSteps": [
+        {
+          "stepOrder": 1,
+          "operation": "BOOSTERA_TRIGGER_EFFECT",
+          "descriptionHe": "שיגור אפקט למנוע BOOSTERA הקיים ללא AI",
+          "paramsTemplate": {}
+        }
+      ],
+      "generatedTypeScriptCode": "// Deterministic Skill: boostera.effects.trigger (Zero AI / Zero Secrets)\nexport async function run_boostera_effects_trigger(runner: DeterministicStepContext, vars: { effectId: string }) {\n  // Step 1: שיגור אפקט למנוע BOOSTERA הקיים ללא AI\n  await runner.execStep('BOOSTERA_TRIGGER_EFFECT', {}, vars);\n  return { status: 'SUCCESS' as const, skillId: 'boostera.effects.trigger' };\n}",
+      "generatedPythonCode": "# Deterministic Skill: boostera.effects.trigger (No tokens or credentials stored)\ndef run_boostera_effects_trigger(runner, variables: dict) -> dict:\n    for k in ['effectId']:\n        assert k in variables, f\"Missing {k}\"\n    # Step 1: שיגור אפקט למנוע BOOSTERA הקיים ללא AI\n    runner.exec_step(\"BOOSTERA_TRIGGER_EFFECT\", {}, variables)\n    return {\"status\": \"SUCCESS\", \"skill_id\": \"boostera.effects.trigger\"}",
+      "runsWithoutAi": true,
+      "testStatus": "PASSED",
+      "lastTestedAtTs": 1794759613947,
+      "runCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "lastRunAtTs": null,
+      "lastRunStatus": null,
+      "recoveryProposal": null
+    }
+  ],
+  "recordedActions": [],
+  "chatMode": "ASSIST",
+  "workMode": "LIVE_DIRECTOR"
+}

@@ -842,10 +842,19 @@ export interface CompanionAccountSlot {
     | 'SLOT_READY'
     | 'LIVE_ROOM_DEPLOYED'
     | 'TIKTOK_AUTH_LIVE'
-    | 'WS_BRIDGE_ACTIVE';
+    | 'WS_BRIDGE_ACTIVE'
+    | 'DISCONNECTED_NO_AUTH';
   hasServerTikTokAuth?: boolean;
+  isTrulyConnected?: boolean;
+  lastConnectionErrorHe?: string | null;
   deployedRoomHandle?: string | null;
   deployedRoomLive?: boolean;
+  geelarkDeviceId?: string | null;
+  appPackageId?: string;
+  selectedForChatCrew?: boolean;
+  assignedCrewRole?: string | null;
+  verifiedChannel?: string;
+  lastVerifiedAtTs?: number | null;
   trainingLevel: number;
   trainedSkillSummaryHe: string;
   trainedLinesHe: string[];
@@ -894,6 +903,7 @@ export interface CompanionDispatchActionItem {
   messageTextHe: string;
   targetRoom?: string | null;
   deliveryModeHe?: string;
+  deliveryStatus?: 'SENT_TIKTOK' | 'SENT_WS_BRIDGE' | 'LOCAL_PREVIEW_ONLY' | 'BLOCKED_DISCONNECTED';
   targetOffender?: string;
   dispatchedToBridge: boolean;
 }
@@ -918,6 +928,7 @@ export interface ModeratorScriptStep {
   slotNumber: number; // 1..6 for specific .env account, or 0 for smart rotation
   delaySec: number;
   messageTemplateHe: string; // Supports {{USER}}, {{GIFT}}, {{VALUE}}, {{ROOM}}
+  roleActionWhyHe?: string;
 }
 
 export interface ModeratorAutoScriptRule {
@@ -959,9 +970,18 @@ export interface EnvModeratorSlotActivity {
   avatarUrl: string;
   role: CompanionRoleId;
   enabled: boolean;
+  isTrulyConnected: boolean;
+  lastConnectionErrorHe: string | null;
   deployedRoomHandle: string | null;
   deployedRoomLive: boolean;
-  liveDeliveryState: 'DIRECT_TIKTOK_AUTH' | 'WS_BRIDGE_CONNECTED' | 'STAGE_READY' | 'PAUSED';
+  liveDeliveryState:
+    | 'CLOUD_PHONE_CONNECTED'
+    | 'OAUTH_VERIFIED'
+    | 'DIRECT_TIKTOK_AUTH'
+    | 'WS_BRIDGE_CONNECTED'
+    | 'DISCONNECTED_NO_AUTH'
+    | 'STAGE_READY'
+    | 'PAUSED';
   messagesSentTotal: number;
   autoScriptTriggersCount: number;
   brainCommandsCount: number;
@@ -981,7 +1001,7 @@ export interface BrainSquadOrderStep {
   delaySec: number;
   lineHe: string;
   tacticalPurposeHe: string;
-  status: 'QUEUED' | 'SENT';
+  status: 'QUEUED' | 'SENT' | 'PREVIEW_ONLY' | 'BLOCKED_DISCONNECTED';
   sentAtTs?: number;
 }
 
@@ -1007,11 +1027,405 @@ export interface CompanionBrainCommanderState {
   recentOrders: BrainSquadOrderItem[];
 }
 
+export interface ChatRunnerRoleSpec {
+  slotNumber: number;
+  role: CompanionRoleId;
+  runnerTitleHe: string;
+  chainStepLabelHe: string;
+  howHeRunsChatHe: string;
+  whyViewersReplyHe: string;
+  neverSayMistakeHe: string;
+  readyStarterLineHe: string;
+}
+
+export const CHAT_RUNNER_ROLES_CATALOG: ChatRunnerRoleSpec[] = [
+  {
+    slotNumber: 1,
+    role: 'TACTICAL_SNIPE',
+    runnerTitleHe: 'פותח הפיתיון והדילמה (The Hook)',
+    chainStepLabelHe: 'שלב 1 · זורק את הניצוץ הראשוני (0.0 שנ׳)',
+    howHeRunsChatHe: 'זורק שאלה חצויה (50/50), התערבות קטנה או הבחנה חדה על הקרב והיריב — אף פעם לא סיסמה סגורה.',
+    whyViewersReplyHe: 'מוח אנושי מתקשה להתעלם משאלה פתוחה או הימור חד על מה שעומד לקרות בלייב.',
+    neverSayMistakeHe: 'לא כותב "כולם לתת לייקים!" — זה נשמע כמו בוט והורג שיחה.',
+    readyStarterLineHe: 'רגע התערבות פה בצ׳אט: אנחנו סוגרים אותו לפני הכפפה או שרק בסנייפ בשנייה 6?',
+  },
+  {
+    slotNumber: 2,
+    role: 'VIBE_HYPE',
+    runnerTitleHe: 'מצית הוויכוח הידידותי (The Contrarian)',
+    chainStepLabelHe: 'שלב 2 · חולק בחיוך ומייצר פינג-פונג (+3.5 שנ׳)',
+    howHeRunsChatHe: 'עונה לסלוט #1 בדעה הפוכה, צחוק או טיזינג חברי. כשיש שני צדדים בצ׳אט — הקהל נשאב לבחור צד!',
+    whyViewersReplyHe: 'צופים בטיקטוק לא מגיבים להסכמה, אבל קופצים מיד כשיש ויכוח קליל בין שני אנשים בצ׳אט.',
+    neverSayMistakeHe: 'לא מסכים ישר ("נכון מאוד!") — הסכמה סוגרת את הנושא תוך שנייה.',
+    readyStarterLineHe: 'חחח אין סיכוי אחי, ראית איך הוא שמר כפפה סיבוב קודם? בלי סנייפ שקט בסוף זה לא נגמר',
+  },
+  {
+    slotNumber: 3,
+    role: 'MOD_SHIELD',
+    runnerTitleHe: 'מסובב הנרטיב ("אנחנו מולם")',
+    chainStepLabelHe: 'שלב 3 · הופך לחץ או עקיצה לאנרגיה (+7.0 שנ׳)',
+    howHeRunsChatHe: 'לא מתנהג כמו שוטר יבש — לוקח ענן יריב, פיגור או מרגלים מהחדר השני והופך את זה לסיפור מתח שמאחד את החדר.',
+    whyViewersReplyHe: 'תחושת "קבוצה סודית מול החדר השני" גורמת לצופים שקטים להגיב מתוך גאוות יחידה.',
+    neverSayMistakeHe: 'לא נוזף בצופים ולא עונה לטרולים בשמם (זה מקפיץ להם חשיפה).',
+    readyStarterLineHe: 'בדוק שנכנסו לפה עכשיו 3 מרגלים מהחדר שלו לבדוק מה אנחנו מתכננים חחח אל תגלו כלום',
+  },
+  {
+    slotNumber: 4,
+    role: 'WELCOME_VIP',
+    runnerTitleHe: 'מגנט השמות מהקהל (Crowd Connector)',
+    chainStepLabelHe: 'שלב 4 · שואב צופה אמיתי בשם לתוך השיחה (+10.5 שנ׳)',
+    howHeRunsChatHe: 'תופס שם של תומך או צופה שנכנס/הגיב ({{USER}}) ושואל אותו שאלה אישית ישירה על הדילמה הפתוחה.',
+    whyViewersReplyHe: 'כשקוראים לצופה בשם עם שאלה קלה, הוא נשאר בחדר פי 4 זמן ועונה 2–3 הודעות ברצף.',
+    neverSayMistakeHe: 'לא מסתפק ב"תודה ל-X" יבש שאין מה לענות אחריו.',
+    readyStarterLineHe: '{{USER}} יא אלוף איזה טיימינג שנכנסת — תעשה לנו סדר רגע, פותחים כפפה עכשיו או מחכים?',
+  },
+  {
+    slotNumber: 5,
+    role: 'COMBO_PACER',
+    runnerTitleHe: 'סופר ההצבעות והמתח החי (Live Pacer)',
+    chainStepLabelHe: 'שלב 5 · סופר תגובות חיות ומייצר FOMO (+14.0 שנ׳)',
+    howHeRunsChatHe: 'מתרגם את הוויכוח להצבעה מהירה (1 או 2 / מילה קצרה) ומכריז על פער חי שכמעט נסגר תוך שניות.',
+    whyViewersReplyHe: 'כשצופה שומע ש"יש תיקו בצ׳אט וחסרים 3 קולות", הקלדת ספרה אחת מרגישה כמו השפעה מיידית.',
+    neverSayMistakeHe: 'לא מבקש משימות כלליות בלי מספר מוחשי קרוב.',
+    readyStarterLineHe: 'יואו תיקו בצ׳אט כרגע!! מי שאומר לשמור לסוף שיכתוב 1, מי שאומר לפרק עכשיו שיכתוב 2!',
+  },
+  {
+    slotNumber: 6,
+    role: 'SCOUT_SUPPORT',
+    runnerTitleHe: 'מאריך השרשרת והקליפהאנגר (Open-Loop Closer)',
+    chainStepLabelHe: 'שלב 6 · זורק קרס סקרנות לצופים חדשים (+18.0 שנ׳)',
+    howHeRunsChatHe: 'רגע לפני שהגל דועך, זורק משפט סקרנות פתוח לגבי מה שהולך לקרות עוד 20 שניות כדי שצופים מהפור-יו ישאלו "מה קרה?".',
+    whyViewersReplyHe: 'צופה חדש שנכנס באמצע משפט מסתורי עוצר את הגלילה ושואל בצ׳אט "רגע מה פספסתי??".',
+    neverSayMistakeHe: 'לעולם לא מסכם את השיחה במשפט שסוגר עניין.',
+    readyStarterLineHe: 'חכו חכו מי שנכנס עכשיו מהפור-יו עוד לא מבין איזה מהפך מתבשל פה בדקה האחרונה...',
+  },
+];
+
+export type ChatElongationMethodId =
+  | 'METHOD_SPLIT_DEBATE'
+  | 'METHOD_CUNNINGHAM_BAIT'
+  | 'METHOD_CLIFFHANGER_FOMO'
+  | 'METHOD_VIEWER_JUDGE'
+  | 'METHOD_CLOUD_CONSPIRACY'
+  | 'METHOD_MICRO_CHALLENGE';
+
+export interface ChatElongationMethodStep {
+  slotNumber: number;
+  role: CompanionRoleId;
+  delaySec: number;
+  roleActionLabelHe: string;
+  lineHe: string;
+}
+
+export interface ChatElongationMethodSpec {
+  id: ChatElongationMethodId;
+  titleHe: string;
+  subtitleHe: string;
+  psychologyWhyItWorksHe: string;
+  badModeratorMistakeHe: string;
+  expectedChainLengthHe: string;
+  recommendedTrigger: ModeratorTriggerEventType;
+  steps: ChatElongationMethodStep[];
+}
+
+export const CHAT_ELONGATION_METHODS_CATALOG: ChatElongationMethodSpec[] = [
+  {
+    id: 'METHOD_SPLIT_DEBATE',
+    titleHe: '01. שיטת "הוויכוח הידידותי 50/50" (פינג-פונג שסוחף קהל)',
+    subtitleHe: 'במקום לבקש תגובות — שני חשבונות מתווכחים בחיוך על מהלך בלייב והקהל נכנס להכריע',
+    psychologyWhyItWorksHe:
+      'אף צופה לא עונה ל"תכתבו משהו בצ׳אט". אבל כששני אנשים בצ׳אט לא מסכימים על שאלה פשוטה, המוח של הצופים חייב לקחת צד ולהוכיח מי צודק — והאלגוריתם מזהה זינוק בתגובות ייחודיות.',
+    badModeratorMistakeHe: 'טעות של מנחה רגיל: "ערב טוב לכולם תרימו את הצ׳אט!!" (0 תגובות המשך)',
+    expectedChainLengthHe: '25–45 שניות של שיחה מתגלגלת + הצבעות של צופים אמיתיים',
+    recommendedTrigger: 'LIKE_BURST',
+    steps: [
+      {
+        slotNumber: 1,
+        role: 'TACTICAL_SNIPE',
+        delaySec: 0,
+        roleActionLabelHe: 'זורק דילמה חצויה',
+        lineHe: 'בכנות תגידו רגע — עדיף לפתוח פער על ההתחלה להלחיץ אותו או לשחק פני פוקר עד השנייה האחרונה?',
+      },
+      {
+        slotNumber: 2,
+        role: 'VIBE_HYPE',
+        delaySec: 3.6,
+        roleActionLabelHe: 'חולקת עליו בחיוך',
+        lineHe: 'פני פוקר קל!! פעם שעברה שפתחנו מוקדם הוא התעורר עלינו בדקה האחרונה חחח מה אתה אומר סתם',
+      },
+      {
+        slotNumber: 3,
+        role: 'MOD_SHIELD',
+        delaySec: 7.4,
+        roleActionLabelHe: 'מוסיף זווית על היריב',
+        lineHe: 'תסתכלו על הפנים שלו אבל, כל פעם שהסקור זז הוא בודק את הצ׳אט שלו מרוב לחץ',
+      },
+      {
+        slotNumber: 5,
+        role: 'COMBO_PACER',
+        delaySec: 11.2,
+        roleActionLabelHe: 'פותח הצבעה מהירה',
+        lineHe: 'יאללה הצ׳אט מחליט עכשיו: 1 = מרדימים אותו עד הסוף, 2 = שוברים אותו מעכשיו! תכתבו!',
+      },
+      {
+        slotNumber: 4,
+        role: 'WELCOME_VIP',
+        delaySec: 15.0,
+        roleActionLabelHe: 'מושכת צופה בשם להכריע',
+        lineHe: '{{USER}} מה אומר אחי? אתה בצד של ה-1 השקטים או 2 בכל הכוח?',
+      },
+      {
+        slotNumber: 6,
+        role: 'SCOUT_SUPPORT',
+        delaySec: 19.0,
+        roleActionLabelHe: 'משאיר מתח פתוח',
+        lineHe: 'חחח הצ׳אט חצוי לגמרי, חכו תראו מה יקרה ברגע שתיפתח הכפפה הראשונה...',
+      },
+    ],
+  },
+  {
+    id: 'METHOD_CUNNINGHAM_BAIT',
+    titleHe: '02. שיטת "פיתיון התיקון" (שאלה תמימה שכולם קופצים לענות לה)',
+    subtitleHe: 'חשבון אחד "מתבלבל" בפרט קטן מהלייב — וצופים שקטים מתעוררים מיד לתקן אותו',
+    psychologyWhyItWorksHe:
+      'חוק קנינגהם ברשת: הדרך הכי מהירה לגרום לאנשים לכתוב בצ׳אט היא לא לבקש מהם, אלא לשאול שאלה תמימה או לטעות בקטנה — צופים אוהבים להראות שהם יודעים מה קרה בשידור!',
+    badModeratorMistakeHe: 'טעות של מנחה רגיל: "מי פה בצ׳אט? ספרו איך עבר היום" (שאלה כבדה שאף אחד לא עונה לה)',
+    expectedChainLengthHe: '30+ שניות של תיקונים, תשובות והתערבות צופים שקטים',
+    recommendedTrigger: 'FOLLOW_NEW',
+    steps: [
+      {
+        slotNumber: 6,
+        role: 'SCOUT_SUPPORT',
+        delaySec: 0,
+        roleActionLabelHe: 'זורק שאלה "מבולבלת"',
+        lineHe: 'רגע נכנסתי לפני דקה — זה כבר ניצחון שלישי ברצף שלנו הערב או שאני מתבלבל?',
+      },
+      {
+        slotNumber: 2,
+        role: 'VIBE_HYPE',
+        delaySec: 3.4,
+        roleActionLabelHe: 'מגבירה את הספק',
+        lineHe: 'נראה לי רביעי אפילו לא?? מישהו שהיה פה מההתחלה זוכר כמה עשינו מול הקודם?',
+      },
+      {
+        slotNumber: 1,
+        role: 'TACTICAL_SNIPE',
+        delaySec: 7.2,
+        roleActionLabelHe: 'מתקן חלקית ופותח דיון',
+        lineHe: 'הקודם נגמר בסנייפ של השנייה האחרונה, זה הסיבוב שקובע אם שומרים על הרצף',
+      },
+      {
+        slotNumber: 4,
+        role: 'WELCOME_VIP',
+        delaySec: 11.0,
+        roleActionLabelHe: 'פונה לוותיקים ולמצטרפים',
+        lineHe: 'כל מי שהיה פה בסיבוב הקודם תאשרו לנו רגע בצ׳אט — כמה נגמר בסוף?',
+      },
+      {
+        slotNumber: 5,
+        role: 'COMBO_PACER',
+        delaySec: 15.0,
+        roleActionLabelHe: 'מחבר למומנטום הנוכחי',
+        lineHe: 'לא משנה כמה היה — אם סוגרים גם את זה ב-2 דקות הקרובות זה רצף משוגע, תישארו לראות!',
+      },
+    ],
+  },
+  {
+    id: 'METHOD_CLIFFHANGER_FOMO',
+    titleHe: '03. שיטת "קליפהאנגר פור-יו" (עצירת צופים חדשים מסקרנות)',
+    subtitleHe: 'יוצרים בצ׳אט תחושה שקרה עכשיו משהו מטורף ושומרים סוד לדקה האחרונה',
+    psychologyWhyItWorksHe:
+      'צופה שמגיע מה-For You מחליט תוך 2.5 שניות אם לגלול הלאה. כשהוא קורא בצ׳אט שני אנשים מדברים על "מה שעומד לקרות עוד מעט", הסקרנות (FOMO) נועלת אותו בשידור וגורמת לו לשאול "מה פספסתי?".',
+    badModeratorMistakeHe: 'טעות של מנחה רגיל: "ברוכים הבאים לכל החדשים תעשו עוקב" (צופים גוללים מיד)',
+    expectedChainLengthHe: 'זינוק בזמן שהייה (Watch Time) + שאלות סקרנות מצופים חדשים',
+    recommendedTrigger: 'SHARE_SPIKE',
+    steps: [
+      {
+        slotNumber: 2,
+        role: 'VIBE_HYPE',
+        delaySec: 0,
+        roleActionLabelHe: 'פותחת תגובת הפתעה',
+        lineHe: 'יואו לא מאמינה שהוא באמת לקח את האתגר הזה עכשיו חחח הולך להיות פה בלאגן',
+      },
+      {
+        slotNumber: 3,
+        role: 'MOD_SHIELD',
+        delaySec: 3.5,
+        roleActionLabelHe: 'יוצר מסתורין בצ׳אט',
+        lineHe: 'ששש אל תכתבו בצ׳אט מה המתנה של הסוף, שהצד השני לא יקלוט לפני ה-30 שניות!',
+      },
+      {
+        slotNumber: 6,
+        role: 'SCOUT_SUPPORT',
+        delaySec: 7.5,
+        roleActionLabelHe: 'מדליק את המצטרפים החדשים',
+        lineHe: 'וואי כל מי שנכנס עכשיו מהפור-יו נפל בדיוק על הדקה הכי מתוחה של הלילה',
+      },
+      {
+        slotNumber: 4,
+        role: 'WELCOME_VIP',
+        delaySec: 11.5,
+        roleActionLabelHe: 'מזמינה חדשים להגיב',
+        lineHe: 'מי פה פעם ראשונה בשידור של {{ROOM}}? תרשמו "אני" תכף תבינו על מה כולם מדברים!',
+      },
+      {
+        slotNumber: 1,
+        role: 'TACTICAL_SNIPE',
+        delaySec: 15.5,
+        roleActionLabelHe: 'מחזיק את המתח פתוח',
+        lineHe: 'רק לשמור על הקצב על המסך בשקט עוד דקה אחת... תראו לבד מה יקרה',
+      },
+    ],
+  },
+  {
+    id: 'METHOD_VIEWER_JUDGE',
+    titleHe: '04. שיטת "הכתרת התומך/הצופה למוביל המהלך" (פרגון שגורר שיחה)',
+    subtitleHe: 'במקום "תודה" גנרית שסוגרת עניין — בונים סביב התומך דיון שלם שמדליק עוד תומכים',
+    psychologyWhyItWorksHe:
+      'כשכותבים לתומך רק "תודה אלוף", הוא מחייך ושותק. כששואלים לדעתו ונותנים לו "לקבוע את הטקטיקה" מול כל החדר, גם הוא מגיב וממשיך לתמוך וגם צופים אחרים רוצים את אותו יחס!',
+    badModeratorMistakeHe: 'טעות של מנחה רגיל: "תודה ליוסי על המתנה המרגשת ❤️❤️" (סוף שיחה)',
+    expectedChainLengthHe: 'מעורבות ישירה של תומכי VIP + הכפלת סיכוי למתנת המשך',
+    recommendedTrigger: 'WHALE_GIFT',
+    steps: [
+      {
+        slotNumber: 4,
+        role: 'WELCOME_VIP',
+        delaySec: 0.6,
+        roleActionLabelHe: 'פותחת בכבוד חד לתומך',
+        lineHe: 'עצרו הכל רגע — ראיתם את הטיימינג של {{USER}} עם ה-{{GIFT}}?! איזו כניסה מדויקת!',
+      },
+      {
+        slotNumber: 1,
+        role: 'TACTICAL_SNIPE',
+        delaySec: 4.0,
+        roleActionLabelHe: 'נותן לתומך סמכות בצ׳אט',
+        lineHe: '{{USER}} שינית את כל התמונה של הסיבוב אחי, מה אומר — לוחצים עכשיו או שומרים עוד מכה לסוף?',
+      },
+      {
+        slotNumber: 2,
+        role: 'VIBE_HYPE',
+        delaySec: 7.8,
+        roleActionLabelHe: 'מדליקה את הקהל סביבו',
+        lineHe: 'איך היריב החליף צבע בשנייה ש-{{USER}} נכנס חחח כולם בצ׳אט להרים לו על המהלך הזה!',
+      },
+      {
+        slotNumber: 5,
+        role: 'COMBO_PACER',
+        delaySec: 11.8,
+        roleActionLabelHe: 'מגייס את הקהל החינמי להשלים',
+        lineHe: 'חברים לא משאירים את {{USER}} לבד במערכה — כל צופה נותן גיבוי בהקשות ותגובה בצ׳אט עכשיו!',
+      },
+      {
+        slotNumber: 6,
+        role: 'SCOUT_SUPPORT',
+        delaySec: 15.8,
+        roleActionLabelHe: 'פותח אתגר לתומך הבא',
+        lineHe: 'מי מצטרף ל-{{USER}} בראש הטבלה של הסיבוב הזה לפני שנסגר השעון?',
+      },
+    ],
+  },
+  {
+    id: 'METHOD_CLOUD_CONSPIRACY',
+    titleHe: '05. שיטת "מבצע שקט מתחת לענן / כפפה" (הפיכת אירוע קרב לדרמה)',
+    subtitleHe: 'כשהיריב פותח ענן או נפתחת כפפה x5 — מתאמים "מבצע חשאי" שגורם לכל הצ׳אט לדווח חי',
+    psychologyWhyItWorksHe:
+      'בענן הסתרה צופים קופאים כי לא רואים סקור. כשהחשבונות מריצים בצ׳אט אווירה של "חדר מצב שיודע את המספרים האמיתיים", הצופים שואלים כמה הסקור וממשיכים להקיש בטירוף.',
+    badModeratorMistakeHe: 'טעות של מנחה רגיל: "יש ענן תמשיכו לזרוק" (הודעה לחוצה שלא מרגיעה את הקהל)',
+    expectedChainLengthHe: 'שמירה על רצף תגובות מלא לאורך כל 30 שניות הענן/הכפפה',
+    recommendedTrigger: 'OPPONENT_CLOUD',
+    steps: [
+      {
+        slotNumber: 1,
+        role: 'TACTICAL_SNIPE',
+        delaySec: 0.4,
+        roleActionLabelHe: 'חושף שהענן נפתח מפחד',
+        lineHe: 'חחח הוא פתח ענן הסתרה מרוב לחץ! אל תגלו לו שאנחנו רואים את הקצב האמיתי מהצד',
+      },
+      {
+        slotNumber: 3,
+        role: 'MOD_SHIELD',
+        delaySec: 3.8,
+        roleActionLabelHe: 'בונה אחוות חדר סודית',
+        lineHe: 'שקט תעשייתי חברים, מתחת לענן כל נקודה שלנו כואבת לו כפול כשהענן יתפזר!',
+      },
+      {
+        slotNumber: 2,
+        role: 'VIBE_HYPE',
+        delaySec: 7.6,
+        roleActionLabelHe: 'מכניסה הומור ומתח',
+        lineHe: 'איזה פרצוף הולך להיות לו עוד 15 שניות כשהמספרים ייחשפו על המסך יואוו',
+      },
+      {
+        slotNumber: 5,
+        role: 'COMBO_PACER',
+        delaySec: 11.4,
+        roleActionLabelHe: 'מפעיל ספירת הקשות בערפל',
+        lineHe: 'מי שעובד איתנו עכשיו מתחת לענן שיכתוב "בפנים" ויתן 30 הקשות מהירות עד שמתבהר!',
+      },
+      {
+        slotNumber: 6,
+        role: 'SCOUT_SUPPORT',
+        delaySec: 15.5,
+        roleActionLabelHe: 'מכין את הקליימקס לסנייפ',
+        lineHe: 'להיות מוכנים על הכפתור ברגע שהענן יורד — שם סוגרים את הסיפור בבום!',
+      },
+    ],
+  },
+  {
+    id: 'METHOD_MICRO_CHALLENGE',
+    titleHe: '06. שיטת "מדרגת 7 התגובות" (משימת מיקרו קטנטנה שמציתה גל)',
+    subtitleHe: 'כשיש שקט מוחלט בחדר — מבקשים יעד זעיר ומדויק וסופרים אחורה בלייב',
+    psychologyWhyItWorksHe:
+      'בחדר שקט אף אחד לא רוצה להיות היחיד שכותב. כשמכריזים ש"חסרות בדיוק 5 תגובות כדי להקפיץ משימה" ומיד סופרים 4.. 3.. 2.., הצופים מרגישים שהחדר כבר זז ומצטרפים בלי היסוס.',
+    badModeratorMistakeHe: 'טעות של מנחה רגיל: "למה הצ׳אט שקט היום תתעוררו??" (מביך את השידור ומבריח צופים)',
+    expectedChainLengthHe: 'שובר שתיקה תוך 8 שניות ומעלה מהירות צ׳אט מ-0 ל-15+ הודעות בדקה',
+    recommendedTrigger: 'BATTLE_SPEED_TASK',
+    steps: [
+      {
+        slotNumber: 5,
+        role: 'COMBO_PACER',
+        delaySec: 0,
+        roleActionLabelHe: 'מציב יעד קטן וקל להשגה',
+        lineHe: 'בדיקה אמיתית ל-15 שניות: נראה אם יש פה 7 אנשים ערים שיכולים לכתוב מילה אחת — מאיזה אזור אתם בארץ?',
+      },
+      {
+        slotNumber: 2,
+        role: 'VIBE_HYPE',
+        delaySec: 3.2,
+        roleActionLabelHe: 'שוברת את הקרח ראשונה',
+        lineHe: 'מרכז פה וערה כמו אמצע היום חחח נראה אם הצפון או הדרום לוקחים היום בצ׳אט!',
+      },
+      {
+        slotNumber: 6,
+        role: 'SCOUT_SUPPORT',
+        delaySec: 6.8,
+        roleActionLabelHe: 'מצטרף לתחרות אזורים',
+        lineHe: 'בדוק שהדרום ברוב הערב, כל לייב לילי הדרום משתלטים על התגובות',
+      },
+      {
+        slotNumber: 4,
+        role: 'WELCOME_VIP',
+        delaySec: 10.6,
+        roleActionLabelHe: 'מזמינה את השקטים להוכיח',
+        lineHe: 'אין מצב שנתתם לדרום לקחת ככה בקלות חחח איפה כל השאר בצ׳אט?',
+      },
+      {
+        slotNumber: 1,
+        role: 'TACTICAL_SNIPE',
+        delaySec: 14.5,
+        roleActionLabelHe: 'מחבר חזרה לאנרגיית הקרב',
+        lineHe: 'אוהב שהצ׳אט התעורר ככה — לשמור את אותו קצב גם על המסך עכשיו!',
+      },
+    ],
+  },
+];
+
 export interface ChatCompanionState {
   autoCompanionEnabled: boolean;
   autoModerationShieldEnabled: boolean;
   autoLearnFromLiveChat: boolean;
   autoEventScriptsEnabled: boolean;
+  allowLocalSimulationWhenDisconnected: boolean;
   chatVelocityPerMin: number;
   detectedRoomMoodHe: string;
   commanderBrain: CompanionBrainCommanderState;
@@ -1021,6 +1435,52 @@ export interface ChatCompanionState {
   learnedPatterns: LearnedChatModeratorPattern[];
   moderationFlags: ChatModerationFlagItem[];
   recentDispatches: CompanionDispatchActionItem[];
+}
+
+export interface LiveBattleContenderFeed {
+  id: string;
+  handle: string;
+  displayName: string;
+  team: 'ALLY' | 'RIVAL';
+  scorePoints: number;
+  currentBehaviorHe: string;
+  speechBubbleHe: string;
+  crowdMomentumPct: number;
+  activePowerupHe: string | null;
+}
+
+export interface LiveVideoBattleIntelState {
+  battleFormat: '1V1' | '2V2';
+  liveBattleActive: boolean;
+  roundRemainingSec: number;
+  lastAnalyzedAtTs: number;
+  analysisSourceLabelHe: string;
+  mySpeechBubbleHe: string;
+  contenders: LiveBattleContenderFeed[];
+  videoAnalysis: {
+    headlineHe: string;
+    bodyLanguageAndFrameHe: string;
+    directorCueNowHe: string;
+    visualEnergyPct: number;
+  };
+  viewerInteraction: {
+    headlineHe: string;
+    howViewersReactToVideoHe: string;
+    sayOutLoudToViewersHe: string;
+    engagementSyncPct: number;
+  };
+  contendersInteraction: {
+    headlineHe: string;
+    whatContendersAreDoingHe: string;
+    counterMoveAgainstContendersHe: string;
+    pressureAdvantageHe: string;
+  };
+  chatAnalysis: {
+    headlineHe: string;
+    crowdSentimentAndTopicsHe: string;
+    recommendedMethodId: ChatElongationMethodId;
+    recommendedMethodReasonHe: string;
+  };
 }
 
 export interface BattleState {
@@ -1067,6 +1527,7 @@ export interface BattleState {
   cloudRadar: OpponentCloudRadarState;
   wsSniffer: WsSnifferState;
   chatCompanion: ChatCompanionState;
+  liveVideoIntel?: LiveVideoBattleIntelState;
   crowdTestActive: boolean;
   connectedClients: number;
   activeEffects: ActiveEffectInstance[];

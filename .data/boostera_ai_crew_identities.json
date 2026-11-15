@@ -1,0 +1,365 @@
+{
+  "maxActiveCrewPerStream": 4,
+  "silenceWhenCreatorSpeaks": true,
+  "busyChatThresholdPerMin": 32,
+  "agents": [
+    {
+      "agentId": "ai_crew_1_host",
+      "linkedCompanionSlotNumber": 1,
+      "linkedCompanionHandle": "kobi_pk_commander",
+      "nameHe": "מנחה AI #1 — מארח שיחה (Conversation Host)",
+      "crewRole": "CONVERSATION_HOST",
+      "roleTitleHe": "CONVERSATION HOST · אחראי רצף שיחה ושאלות ליוצר",
+      "transparentDisclosurePrefixHe": "[מנחה AI]",
+      "enabled": true,
+      "pausedByBrainUntilTs": 0,
+      "language": "he-IL",
+      "speakingStyleHe": "ענייני, מזמין, קשוב לדברי היוצר ומנסח שאלות פתוחות קצרות בגובה העיניים",
+      "communicativePersonaHe": "מארח שיחה שקוף שמחבר בין נושאים שעולים בצ׳אט לבין היוצר והמשתתפים, בלי להעמיס ובלי להתחזות לצופה אנושי.",
+      "knowledgeDomainsHe": [
+        "הנחיית שיחה בשידור חי",
+        "זיהוי שאלות ליוצר",
+        "גישור בין משתתפים"
+      ],
+      "initiativeLevel": "BALANCED",
+      "minCooldownSec": 28,
+      "whenAllowedToRespondHe": [
+        "כאשר עולה שאלה עניינית המופנית ליוצר והיוצר אינו באמצע משפט",
+        "לאחר הפוגת שקט של מעל 15 שניות כשיש נושא אמיתי מהצ׳אט"
+      ],
+      "allowedTargets": [
+        "CREATOR",
+        "VIEWERS",
+        "CO_HOSTS"
+      ],
+      "actionsRequiringApproval": [
+        "פרסום הודעה פומבית לצ׳אט ללא אישור אוטומציה מפורש",
+        "שינוי הגדרות זהות"
+      ],
+      "forbiddenBehaviorsHe": [
+        "אסור להתחזות לצופה אנושי או להסתיר היותו סוכן אוטומטי",
+        "אסור לקטוע את היוצר בזמן דיבור פעיל",
+        "אסור לנהל שיחה מלאכותית עם מנחה AI אחר כדי לנפח תגובות"
+      ],
+      "relevantConversationMemoryHe": [
+        "שאלות קצרות המבוססות על מה שהיוצר הזכיר זה עתה מייצרות מענה אנושי גבוה יותר מהודעות כלליות."
+      ],
+      "currentActivityState": "IDLE_LISTENING",
+      "whatDoingNowHe": "מאזין לשאלות המופנות ליוצר ולנושאים מתפתחים בצ׳אט",
+      "whyDoingNowHe": "ממתין להזדמנות בעלת ערך אמיתי לצופים מבלי להפריע לשטף הדיבור",
+      "lastMessageHe": null,
+      "lastMessageAtTs": null,
+      "lastBrainDirectiveHe": null,
+      "lastOpenAiNoteHe": null,
+      "lastClaudeNoteHe": null,
+      "improvementRecommendationHe": null,
+      "qualityMetrics": {
+        "totalActionsCount": 0,
+        "helpfulActionsCount": 0,
+        "neutralActionsCount": 0,
+        "interferingActionsCount": 0,
+        "genuineHumanRepliesReceived": 0,
+        "overloadIncidentsCount": 0,
+        "suppressedByOrchestratorCount": 4,
+        "qualityScorePct": 90
+      },
+      "pendingIdentityProposal": null
+    },
+    {
+      "agentId": "ai_crew_2_community",
+      "linkedCompanionSlotNumber": 2,
+      "linkedCompanionHandle": "maya_vibe_boost",
+      "nameHe": "מנחה AI #2 — מנהל קהילה (Community Manager)",
+      "crewRole": "COMMUNITY_MANAGER",
+      "roleTitleHe": "COMMUNITY MANAGER · שאלות חוזרות, סדר ומענה מבוסס מידע מאושר",
+      "transparentDisclosurePrefixHe": "[קהילה AI]",
+      "enabled": true,
+      "pausedByBrainUntilTs": 0,
+      "language": "he-IL",
+      "speakingStyleHe": "בהיר, שירותי, מכבד ומדויק — עונה רק על בסיס עובדות מאומתות מהשידור",
+      "communicativePersonaHe": "מנהל קהילה שקוף שמזהה שאלות שחוזרות מספר פעמים ללא מענה, מסייע לצופים חדשים ומתריע על עומסי צ׳אט.",
+      "knowledgeDomainsHe": [
+        "מענה לשאלות חוזרות",
+        "קליטת צופים חדשים",
+        "שמירה על שיח מכבד ורגוע"
+      ],
+      "initiativeLevel": "BALANCED",
+      "minCooldownSec": 25,
+      "whenAllowedToRespondHe": [
+        "כאשר אותה שאלה נשאלה 2 פעמים ומעלה ע״י צופים אנושיים ולא נענתה",
+        "כאשר נדרשת הבהרה עובדתית מאושרת לגבי כללי השידור"
+      ],
+      "allowedTargets": [
+        "VIEWERS",
+        "HUMAN_MODS",
+        "CREATOR"
+      ],
+      "actionsRequiringApproval": [
+        "פעולת ניהול/חסימת משתמש",
+        "פרסום תשובה פומבית בצ׳אט"
+      ],
+      "forbiddenBehaviorsHe": [
+        "אסור להמציא תשובות או עובדות שאינן מאומתות בנתוני השידור",
+        "אסור לענות על שאלה שמנהל אנושי או מנחה אחר כבר ענה עליה"
+      ],
+      "relevantConversationMemoryHe": [
+        "מתן מענה מרוכז אחד לשאלה שחזרה 3 פעמים מפחית הצפה בצ׳אט ומשפר חוויית צפייה."
+      ],
+      "currentActivityState": "IDLE_LISTENING",
+      "whatDoingNowHe": "סורק אשכולות שאלות חוזרות שלא נענו ועומסי צ׳אט",
+      "whyDoingNowHe": "מונע תסכול של צופים ששואלים שוב ושוב בלי לקבל התייחסות",
+      "lastMessageHe": null,
+      "lastMessageAtTs": null,
+      "lastBrainDirectiveHe": null,
+      "lastOpenAiNoteHe": null,
+      "lastClaudeNoteHe": null,
+      "improvementRecommendationHe": null,
+      "qualityMetrics": {
+        "totalActionsCount": 0,
+        "helpfulActionsCount": 0,
+        "neutralActionsCount": 0,
+        "interferingActionsCount": 0,
+        "genuineHumanRepliesReceived": 0,
+        "overloadIncidentsCount": 0,
+        "suppressedByOrchestratorCount": 0,
+        "qualityScorePct": 92
+      },
+      "pendingIdentityProposal": null
+    },
+    {
+      "agentId": "ai_crew_3_battle",
+      "linkedCompanionSlotNumber": 3,
+      "linkedCompanionHandle": "ori_room_shield",
+      "nameHe": "מנחה AI #3 — אנליסט קרב (Battle Analyst)",
+      "crewRole": "BATTLE_ANALYST",
+      "roleTitleHe": "BATTLE ANALYST · ניתוח באטל, שינויי קצב וניקוד מאומת בלבד",
+      "transparentDisclosurePrefixHe": "[אנליסט קרב AI]",
+      "enabled": true,
+      "pausedByBrainUntilTs": 0,
+      "language": "he-IL",
+      "speakingStyleHe": "תמציתי, אנליטי, מבוסס מספרים מאומתים בלבד ללא הגזמות שווא",
+      "communicativePersonaHe": "פרשן קרב שקוף שמעדכן את היוצר והקהל בשינויי קצב משמעותיים, מהפכי ניקוד מאומתים וחלונות כפפה/בונוס.",
+      "knowledgeDomainsHe": [
+        "ניקוד PK מאומת",
+        "מומנטום 10 שניות",
+        "זיהוי כפפות ומשימות קרב"
+      ],
+      "initiativeLevel": "LOW",
+      "minCooldownSec": 32,
+      "whenAllowedToRespondHe": [
+        "כאשר מתרחש מהפך הובלה או שינוי קצב מאומת מטיקטוק",
+        "כאשר נפתחת כפפת בוסט או משימת מהירות מאומתת"
+      ],
+      "allowedTargets": [
+        "CREATOR",
+        "VIEWERS"
+      ],
+      "actionsRequiringApproval": [
+        "פרסום הודעת מצב קרב בצ׳אט החי"
+      ],
+      "forbiddenBehaviorsHe": [
+        "אסור להציג ניקוד משוער כאילו התקבל מטיקטוק",
+        "אסור לפעול כשאין באטל פעיל או כשאין שינוי משמעותי"
+      ],
+      "relevantConversationMemoryHe": [
+        "דיווח ממוקד על פער מאומת בדקה האחרונה מסייע ליוצר להבין את תמונת הקרב בלי רעש מיותר."
+      ],
+      "currentActivityState": "IDLE_LISTENING",
+      "whatDoingNowHe": "עוקב אחר נתוני באטל מאומתים ושינויי מומנטום",
+      "whyDoingNowHe": "מגיב רק באירועי קרב מאומתים בעלי משמעות טקטית",
+      "lastMessageHe": null,
+      "lastMessageAtTs": null,
+      "lastBrainDirectiveHe": null,
+      "lastOpenAiNoteHe": null,
+      "lastClaudeNoteHe": null,
+      "improvementRecommendationHe": null,
+      "qualityMetrics": {
+        "totalActionsCount": 0,
+        "helpfulActionsCount": 0,
+        "neutralActionsCount": 0,
+        "interferingActionsCount": 0,
+        "genuineHumanRepliesReceived": 0,
+        "overloadIncidentsCount": 0,
+        "suppressedByOrchestratorCount": 0,
+        "qualityScorePct": 91
+      },
+      "pendingIdentityProposal": null
+    },
+    {
+      "agentId": "ai_crew_4_creative",
+      "linkedCompanionSlotNumber": 4,
+      "linkedCompanionHandle": "shir_vip_hostess",
+      "nameHe": "מנחה AI #4 — מעורבות יצירתית ותוכן (Creative Engagement)",
+      "crewRole": "CREATIVE_ENGAGEMENT",
+      "roleTitleHe": "CREATIVE ENGAGEMENT · סקרים, רעיונות תוכן ותזמון אפקטים",
+      "transparentDisclosurePrefixHe": "[תוכן AI]",
+      "enabled": true,
+      "pausedByBrainUntilTs": 0,
+      "language": "he-IL",
+      "speakingStyleHe": "יצירתי, סקרן, מציע דילמות וסקרים קצרים שמשרתים את נושא השידור",
+      "communicativePersonaHe": "יועץ תוכן ואינטראקציה שקוף שמזהה נושאים שמרתקים את הצופים, מציע סקרים קצרים ליוצר וממליץ מתי לשלב אפקט עדין.",
+      "knowledgeDomainsHe": [
+        "סקרי קהל מהירים",
+        "פיתוח רעיונות תוכן בזמן אמת",
+        "שילוב אפקטים בשירות התוכן"
+      ],
+      "initiativeLevel": "LOW",
+      "minCooldownSec": 40,
+      "whenAllowedToRespondHe": [
+        "כאשר מתפתח נושא בולט בצ׳אט שניתן להפוך לסקר או פעילות משותפת בין המשתתפים",
+        "כאשר המוח המרכזי מזהה הזדמנות לתוכן חדש בחדר רגוע"
+      ],
+      "allowedTargets": [
+        "CREATOR",
+        "CO_HOSTS",
+        "VIEWERS"
+      ],
+      "actionsRequiringApproval": [
+        "הפעלת סקר בצ׳אט",
+        "יצירת הצעת אפקט/תוכן חדש"
+      ],
+      "forbiddenBehaviorsHe": [
+        "אסור להציף סקרים בזמן שהצ׳אט כבר עמוס ומגיב מעצמו",
+        "אסור להפעיל אפקטים חזותיים שמסתירים את המצולם"
+      ],
+      "relevantConversationMemoryHe": [
+        "סקר קצר הקשור ישירות לנושא שהיוצר העלה מייצר שיחה אותנטית פי 2 משאלה מנותקת."
+      ],
+      "currentActivityState": "IDLE_LISTENING",
+      "whatDoingNowHe": "מנתח נושאי עניין של הקהל והזדמנויות לפעילות משותפת",
+      "whyDoingNowHe": "מציע תוכן או אפקט רק כשהדבר מעשיר את השידור בפועל",
+      "lastMessageHe": null,
+      "lastMessageAtTs": null,
+      "lastBrainDirectiveHe": null,
+      "lastOpenAiNoteHe": null,
+      "lastClaudeNoteHe": null,
+      "improvementRecommendationHe": null,
+      "qualityMetrics": {
+        "totalActionsCount": 0,
+        "helpfulActionsCount": 0,
+        "neutralActionsCount": 0,
+        "interferingActionsCount": 0,
+        "genuineHumanRepliesReceived": 0,
+        "overloadIncidentsCount": 0,
+        "suppressedByOrchestratorCount": 4,
+        "qualityScorePct": 89
+      },
+      "pendingIdentityProposal": null
+    }
+  ],
+  "recentActionAudits": [],
+  "recentOrchestratorGates": [
+    {
+      "gateId": "gate_1794759720373_2",
+      "timestamp": 1794759720373,
+      "streamId": "test_stream_5",
+      "candidateAgentId": "ai_crew_4_creative",
+      "candidateRole": "CREATIVE_ENGAGEMENT",
+      "whoShouldRespondHe": "מנחה AI #4 — מעורבות יצירתית ותוכן (Creative Engagement)",
+      "whyRespondHe": "בדיקת חסימה בעומס",
+      "viewerValueHe": "סקר קהל",
+      "timingAppropriate": false,
+      "decision": "BLOCKED",
+      "blockReasonCode": "CHAT_OVERLOAD_BUSY",
+      "explanationHe": "נחסם ע״י Chat Orchestrator: הצ׳אט האנושי כבר פעיל מאוד (10 הודעות/דקה) — מצמצמים הודעות אוטומטיות."
+    },
+    {
+      "gateId": "gate_1794759720372_1",
+      "timestamp": 1794759720372,
+      "streamId": "test_stream_5",
+      "candidateAgentId": "ai_crew_1_host",
+      "candidateRole": "CONVERSATION_HOST",
+      "whoShouldRespondHe": "מנחה AI #1 — מארח שיחה (Conversation Host)",
+      "whyRespondHe": "בדיקת חסימת שיח בוטים",
+      "viewerValueHe": "בדיקה",
+      "timingAppropriate": false,
+      "decision": "BLOCKED",
+      "blockReasonCode": "BOT_TO_BOT_FORBIDDEN",
+      "explanationHe": "נחסם ע״י Chat Orchestrator: נאסר על סוכן AI לפנות לסוכן AI אחר או לייצר שיח מלאכותי בין בוטים."
+    },
+    {
+      "gateId": "gate_1794755072252_4",
+      "timestamp": 1794755072252,
+      "streamId": "test_stream_5",
+      "candidateAgentId": "ai_crew_4_creative",
+      "candidateRole": "CREATIVE_ENGAGEMENT",
+      "whoShouldRespondHe": "מנחה AI #4 — מעורבות יצירתית ותוכן (Creative Engagement)",
+      "whyRespondHe": "בדיקת חסימה בעומס",
+      "viewerValueHe": "סקר קהל",
+      "timingAppropriate": false,
+      "decision": "BLOCKED",
+      "blockReasonCode": "CHAT_OVERLOAD_BUSY",
+      "explanationHe": "נחסם ע״י Chat Orchestrator: הצ׳אט האנושי כבר פעיל מאוד (10 הודעות/דקה) — מצמצמים הודעות אוטומטיות."
+    },
+    {
+      "gateId": "gate_1794755072252_3",
+      "timestamp": 1794755072252,
+      "streamId": "test_stream_5",
+      "candidateAgentId": "ai_crew_1_host",
+      "candidateRole": "CONVERSATION_HOST",
+      "whoShouldRespondHe": "מנחה AI #1 — מארח שיחה (Conversation Host)",
+      "whyRespondHe": "בדיקת חסימת שיח בוטים",
+      "viewerValueHe": "בדיקה",
+      "timingAppropriate": false,
+      "decision": "BLOCKED",
+      "blockReasonCode": "BOT_TO_BOT_FORBIDDEN",
+      "explanationHe": "נחסם ע״י Chat Orchestrator: נאסר על סוכן AI לפנות לסוכן AI אחר או לייצר שיח מלאכותי בין בוטים."
+    },
+    {
+      "gateId": "gate_1794754997054_2",
+      "timestamp": 1794754997054,
+      "streamId": "test_stream_5",
+      "candidateAgentId": "ai_crew_4_creative",
+      "candidateRole": "CREATIVE_ENGAGEMENT",
+      "whoShouldRespondHe": "מנחה AI #4 — מעורבות יצירתית ותוכן (Creative Engagement)",
+      "whyRespondHe": "בדיקת חסימה בעומס",
+      "viewerValueHe": "סקר קהל",
+      "timingAppropriate": false,
+      "decision": "BLOCKED",
+      "blockReasonCode": "CHAT_OVERLOAD_BUSY",
+      "explanationHe": "נחסם ע״י Chat Orchestrator: הצ׳אט האנושי כבר פעיל מאוד (10 הודעות/דקה) — מצמצמים הודעות אוטומטיות."
+    },
+    {
+      "gateId": "gate_1794754997054_1",
+      "timestamp": 1794754997054,
+      "streamId": "test_stream_5",
+      "candidateAgentId": "ai_crew_1_host",
+      "candidateRole": "CONVERSATION_HOST",
+      "whoShouldRespondHe": "מנחה AI #1 — מארח שיחה (Conversation Host)",
+      "whyRespondHe": "בדיקת חסימת שיח בוטים",
+      "viewerValueHe": "בדיקה",
+      "timingAppropriate": false,
+      "decision": "BLOCKED",
+      "blockReasonCode": "BOT_TO_BOT_FORBIDDEN",
+      "explanationHe": "נחסם ע״י Chat Orchestrator: נאסר על סוכן AI לפנות לסוכן AI אחר או לייצר שיח מלאכותי בין בוטים."
+    },
+    {
+      "gateId": "gate_1794753371257_2",
+      "timestamp": 1794753371257,
+      "streamId": "test_stream_5",
+      "candidateAgentId": "ai_crew_4_creative",
+      "candidateRole": "CREATIVE_ENGAGEMENT",
+      "whoShouldRespondHe": "מנחה AI #4 — מעורבות יצירתית ותוכן (Creative Engagement)",
+      "whyRespondHe": "בדיקת חסימה בעומס",
+      "viewerValueHe": "סקר קהל",
+      "timingAppropriate": false,
+      "decision": "BLOCKED",
+      "blockReasonCode": "CHAT_OVERLOAD_BUSY",
+      "explanationHe": "נחסם ע״י Chat Orchestrator: הצ׳אט האנושי כבר פעיל מאוד (10 הודעות/דקה) — מצמצמים הודעות אוטומטיות."
+    },
+    {
+      "gateId": "gate_1794753371256_1",
+      "timestamp": 1794753371256,
+      "streamId": "test_stream_5",
+      "candidateAgentId": "ai_crew_1_host",
+      "candidateRole": "CONVERSATION_HOST",
+      "whoShouldRespondHe": "מנחה AI #1 — מארח שיחה (Conversation Host)",
+      "whyRespondHe": "בדיקת חסימת שיח בוטים",
+      "viewerValueHe": "בדיקה",
+      "timingAppropriate": false,
+      "decision": "BLOCKED",
+      "blockReasonCode": "BOT_TO_BOT_FORBIDDEN",
+      "explanationHe": "נחסם ע״י Chat Orchestrator: נאסר על סוכן AI לפנות לסוכן AI אחר או לייצר שיח מלאכותי בין בוטים."
+    }
+  ]
+}

@@ -1,7 +1,22 @@
 {
-  "totalRoundsAnalyzed": 69,
+  "totalRoundsAnalyzed": 76,
   "oauthConnectedUser": null,
   "watchedCreators": [
+    {
+      "username": "boostera_demo_live",
+      "displayName": "boostera_demo_live",
+      "addedAtTs": 1794759632855,
+      "autoWatchEnabled": true,
+      "autoLearnEnabled": true,
+      "notesHe": "מעקב אוטומטי 24/7 — מתחבר ומאזין לאנרגיה, צ׳אט, מסיבה ובאטלים בכל פעם שעולה ללייב",
+      "isLiveNow": false,
+      "currentlyConnected": false,
+      "lastCheckedTs": 1794759694999,
+      "lastLiveSeenTs": null,
+      "lastLearnedTs": null,
+      "sessionsLearnedCount": 0,
+      "detectedLanguage": "GLOBAL"
+    },
     {
       "username": "q39p._",
       "displayName": "q39p._",
@@ -9,9 +24,9 @@
       "autoWatchEnabled": true,
       "autoLearnEnabled": true,
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @romanioli3 (מחובר לשאיבת סקור אנטי-ענן)",
-      "isLiveNow": true,
-      "currentlyConnected": true,
-      "lastCheckedTs": 1794746277667,
+      "isLiveNow": false,
+      "currentlyConnected": false,
+      "lastCheckedTs": 1794759695961,
       "lastLiveSeenTs": 1794746283947,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -24,9 +39,9 @@
       "autoWatchEnabled": true,
       "autoLearnEnabled": true,
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @zainabmamdouh35 (מחובר לשאיבת סקור אנטי-ענן)",
-      "isLiveNow": true,
-      "currentlyConnected": true,
-      "lastCheckedTs": 1794746277025,
+      "isLiveNow": false,
+      "currentlyConnected": false,
+      "lastCheckedTs": 1794759694511,
       "lastLiveSeenTs": 1794746283947,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -39,9 +54,9 @@
       "autoWatchEnabled": true,
       "autoLearnEnabled": true,
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @oneillcohenlive (מחובר לשאיבת סקור אנטי-ענן)",
-      "isLiveNow": true,
-      "currentlyConnected": true,
-      "lastCheckedTs": 1794746276671,
+      "isLiveNow": false,
+      "currentlyConnected": false,
+      "lastCheckedTs": 1794759695502,
       "lastLiveSeenTs": 1794746283947,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -54,9 +69,9 @@
       "autoWatchEnabled": true,
       "autoLearnEnabled": true,
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @04rboy10 (מחובר לשאיבת סקור אנטי-ענן)",
-      "isLiveNow": true,
-      "currentlyConnected": true,
-      "lastCheckedTs": 1794746277642,
+      "isLiveNow": false,
+      "currentlyConnected": false,
+      "lastCheckedTs": 1794759695224,
       "lastLiveSeenTs": 1794746283947,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -71,7 +86,7 @@
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @romanioli3 (מחובר לשאיבת סקור אנטי-ענן)",
       "isLiveNow": false,
       "currentlyConnected": false,
-      "lastCheckedTs": 1794746275251,
+      "lastCheckedTs": 1794759694469,
       "lastLiveSeenTs": 1794745120093,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -86,7 +101,7 @@
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @sanya.mar (מחובר לשאיבת סקור אנטי-ענן)",
       "isLiveNow": false,
       "currentlyConnected": false,
-      "lastCheckedTs": 1794746275139,
+      "lastCheckedTs": 1794759696394,
       "lastLiveSeenTs": 1794745229876,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -101,7 +116,7 @@
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @oneillcohenlive (מחובר לשאיבת סקור אנטי-ענן)",
       "isLiveNow": false,
       "currentlyConnected": false,
-      "lastCheckedTs": 1794746278961,
+      "lastCheckedTs": 1794759697020,
       "lastLiveSeenTs": 1794746267177,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -116,7 +131,7 @@
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @user9107968149279 (מחובר לשאיבת סקור אנטי-ענן)",
       "isLiveNow": false,
       "currentlyConnected": false,
-      "lastCheckedTs": 1794746278958,
+      "lastCheckedTs": 1794759696356,
       "lastLiveSeenTs": 1794746267177,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -129,9 +144,9 @@
       "autoWatchEnabled": true,
       "autoLearnEnabled": true,
       "notesHe": "מעקב אוטומטי 24/7 — מתחבר ומאזין לאנרגיה, צ׳אט, מסיבה ובאטלים בכל פעם שעולה ללייב",
-      "isLiveNow": true,
-      "currentlyConnected": true,
-      "lastCheckedTs": 1794746280065,
+      "isLiveNow": false,
+      "currentlyConnected": false,
+      "lastCheckedTs": 1794759697160,
       "lastLiveSeenTs": 1794746283947,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -146,7 +161,7 @@
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @queentina1991 (מחובר לשאיבת סקור אנטי-ענן)",
       "isLiveNow": false,
       "currentlyConnected": false,
-      "lastCheckedTs": 1794746278936,
+      "lastCheckedTs": 1794759696977,
       "lastLiveSeenTs": 1794746267177,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -161,7 +176,7 @@
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @q39p._ (מחובר לשאיבת סקור אנטי-ענן)",
       "isLiveNow": false,
       "currentlyConnected": false,
-      "lastCheckedTs": 1794746278988,
+      "lastCheckedTs": 1794759696429,
       "lastLiveSeenTs": 1794746267177,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -176,7 +191,7 @@
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @loyals_foundation (מחובר לשאיבת סקור אנטי-ענן)",
       "isLiveNow": false,
       "currentlyConnected": false,
-      "lastCheckedTs": 1794746278984,
+      "lastCheckedTs": 1794759697617,
       "lastLiveSeenTs": 1794746267177,
       "lastLearnedTs": 1794740317841,
       "sessionsLearnedCount": 11,
@@ -191,7 +206,7 @@
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @007.player (מחובר לשאיבת סקור אנטי-ענן)",
       "isLiveNow": false,
       "currentlyConnected": false,
-      "lastCheckedTs": 1794746280499,
+      "lastCheckedTs": 1794759697840,
       "lastLiveSeenTs": 1794745217030,
       "lastLearnedTs": 1794740317841,
       "sessionsLearnedCount": 11,
@@ -206,7 +221,7 @@
       "notesHe": "יריב קרב PK שזוהה בשידור חי מול @oneillcohenlive (מחובר לשאיבת סקור אנטי-ענן)",
       "isLiveNow": false,
       "currentlyConnected": false,
-      "lastCheckedTs": 1794746280444,
+      "lastCheckedTs": 1794759697738,
       "lastLiveSeenTs": 1794744633496,
       "lastLearnedTs": 1794740317841,
       "sessionsLearnedCount": 9,
@@ -221,7 +236,7 @@
       "notesHe": "מדורג #1 US — מעקב בניית הייפ קהילתי וקצב מתנות",
       "isLiveNow": false,
       "currentlyConnected": false,
-      "lastCheckedTs": 1794746280484,
+      "lastCheckedTs": 1794759697631,
       "lastLiveSeenTs": null,
       "lastLearnedTs": null,
       "sessionsLearnedCount": 0,
@@ -699,9 +714,9 @@
     {
       "cueId": "VID_07_QUAD_PYRO_FLAME_JETS",
       "labelHe": "VID_07_QUAD_PYRO_FLAME_JETS",
-      "timesTriggered": 63,
+      "timesTriggered": 70,
       "avgLpsBoost": 2.8,
-      "lastUsedTs": 1794746267448
+      "lastUsedTs": 1794759428752
     },
     {
       "cueId": "VID_06_PLASMA_SPARK_SURGE",
@@ -713,37 +728,37 @@
     {
       "cueId": "VID_03_TWIN_LIGHTNING_ARCS",
       "labelHe": "VID_03_TWIN_LIGHTNING_ARCS",
-      "timesTriggered": 53,
+      "timesTriggered": 83,
       "avgLpsBoost": 2.2,
-      "lastUsedTs": 1794746186995
+      "lastUsedTs": 1794759687950
     },
     {
       "cueId": "VID_05_PK_FACTION_SMOKE_CLASH",
       "labelHe": "VID_05_PK_FACTION_SMOKE_CLASH",
-      "timesTriggered": 81,
+      "timesTriggered": 111,
       "avgLpsBoost": 2.2,
-      "lastUsedTs": 1794746239444
+      "lastUsedTs": 1794759659949
     },
     {
       "cueId": "BEAST_08_VIOLET_PHOENIX",
       "labelHe": "BEAST_08_VIOLET_PHOENIX",
-      "timesTriggered": 32,
+      "timesTriggered": 55,
       "avgLpsBoost": 2,
-      "lastUsedTs": 1794746257807
+      "lastUsedTs": 1794759715951
     },
     {
       "cueId": "BEAST_10_ROYAL_FIRE_LION",
       "labelHe": "BEAST_10_ROYAL_FIRE_LION",
-      "timesTriggered": 34,
+      "timesTriggered": 44,
       "avgLpsBoost": 2,
-      "lastUsedTs": 1794746281918
+      "lastUsedTs": 1794759418616
     },
     {
       "cueId": "FOLLOW_GOLDEN_SPARKS",
       "labelHe": "FOLLOW_GOLDEN_SPARKS",
-      "timesTriggered": 12,
+      "timesTriggered": 14,
       "avgLpsBoost": 1.7,
-      "lastUsedTs": 1794742439190
+      "lastUsedTs": 1794755076253
     },
     {
       "cueId": "SOLO_WARM_LOUNGE",
@@ -755,9 +770,9 @@
     {
       "cueId": "FINALE_PYRO_CONVERGENCE",
       "labelHe": "FINALE_PYRO_CONVERGENCE",
-      "timesTriggered": 46,
+      "timesTriggered": 53,
       "avgLpsBoost": 2.3,
-      "lastUsedTs": 1794746056666
+      "lastUsedTs": 1794759428754
     },
     {
       "cueId": "PRESSURE_FORKED_LIGHTNING",
@@ -776,9 +791,9 @@
     {
       "cueId": "TAP_DOPAMINE_STIMULUS",
       "labelHe": "גירוי אצבע ללחיצה (Tap Stimulus)",
-      "timesTriggered": 434,
+      "timesTriggered": 515,
       "avgLpsBoost": 6,
-      "lastUsedTs": 1794746280846
+      "lastUsedTs": 1794759715951
     },
     {
       "cueId": "SNIPE_CRITICAL_FLASH",

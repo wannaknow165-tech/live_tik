@@ -22,6 +22,7 @@ import {
   ModeratorTriggerEventType,
 } from '../data/boosteraCatalog';
 import { ChatCompanionCrewPanel } from './ChatCompanionCrewPanel';
+import { UnifiedTikTokAccountsPhonePanel } from './UnifiedTikTokAccountsPhonePanel';
 
 interface ModeratorsManagementWorkspaceProps {
   battleState: BattleState;
@@ -64,8 +65,16 @@ const DELIVERY_STATE_LABELS: Record<
   EnvModeratorSlotActivity['liveDeliveryState'],
   { textHe: string; toneClass: string }
 > = {
+  CLOUD_PHONE_CONNECTED: {
+    textHe: 'מחובר ומאומת דרך טלפון ענן (GeeLark)',
+    toneClass: 'text-emerald-300',
+  },
+  OAUTH_VERIFIED: {
+    textHe: 'מחובר ומאומת דרך TikTok OAuth מאובטח',
+    toneClass: 'text-emerald-300',
+  },
   DIRECT_TIKTOK_AUTH: {
-    textHe: 'שליחה ישירה מאומתת (.env)',
+    textHe: 'מחובר דרך סשן שרת מנוהל אוטומטית',
     toneClass: 'text-emerald-300',
   },
   WS_BRIDGE_CONNECTED: {
@@ -75,6 +84,10 @@ const DELIVERY_STATE_LABELS: Record<
   STAGE_READY: {
     textHe: 'פעיל בתצוגה ובגשר מנחים',
     toneClass: 'text-amber-300',
+  },
+  DISCONNECTED_NO_AUTH: {
+    textHe: 'מנותק — טרם אומת מול טלפון ענן או OAuth (אופציונלי)',
+    toneClass: 'text-rose-300',
   },
   PAUSED: {
     textHe: 'מושהה ידנית',
@@ -152,19 +165,20 @@ export const ModeratorsManagementWorkspace: React.FC<ModeratorsManagementWorkspa
     setReloadingEnv(true);
     setBannerHe(null);
     try {
-      const resp = await fetch('/api/chat-companion/reload-env-status', {
+      const resp = await fetch('/api/accounts-bridge/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
       const json = await resp.json();
       await refreshState();
       if (resp.ok) {
+        const connectedCount = json.bridge?.connectedAccountsCount ?? 0;
         setBannerHe(
-          `נסרק קובץ הסביבה (.env): זוהו ${json.configuredCount} מתוך 6 סשנים ישירים פעילים, וכל 6 הסלוטים מסונכרנים.`
+          `נבדקו חיבורי הטלפונים והחשבונות בזמן אמת: ${connectedCount} מתוך 6 חשבונות מחוברים ומאומתים.`
         );
       }
     } catch {
-      setBannerHe('שגיאה ברענון סטטוס משתני ה-.env.');
+      setBannerHe('שגיאה בבדיקת חיבור החשבונות והטלפונים.');
     } finally {
       setReloadingEnv(false);
     }
@@ -453,12 +467,12 @@ export const ModeratorsManagementWorkspace: React.FC<ModeratorsManagementWorkspa
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="space-y-1.5 max-w-3xl">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-100">
-              ניהול מנחים (Moderators), תסריטי אירועים אוטומטיים וניטור 6 חשבונות ה-.env
+              ניהול מנחים (Moderators), חשבונות וטלפונים מחוברים ותסריטי אירועים אוטומטיים
             </h1>
             <p className="text-xs sm:text-sm text-slate-400">
               {enabledSlotsCount}/6 חשבונות מנחים פעילים
               <span aria-hidden="true"> · </span>
-              {configuredInEnvCount}/6 סשנים ישירים מוגדרים ב-.env
+              {configuredInEnvCount}/6 חשבונות מחוברים ומאומתים
               <span aria-hidden="true"> · </span>
               {scripts.filter((s) => s.enabled).length} תסריטי אירועים דרוכים
               <span aria-hidden="true"> · </span>
@@ -471,7 +485,7 @@ export const ModeratorsManagementWorkspace: React.FC<ModeratorsManagementWorkspa
             {(
               [
                 { id: 'ALL', label: 'תצוגה מרוכזת' },
-                { id: 'ENV_ACCOUNTS', label: '6 חשבונות ה-.env' },
+                { id: 'ENV_ACCOUNTS', label: 'חשבונות וטלפונים מחוברים' },
                 { id: 'AUTO_SCRIPTS', label: 'תסריטי תגובה אוטומטיים' },
                 { id: 'AI_BRAIN', label: 'מוח AI ואימון צ׳אט' },
               ] as const
@@ -500,7 +514,7 @@ export const ModeratorsManagementWorkspace: React.FC<ModeratorsManagementWorkspa
               type="text"
               value={deployRoomInput}
               onChange={(e) => setDeployRoomInput(e.target.value)}
-              placeholder="הזן @username של לייב בטיקטוק להצבת כל 6 החשבונות והתסריטים..."
+              placeholder="הזן @username של לייב בטיקטוק לשיוך מהיר של המנחים והתסריטים..."
               className="flex-1 bg-[#111724] border border-[#1E2636] rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-400"
             />
             <button
@@ -514,7 +528,7 @@ export const ModeratorsManagementWorkspace: React.FC<ModeratorsManagementWorkspa
               ) : (
                 <Users className="w-3.5 h-3.5" />
               )}
-              הצב את 6 החשבונות בלייב
+              שייך את כל החשבונות ללייב
             </button>
           </div>
 
@@ -540,7 +554,7 @@ export const ModeratorsManagementWorkspace: React.FC<ModeratorsManagementWorkspa
               className="px-3.5 py-2 rounded-lg text-xs font-medium bg-[#111724] border border-[#1E2636] hover:border-slate-600 text-slate-200 flex items-center gap-1.5"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${reloadingEnv ? 'animate-spin' : ''}`} />
-              סרוק מחדש קובץ .env
+              בדוק חיבור טלפונים וחשבונות
             </button>
           </div>
         </div>
@@ -563,20 +577,23 @@ export const ModeratorsManagementWorkspace: React.FC<ModeratorsManagementWorkspa
       </section>
 
       {/* ===================================================================== */}
-      {/* 01. CENTRALIZED 6 .ENV ACCOUNTS MONITOR (TIKTOK_MOD_1 .. TIKTOK_MOD_6) */}
+      {/* 01. UNIFIED CONNECTED TIKTOK ACCOUNTS & CLOUD PHONES MONITOR          */}
       {/* ===================================================================== */}
       {(sectionFilter === 'ALL' || sectionFilter === 'ENV_ACCOUNTS') && (
-        <section className="space-y-4">
+        <section className="space-y-6">
+          <UnifiedTikTokAccountsPhonePanel
+            fallbackTargetRoom={deployRoomInput}
+            onUpdated={refreshState}
+          />
+
           <div className="flex items-baseline justify-between gap-4 flex-wrap">
             <div className="space-y-1">
               <h2 className="text-base sm:text-lg font-semibold text-slate-100 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-emerald-400" />
-                01. מרכז פעילות 6 החשבונות המוגדרים בקובץ ה-.env
+                01. יומן פעילות וביצוע תסריטים לכל 6 סלוטי החשבונות
               </h2>
               <p className="text-xs text-slate-400">
-                מיפוי מלא של משתני הסביבה{' '}
-                <span className="font-mono text-slate-300">TIKTOK_MOD_1_SESSIONID</span> עד{' '}
-                <span className="font-mono text-slate-300">TIKTOK_MOD_6_SESSIONID</span> — כולל אזור שרת, חדר יעד, ספירת תסריטים ויומן הודעות אחרונות לכל חשבון.
+                מעקב חי אחר כל הודעה שנשלחה או הומלצה, ספירת תסריטים אוטומטיים ויומן פעילות לכל חשבון — ללא הזנה ידנית של מזהי Session.
               </p>
             </div>
           </div>
@@ -617,7 +634,7 @@ export const ModeratorsManagementWorkspace: React.FC<ModeratorsManagementWorkspa
                             </span>
                           </div>
 
-                          {/* Clean unboxed .env metadata row */}
+                          {/* Clean unboxed connection metadata row */}
                           <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400">
                             <span className="font-mono text-slate-300">
                               {slot.envSessionKeyName}
@@ -632,8 +649,6 @@ export const ModeratorsManagementWorkspace: React.FC<ModeratorsManagementWorkspa
                             >
                               {slot.sessionMaskedStatusHe}
                             </span>
-                            <span aria-hidden="true">·</span>
-                            <span>אזור: {slot.targetIdc}</span>
                             <span aria-hidden="true">·</span>
                             <span className={deliveryMeta.toneClass}>{deliveryMeta.textHe}</span>
                             {slot.deployedRoomHandle && (
@@ -835,7 +850,7 @@ export const ModeratorsManagementWorkspace: React.FC<ModeratorsManagementWorkspa
                 02. תסריטי תגובה אוטומטיים לצ׳אט לפי זיהוי אירועים בלייב
               </h2>
               <p className="text-xs text-slate-400">
-                הגדר אילו מחשבונות ה-.env (#1–#6) יגיבו אוטומטית ובאילו הפרשי שניות בכל פעם שמזוהה מתנה, כפפה, ענן יריב, משימת מהירות או כל אירוע WebSocket בלייב.
+                הגדר אילו מהחשבונות המחוברים (#1–#6) יגיבו אוטומטית ובאילו הפרשי שניות בכל פעם שמזוהה מתנה, כפפה, ענן יריב, משימת מהירות או כל אירוע WebSocket בלייב.
               </p>
             </div>
 
@@ -975,7 +990,7 @@ export const ModeratorsManagementWorkspace: React.FC<ModeratorsManagementWorkspa
               <div className="space-y-2.5 pt-2 border-t border-[#1E2636]">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-xs font-semibold text-slate-200">
-                    שלבי שיחה מתוזמנים בין חשבונות ה-.env (נשלחים בדירוג אנושי):
+                    שלבי שיחה מתוזמנים בין החשבונות המחוברים (נשלחים בדירוג אנושי):
                   </span>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-[11px] text-slate-400">הוסף משתנה חי:</span>

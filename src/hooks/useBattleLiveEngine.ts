@@ -122,8 +122,9 @@ const INITIAL_FALLBACK_STATE: BattleState = {
     autoModerationShieldEnabled: true,
     autoLearnFromLiveChat: true,
     autoEventScriptsEnabled: true,
+    allowLocalSimulationWhenDisconnected: false,
     chatVelocityPerMin: 0,
-    detectedRoomMoodHe: 'מאזין לצ׳אט חי ולמנחים מלווים...',
+    detectedRoomMoodHe: 'ממתין להרצת שרשרת שיחה בין 6 התפקידים...',
     commanderBrain: {
       autonomousBrainEnabled: true,
       activeTargetRoom: null,

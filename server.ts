@@ -7,6 +7,32 @@ import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import { FunctionDeclaration, GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import { ControlEvent, TikTokLiveConnection, WebcastEvent } from 'tiktok-live-connector';
+import {
+  CHAT_ELONGATION_METHODS_CATALOG,
+  CHAT_RUNNER_ROLES_CATALOG,
+  ChatElongationMethodId,
+  LiveBattleContenderFeed,
+  LiveVideoBattleIntelState,
+} from './src/data/boosteraCatalog';
+import { BoosteraDataFactory } from './src/server/boosteraDataFactory';
+import { BoosteraKnowledgeEngine } from './src/server/boosteraKnowledgeEngine';
+import { BoosteraAiChatCrewOrchestrator } from './src/server/boosteraAiChatCrewOrchestrator';
+import { BoosteraAiDecisionOrchestrator } from './src/server/boosteraAiDecisionOrchestrator';
+import {
+  BoosteraExecutionBridge,
+  buildUnifiedIntelligenceDashboardState,
+  ExistingBoosteraStageCallbacks,
+  runBoosteraPhase5TestSuite,
+} from './src/server/boosteraExecutionAndTests';
+import { GeeLarkLiveDirectorCoordinator } from './server/geelarkDirectorEngine';
+import type { TikTokAccountSlotId } from './src/types/geelarkDirectorTypes';
+import type {
+  AiCrewArchetypeId,
+  ManagedTikTokVerifiedChannel,
+  ManagedTikTokVerifiedStatus,
+  PhoneAndAccountsBridgeState,
+  UnifiedManagedTikTokAccount,
+} from './src/types/boosteraIntelligence';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +43,7 @@ const MEMORY_FILE = path.join(DATA_DIR, 'boostera_ai_memory.json');
 const TIKLEAP_CACHE_FILE = path.join(DATA_DIR, 'tikleap_rankings_cache.json');
 const WS_SNIFFER_FILE = path.join(DATA_DIR, 'ws_event_sniffer.json');
 const CHAT_COMPANION_FILE = path.join(DATA_DIR, 'chat_companion_crew.json');
+const SECURE_ACCOUNT_SESSIONS_FILE = path.join(DATA_DIR, 'boostera_secure_account_sessions.json');
 
 type VfxLayer = 'BACK' | 'FRONT' | 'HYBRID';
 type BattlePhaseId = 'IGNITION' | 'MOMENTUM' | 'PRESSURE' | 'TENSION' | 'FINALE';
@@ -1172,10 +1199,19 @@ interface CompanionAccountSlot {
     | 'SLOT_READY'
     | 'LIVE_ROOM_DEPLOYED'
     | 'TIKTOK_AUTH_LIVE'
-    | 'WS_BRIDGE_ACTIVE';
+    | 'WS_BRIDGE_ACTIVE'
+    | 'DISCONNECTED_NO_AUTH';
   hasServerTikTokAuth?: boolean;
+  isTrulyConnected?: boolean;
+  lastConnectionErrorHe?: string | null;
   deployedRoomHandle?: string | null;
   deployedRoomLive?: boolean;
+  geelarkDeviceId?: string | null;
+  appPackageId?: string;
+  selectedForChatCrew?: boolean;
+  assignedCrewRole?: string | null;
+  verifiedChannel?: string;
+  lastVerifiedAtTs?: number | null;
   trainingLevel: number;
   trainedSkillSummaryHe: string;
   trainedLinesHe: string[];
@@ -1224,6 +1260,7 @@ interface CompanionDispatchActionItem {
   messageTextHe: string;
   targetRoom?: string | null;
   deliveryModeHe?: string;
+  deliveryStatus?: 'SENT_TIKTOK' | 'SENT_WS_BRIDGE' | 'LOCAL_PREVIEW_ONLY' | 'BLOCKED_DISCONNECTED';
   targetOffender?: string;
   dispatchedToBridge: boolean;
 }
@@ -1248,6 +1285,7 @@ interface ModeratorScriptStep {
   slotNumber: number;
   delaySec: number;
   messageTemplateHe: string;
+  roleActionWhyHe?: string;
 }
 
 interface ModeratorAutoScriptRule {
@@ -1289,9 +1327,18 @@ interface EnvModeratorSlotActivity {
   avatarUrl: string;
   role: CompanionRoleId;
   enabled: boolean;
+  isTrulyConnected: boolean;
+  lastConnectionErrorHe: string | null;
   deployedRoomHandle: string | null;
   deployedRoomLive: boolean;
-  liveDeliveryState: 'DIRECT_TIKTOK_AUTH' | 'WS_BRIDGE_CONNECTED' | 'STAGE_READY' | 'PAUSED';
+  liveDeliveryState:
+    | 'CLOUD_PHONE_CONNECTED'
+    | 'OAUTH_VERIFIED'
+    | 'DIRECT_TIKTOK_AUTH'
+    | 'WS_BRIDGE_CONNECTED'
+    | 'DISCONNECTED_NO_AUTH'
+    | 'STAGE_READY'
+    | 'PAUSED';
   messagesSentTotal: number;
   autoScriptTriggersCount: number;
   brainCommandsCount: number;
@@ -1311,7 +1358,7 @@ interface BrainSquadOrderStep {
   delaySec: number;
   lineHe: string;
   tacticalPurposeHe: string;
-  status: 'QUEUED' | 'SENT';
+  status: 'QUEUED' | 'SENT' | 'PREVIEW_ONLY' | 'BLOCKED_DISCONNECTED';
   sentAtTs?: number;
 }
 
@@ -1342,6 +1389,7 @@ interface ChatCompanionState {
   autoModerationShieldEnabled: boolean;
   autoLearnFromLiveChat: boolean;
   autoEventScriptsEnabled: boolean;
+  allowLocalSimulationWhenDisconnected: boolean;
   chatVelocityPerMin: number;
   detectedRoomMoodHe: string;
   commanderBrain: CompanionBrainCommanderState;
@@ -2304,229 +2352,211 @@ const DEFAULT_COMPANION_ACCOUNTS: CompanionAccountSlot[] = [
     id: 'comp_tactical_1',
     slotNumber: 1,
     handle: 'kobi_pk_commander',
-    displayName: 'קובי · קצין קרב וסנייפ',
+    displayName: 'קובי · פותח הפיתיון והדילמה',
     avatarUrl: buildBroadcastAvatarCrestUri('קב', 0),
     role: 'TACTICAL_SNIPE',
     enabled: true,
-    connectionStatus: hasServerTikTokModSession(1) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    connectionStatus: hasServerTikTokModSession(1) ? 'TIKTOK_AUTH_LIVE' : 'DISCONNECTED_NO_AUTH',
     hasServerTikTokAuth: hasServerTikTokModSession(1),
+    isTrulyConnected: hasServerTikTokModSession(1),
+    lastConnectionErrorHe: null,
     deployedRoomHandle: null,
     deployedRoomLive: false,
-    trainingLevel: 92,
-    trainedSkillSummaryHe: 'תזמון פתיחת כפפה x5 ב-5 השניות הראשונות והכנת קהל לסנייפ בשנייה ה-8',
+    trainingLevel: 94,
+    trainedSkillSummaryHe: 'זורק דילמה חצויה (50/50) או התערבות שמחייבת צופים לענות — לעולם לא סיסמה יבשה',
     trainedLinesHe: [
-      'כפפה באוויר 30 שניות — כל ורד קטן עכשיו תופס מכפיל x5, כולם ביחד!',
-      'לשמור תחמושת חברים, סנייפ מדויק ב-8 שניות אחרונות סוגר את הסיבוב!',
-      'היריב פתח ענן מלחץ — ממשיכים נקודות בשקט ולא עוצרים לשנייה!',
+      'רגע התערבות פה בצ׳אט: אנחנו סוגרים אותו לפני הכפפה או שרק בסנייפ בשנייה 6?',
+      'אני היחיד ששם לב שכל פעם שהסקור זז היריב בודק את הצ׳אט שלו מרוב לחץ?',
+      'בכנות תגידו רגע — לשחק פה פני פוקר בשקט או לפתוח פער על ההתחלה?',
     ],
     lastOrderHe: null,
     externalWebhookOrWsTag: 'tiktok-mod-slot-1',
-    toneNotesHe: 'חד, טקטי, סופר שניות לכפפה, מתריע מיד על ענן יריב ומדרבן בשניות ההכרעה.',
-    messagesDispatched: 4,
+    toneNotesHe: 'תפקיד #1 בשרשרת: זורק את הניצוץ/הפיתיון הראשוני (התערבות או שאלת 50/50) שפותח שיחה ארוכה.',
+    messagesDispatched: 0,
     moderationsTriggered: 0,
   },
   {
     id: 'comp_hype_2',
     slotNumber: 2,
     handle: 'maya_vibe_boost',
-    displayName: 'מאיה · הרמת אווירה וצ׳אט',
+    displayName: 'מאיה · מציתת הוויכוח הידידותי',
     avatarUrl: buildBroadcastAvatarCrestUri('מי', 1),
     role: 'VIBE_HYPE',
     enabled: true,
-    connectionStatus: hasServerTikTokModSession(2) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    connectionStatus: hasServerTikTokModSession(2) ? 'TIKTOK_AUTH_LIVE' : 'DISCONNECTED_NO_AUTH',
     hasServerTikTokAuth: hasServerTikTokModSession(2),
+    isTrulyConnected: hasServerTikTokModSession(2),
+    lastConnectionErrorHe: null,
     deployedRoomHandle: null,
     deployedRoomLive: false,
-    trainingLevel: 90,
-    trainedSkillSummaryHe: 'שבירת שתיקות בצ׳אט עם שאלות קצרות שמקפיצות חשיפה באלגוריתם הלייב',
+    trainingLevel: 93,
+    trainedSkillSummaryHe: 'עונה לסלוט #1 בדעה הפוכה בחיוך אחרי 3.5 שנ׳ — הסוד שגורם לצופים לקפוץ להכריע מי צודק',
     trainedLinesHe: [
-      'בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב?',
-      'איזה אנרגיות יש בחדר הערב!! כל מי שכאן תנו "1" בצ׳אט ונרים את המסך!',
-      'יאללה משפחה לא להוריד רגל מהגז, החדר שלנו בוער היום!',
+      'חחח אין סיכוי אחי, ראית איך הוא שמר כפפה סיבוב קודם? בלי סנייפ שקט בסוף זה לא נגמר',
+      'פני פוקר קל!! פעם שעברה שפתחנו מוקדם הוא התעורר עלינו בדקה האחרונה חחח',
+      'יואו לא מאמינה שהוא באמת לקח את האתגר הזה עכשיו חחח הולך להיות פה בלאגן',
     ],
     lastOrderHe: null,
     externalWebhookOrWsTag: 'tiktok-mod-slot-2',
-    toneNotesHe: 'אנרגטית, חמה, שוברת שתיקות עם שאלות לקהל ומרימה רצפי דאבל-טאפ ושיתופים.',
-    messagesDispatched: 6,
+    toneNotesHe: 'תפקיד #2 בשרשרת: חולקת בידידות על סלוט #1 כדי לייצר פינג-פונג אנושי שגורר צופים לקחת צד.',
+    messagesDispatched: 0,
     moderationsTriggered: 0,
   },
   {
     id: 'comp_shield_3',
     slotNumber: 3,
     handle: 'ori_room_shield',
-    displayName: 'אורי · מגן חדר וניקוי רעשים',
+    displayName: 'אורי · מסובב נרטיב ("אנחנו מולם")',
     avatarUrl: buildBroadcastAvatarCrestUri('אר', 2),
     role: 'MOD_SHIELD',
     enabled: true,
-    connectionStatus: hasServerTikTokModSession(3) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    connectionStatus: hasServerTikTokModSession(3) ? 'TIKTOK_AUTH_LIVE' : 'DISCONNECTED_NO_AUTH',
     hasServerTikTokAuth: hasServerTikTokModSession(3),
+    isTrulyConnected: hasServerTikTokModSession(3),
+    lastConnectionErrorHe: null,
     deployedRoomHandle: null,
     deployedRoomLive: false,
-    trainingLevel: 94,
-    trainedSkillSummaryHe: 'ניטרול טרולים מחדר יריב ע״י הצפה חיובית מתואמת בלי לתת להם במה',
+    trainingLevel: 95,
+    trainedSkillSummaryHe: 'הופך עקיצות מהיריב או ענן הסתרה לסיפור "מבצע סודי של החדר שלנו" במקום נזיפות שוטר',
     trainedLinesHe: [
-      'מתרכזים אך ורק בניצחון שלנו — להציף לבבות כתומים בצ׳אט ולדחוף קדימה!',
-      'אף רעש מבחוץ לא עוצר את המשפחה הזאת, כולנו על המסך בדאבל טאפ!',
-      'שומרים על צ׳אט נקי ואנרגיה גבוהה, כל החדר איתך עד הסוף!',
+      'בדוק שנכנסו לפה עכשיו 3 מרגלים מהחדר שלו לבדוק אם יש לנו כפפה חחח אל תגלו כלום',
+      'ששש אל תכתבו בצ׳אט מה המתנה של הסוף, שהצד השני לא יקלוט לפני ה-30 שניות!',
+      'שקט תעשייתי חברים, מתחת לענן כל נקודה שלנו כואבת לו כפול כשהענן יתפזר!',
     ],
     lastOrderHe: null,
     externalWebhookOrWsTag: 'tiktok-mod-slot-3',
-    toneNotesHe: 'מזהה טרולים מהחדר היריב, הודעות שליליות וספאם — מסמן להשתקה ומציף אנרגיה חיובית.',
-    messagesDispatched: 2,
-    moderationsTriggered: 3,
+    toneNotesHe: 'תפקיד #3 בשרשרת: הופך לחץ, טרולים או ענן יריב לאחוות חדר סודית שמדליקה את הצ׳אט.',
+    messagesDispatched: 0,
+    moderationsTriggered: 0,
   },
   {
     id: 'comp_vip_4',
     slotNumber: 4,
     handle: 'shir_vip_hostess',
-    displayName: 'שיר · קבלת פנים ותודות VIP',
+    displayName: 'שיר · מגנט שמות וחיבור צופים',
     avatarUrl: buildBroadcastAvatarCrestUri('שר', 3),
     role: 'WELCOME_VIP',
     enabled: true,
-    connectionStatus: hasServerTikTokModSession(4) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    connectionStatus: hasServerTikTokModSession(4) ? 'TIKTOK_AUTH_LIVE' : 'DISCONNECTED_NO_AUTH',
     hasServerTikTokAuth: hasServerTikTokModSession(4),
+    isTrulyConnected: hasServerTikTokModSession(4),
+    lastConnectionErrorHe: null,
     deployedRoomHandle: null,
     deployedRoomLive: false,
-    trainingLevel: 89,
-    trainedSkillSummaryHe: 'יחס אישי לתומכים תוך 2 שניות מהמתנה ליצירת נאמנות ומתנות המשך',
+    trainingLevel: 92,
+    trainedSkillSummaryHe: 'תופסת צופה או תומך בשמו ושואלת אותו שאלה אישית ישירה שמחייבת תשובה בצ׳אט',
     trainedLinesHe: [
-      'כבוד ענק ל-{{USER}} על התמיכה המטורפת! כולם לפרגן לו בצ׳אט!',
-      'ברוכים הבאים לכל מי שנכנס עכשיו ללייב — הגעתם בדיוק לרגע השיא!',
-      'איזו כניסה מלכותית של התומכים שלנו, מרימים את כל החדר באוויר!',
+      '{{USER}} יא אלוף איזה טיימינג שנכנסת — תעשה לנו סדר רגע בוויכוח, פותחים עכשיו או שומרים?',
+      'מי פה פעם ראשונה בשידור היום? תרשמו "אני" תכף תבינו על מה כולם מתווכחים פה!',
+      'כל מי שהיה פה בסיבוב הקודם תאשרו לנו רגע בצ׳אט — בכמה הפרש לקחנו בסוף?',
     ],
     lastOrderHe: null,
     externalWebhookOrWsTag: 'tiktok-mod-slot-4',
-    toneNotesHe: 'נותנת כבוד אישי לתומכים, מברכת מצטרפים חדשים וגורמת לכל תומך להרגיש מלך בחדר.',
-    messagesDispatched: 5,
+    toneNotesHe: 'תפקיד #4 בשרשרת: שואבת צופים אמיתיים ותומכים לתוך הוויכוח באמצעות פנייה אישית ושאלה פתוחה.',
+    messagesDispatched: 0,
     moderationsTriggered: 0,
   },
   {
     id: 'comp_pacer_5',
     slotNumber: 5,
     handle: 'dan_combo_pacer',
-    displayName: 'דן · דחיפת הקשות וקומבו מהירות',
+    displayName: 'דן · סופר ההצבעות והמתח החי',
     avatarUrl: buildBroadcastAvatarCrestUri('דן', 0),
     role: 'COMBO_PACER',
     enabled: true,
-    connectionStatus: hasServerTikTokModSession(5) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    connectionStatus: hasServerTikTokModSession(5) ? 'TIKTOK_AUTH_LIVE' : 'DISCONNECTED_NO_AUTH',
     hasServerTikTokAuth: hasServerTikTokModSession(5),
+    isTrulyConnected: hasServerTikTokModSession(5),
+    lastConnectionErrorHe: null,
     deployedRoomHandle: null,
     deployedRoomLive: false,
-    trainingLevel: 88,
-    trainedSkillSummaryHe: 'הנעת גלי הקשות (Speed Challenge / 3,000 לייקים בנקודות חינם) וסגירת משימות קרב',
+    trainingLevel: 91,
+    trainedSkillSummaryHe: 'מתרגם את הוויכוח להצבעת 1 מול 2 וסופר פער קטן בלייב שגורם לקהל להקליד מיד',
     trainedLinesHe: [
-      'כולם אצבעות על המסך עכשיו — סוגרים את משימת המהירות לנקודות בונוס חינם!',
-      'עוד דחיפה קטנה בהקשות ואנחנו פותחים את מד האנרגיה עד הסוף!',
-      'כל צופה נותן 30 הקשות מהירות עכשיו — בואו נראה את הקומבו עף!',
+      'יואו תיקו בצ׳אט כרגע!! מי שאומר לשמור לסוף שיכתוב 1, מי שאומר לפרק עכשיו שיכתוב 2!',
+      'בדיקה אמיתית ל-15 שניות: נראה אם יש פה 7 אנשים ערים שיכתבו מאיזה אזור הם בארץ!',
+      'מי שעובד איתנו עכשיו מתחת לענן שיכתוב "בפנים" ויתן 30 הקשות מהירות עד שמתבהר!',
     ],
     lastOrderHe: null,
     externalWebhookOrWsTag: 'tiktok-mod-slot-5',
-    toneNotesHe: 'ממוקד במשימות מהירות, גלי לייקים מתואמים וסגירת יעדי חדר בזמן קצר.',
-    messagesDispatched: 3,
+    toneNotesHe: 'תפקיד #5 בשרשרת: מייצר דחיפות, סופר קולות 1 מול 2 ומפעיל יעדי מיקרו של 15 שניות.',
+    messagesDispatched: 0,
     moderationsTriggered: 0,
   },
   {
     id: 'comp_scout_6',
     slotNumber: 6,
     handle: 'noam_live_scout',
-    displayName: 'נועם · מלווה תצפית ושיתופי לייב',
+    displayName: 'נועם · מאריך השרשרת והקליפהאנגר',
     avatarUrl: buildBroadcastAvatarCrestUri('נע', 1),
     role: 'SCOUT_SUPPORT',
     enabled: true,
-    connectionStatus: hasServerTikTokModSession(6) ? 'TIKTOK_AUTH_LIVE' : 'SLOT_READY',
+    connectionStatus: hasServerTikTokModSession(6) ? 'TIKTOK_AUTH_LIVE' : 'DISCONNECTED_NO_AUTH',
     hasServerTikTokAuth: hasServerTikTokModSession(6),
+    isTrulyConnected: hasServerTikTokModSession(6),
+    lastConnectionErrorHe: null,
     deployedRoomHandle: null,
     deployedRoomLive: false,
-    trainingLevel: 87,
-    trainedSkillSummaryHe: 'שיח דו-שיחי טבעי עם שאר המנחים והנעת שיתופי לייב להבאת צופים חדשים',
+    trainingLevel: 91,
+    trainedSkillSummaryHe: 'נכנס בסוף הגל ומשאיר משפט סקרנות פתוח לצופים חדשים מהפור-יו כדי שהשיחה תמשיך',
     trainedLinesHe: [
-      'שיתפתי עכשיו ל-3 חברים, בואו נביא עוד גל צופים מהפור-יו לתוך הקרב!',
-      'לגמרי, רואים שהמומנטום עובר אלינו — רק להמשיך לשתף ולהקיש!',
-      'מי שעוד לא עשה עוקב לשידור זה הזמן, הולך להיות פה סיום מטורף!',
+      'חכו חכו מי שנכנס עכשיו מהפור-יו עוד לא מבין איזה מהפך מתבשל פה בדקה האחרונה...',
+      'רגע נכנסתי לפני דקה — זה כבר ניצחון שלישי ברצף שלנו הערב או שאני מתבלבל?',
+      'חחח הצ׳אט חצוי לגמרי, חכו תראו מה יקרה ברגע שתיפתח הכפפה הראשונה...',
     ],
     lastOrderHe: null,
     externalWebhookOrWsTag: 'tiktok-mod-slot-6',
-    toneNotesHe: 'משלים שיחה טבעית מול שאר המנחים כדי לייצר תחושת קהילה חיה ומניע שיתופים ועוקבים.',
-    messagesDispatched: 2,
+    toneNotesHe: 'תפקיד #6 בשרשרת: לעולם לא סוגר נושא — זורק קליפהאנגר או שאלת ספק שפותחת גל תגובות נוסף.',
+    messagesDispatched: 0,
     moderationsTriggered: 0,
   },
 ];
 
 const DEFAULT_LEARNED_CHAT_PATTERNS: LearnedChatModeratorPattern[] = [
   {
-    id: 'cpat_glove_1',
-    moment: 'GLOVE_X5_PUSH',
-    role: 'TACTICAL_SNIPE',
-    sourceStreamHe: 'נלמד ממנחי באטלים מובילים',
-    whatObservedHe: 'מנחה מלווה לא כותב סתם "תזרקו" — הוא מבקש להכין ורדים/מתנות קטנות ב-5 השניות הראשונות של הכפפה כדי לפתוח מכפיל x5.',
+    id: 'cpat_debate_1',
+    moment: 'DEAD_AIR_ICEBREAKER',
+    role: 'VIBE_HYPE',
+    sourceStreamHe: 'שיטת הוויכוח הידידותי 50/50',
+    whatObservedHe: 'סיסמאות של מנחה ("תרימו את הצ׳אט") מקבלות 0 מענה. כשחשבון #1 זורק דילמה וחשבון #2 חולק עליו בחיוך, הקהל קופץ להכריע מי צודק.',
     hebrewLines: [
-      'כפפה פתוחה 30 שניות!! כולם לזרוק אפילו ורד אחד עכשיו לתפוס מכפיל x5!',
-      'חלון x5 באוויר! כל לחיצה וכל מתנה קטנה עכשיו שווה פי 5 — בואו נפתח פער!',
+      'עדיף לפתוח פער על ההתחלה להלחיץ אותו או לשחק פני פוקר עד השנייה האחרונה?',
+      'פני פוקר קל!! פעם שעברה שפתחנו מוקדם הוא התעורר בדקה האחרונה חחח',
     ],
-    effectivenessScore: 96,
+    effectivenessScore: 98,
     autoDispatchEnabled: true,
-    usedCount: 3,
+    usedCount: 0,
     updatedAtTs: Date.now() - 60000,
   },
   {
     id: 'cpat_cloud_2',
     moment: 'CLOUD_DEFENSE',
     role: 'TACTICAL_SNIPE',
-    sourceStreamHe: 'נלמד מהגנות ענן בזירות PK',
-    whatObservedHe: 'כשהיריב פותח ענן הסתרת סקור, הקהל נוטה לקפוא מחוסר ודאות. מנחה חזק מרגיע מיד ומכוון לשמירת תחמושת לסנייפ.',
+    sourceStreamHe: 'שיטת מבצע חשאי מתחת לענן',
+    whatObservedHe: 'כשהיריב פותח ענן, הופכים את הלחץ לסיפור ש"הוא מפחד מאיתנו" ומבקשים מהקהל לכתוב "בפנים" תוך כדי הקשות שקטות.',
     hebrewLines: [
-      'היריב פתח ענן כי הוא בלחץ! אנחנו רואים את הסקור האמיתי — להמשיך דאבל טאפ ולשמור סנייפ ל-8 שניות אחרונות!',
-      'לא לעצור בגלל הענן חברים! כל נקודה נספרת עכשיו בשקט — תנו עבודה על המסך!',
+      'חחח הוא פתח ענן הסתרה מרוב לחץ! אל תגלו לו שאנחנו רואים את הקצב האמיתי מהצד',
+      'מי שעובד איתנו עכשיו מתחת לענן שיכתוב "בפנים" ויתן 30 הקשות עד שמתבהר!',
     ],
-    effectivenessScore: 95,
+    effectivenessScore: 96,
     autoDispatchEnabled: true,
-    usedCount: 2,
+    usedCount: 0,
     updatedAtTs: Date.now() - 50000,
   },
   {
-    id: 'cpat_deadair_3',
-    moment: 'DEAD_AIR_ICEBREAKER',
-    role: 'VIBE_HYPE',
-    sourceStreamHe: 'נלמד ממרימי אווירה בלייבים',
-    whatObservedHe: 'ברגע שהצ׳אט מאט ל-15 שניות, שאלת מיקרו קצרה (מאיפה צופים / דירוג 1-10) מקפיצה את האלגוריתם של טיקטוק פי 3.',
-    hebrewLines: [
-      'בדיקת נוכחות מהירה בצ׳אט — מאיזה עיר אתם איתנו עכשיו בלייב? תכתבו!',
-      'כל מי שאיתנו בחדר תנו "1" בצ׳אט ושיתוף אחד לחבר, בואו נראה כמה כוח יש פה הערב!',
-    ],
-    effectivenessScore: 91,
-    autoDispatchEnabled: true,
-    usedCount: 4,
-    updatedAtTs: Date.now() - 40000,
-  },
-  {
-    id: 'cpat_shield_4',
-    moment: 'ANTI_TROLL_SHIELD',
-    role: 'MOD_SHIELD',
-    sourceStreamHe: 'נלמד ממודרטורים בזירות תחרותיות',
-    whatObservedHe: 'כשנכנסים צופים של היריב להוריד מורל, לא עונים להם ישירות (זה מעלה להם חשיפה) — מסמנים להשתקה ומציפים מיד 2 שורות חיוביות.',
-    hebrewLines: [
-      'רק אנרגיות טובות בחדר שלנו — כולם להציף לבבות כתומים בצ׳אט ולדחוף קדימה!',
-      'המשפחה פה הכי חזקה שיש — מתרכזים אך ורק בניצחון ובדאבל טאפ על המסך!',
-    ],
-    effectivenessScore: 94,
-    autoDispatchEnabled: true,
-    usedCount: 2,
-    updatedAtTs: Date.now() - 30000,
-  },
-  {
-    id: 'cpat_vip_5',
+    id: 'cpat_vip_3',
     moment: 'VIP_THANK_YOU',
     role: 'WELCOME_VIP',
-    sourceStreamHe: 'נלמד מחדרי VIP במפרץ ובישראל',
-    whatObservedHe: 'אזכור שם התומך בצ׳אט תוך 2 שניות מהמתנה גורם ל-40% יותר מתנות המשך באותו סיבוב.',
+    sourceStreamHe: 'שיטת הכתרת התומך למוביל הטקטיקה',
+    whatObservedHe: 'במקום "תודה ל-X" שסוגר את הנושא, שואלים את התומך בשמו מה המהלך הבא לדעתו — הוא עונה בצ׳אט ונשאר לעוד סיבובים.',
     hebrewLines: [
-      'כבוד ענק ל-{{USER}} על התמיכה המטורפת!! כולם לפרגן לו בלבבות בצ׳אט!',
-      'איזו כניסה מלכותית של {{USER}}! מרים את כל החדר באוויר!',
+      'עצרו הכל רגע — ראיתם את הטיימינג של {{USER}}?! שינית את כל התמונה אחי!',
+      '{{USER}} אתה קובע עכשיו: לוחצים עליו מעכשיו או שומרים עוד מכה לשנייה ה-8?',
     ],
-    effectivenessScore: 93,
+    effectivenessScore: 97,
     autoDispatchEnabled: true,
-    usedCount: 3,
-    updatedAtTs: Date.now() - 20000,
+    usedCount: 0,
+    updatedAtTs: Date.now() - 40000,
   },
 ];
 
@@ -2537,6 +2567,7 @@ interface EnvSlotRuntimeStats {
   lastSentAtTs: number | null;
   lastSentMessageHe: string | null;
   lastTriggerReasonHe: string | null;
+  lastConnectionErrorHe: string | null;
   recentLogs: EnvModeratorSlotLogItem[];
 }
 
@@ -2552,6 +2583,7 @@ function getEnvSlotRuntime(slotNumber: number): EnvSlotRuntimeStats {
       lastSentAtTs: null,
       lastSentMessageHe: null,
       lastTriggerReasonHe: null,
+      lastConnectionErrorHe: null,
       recentLogs: [],
     };
     envSlotRuntimeMap.set(slotNumber, st);
@@ -2559,48 +2591,143 @@ function getEnvSlotRuntime(slotNumber: number): EnvSlotRuntimeStats {
   return st;
 }
 
-function inspectEnvModeratorSlotConfig(slotNumber: number): {
+interface StoredSecureOAuthAccountRecord {
+  accountId: string;
+  slotNumber: number;
+  openId: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  accessToken: string;
+  refreshToken?: string;
+  verifiedAtTs: number;
+  liveVerifiedInRuntime?: boolean;
+}
+
+const secureOAuthRecordsBySlot = new Map<number, StoredSecureOAuthAccountRecord>();
+
+function loadSecureOAuthAccountRecords(): void {
+  try {
+    if (!fs.existsSync(SECURE_ACCOUNT_SESSIONS_FILE)) return;
+    const raw = JSON.parse(fs.readFileSync(SECURE_ACCOUNT_SESSIONS_FILE, 'utf8'));
+    if (Array.isArray(raw)) {
+      for (const item of raw) {
+        if (item && typeof item.slotNumber === 'number' && typeof item.accessToken === 'string' && item.accessToken) {
+          secureOAuthRecordsBySlot.set(item.slotNumber, {
+            ...item,
+            // Must be verified live in runtime before showing CONNECTED
+            liveVerifiedInRuntime: false,
+          });
+        }
+      }
+    }
+  } catch {
+    // Ignore corrupt file
+  }
+}
+
+function saveSecureOAuthAccountRecords(): void {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    const list = Array.from(secureOAuthRecordsBySlot.values()).map(({ liveVerifiedInRuntime: _ignore, ...rest }) => rest);
+    fs.writeFileSync(SECURE_ACCOUNT_SESSIONS_FILE, JSON.stringify(list, null, 2), 'utf8');
+  } catch {
+    // Non-fatal
+  }
+}
+
+loadSecureOAuthAccountRecords();
+
+const DEFAULT_CREW_ROLES_BY_SLOT: Record<number, AiCrewArchetypeId> = {
+  1: 'CONVERSATION_HOST',
+  2: 'COMMUNITY_MANAGER',
+  3: 'BATTLE_ANALYST',
+  4: 'CREATIVE_ENGAGEMENT',
+};
+
+function inspectEnvModeratorSlotConfig(
+  slotNumber: number,
+  extra?: {
+    cloudPhoneConnected?: boolean;
+    cloudPhoneName?: string | null;
+    oauthVerified?: boolean;
+    wsBridgeConnected?: boolean;
+  }
+): {
   envSessionKeyName: string;
   envIdcKeyName: string;
   sessionConfiguredInEnv: boolean;
   sessionMaskedStatusHe: string;
   targetIdc: string;
 } {
-  const envSessionKeyName = `TIKTOK_MOD_${slotNumber}_SESSIONID`;
-  const envIdcKeyName = `TIKTOK_MOD_${slotNumber}_TARGET_IDC`;
-  const rawSid = String(process.env[envSessionKeyName] || '').trim();
-  const targetIdc = String(process.env[envIdcKeyName] || 'useast2a').trim() || 'useast2a';
-  const configured = rawSid.length > 6;
+  const envSessionKeyName = `TIKTOK_ACCOUNT_${slotNumber}`;
+  const envIdcKeyName = 'AUTO_MANAGED';
+  const rawSid = String(process.env[`TIKTOK_MOD_${slotNumber}_SESSIONID`] || '').trim();
+  const targetIdc = String(process.env[`TIKTOK_MOD_${slotNumber}_TARGET_IDC`] || 'auto').trim() || 'auto';
+  const hasAutoServerSession = rawSid.length > 6;
+  const isConnected =
+    Boolean(extra?.cloudPhoneConnected) ||
+    Boolean(extra?.oauthVerified) ||
+    Boolean(extra?.wsBridgeConnected) ||
+    hasAutoServerSession;
+
+  const statusHe = extra?.cloudPhoneConnected
+    ? `מחובר דרך טלפון ענן (${extra.cloudPhoneName || 'GeeLark RUNNING'})`
+    : extra?.oauthVerified
+      ? 'מחובר ומאומת דרך TikTok OAuth מאובטח בשרת'
+      : extra?.wsBridgeConnected
+        ? 'מחובר דרך גשר WebSocket פעיל'
+        : hasAutoServerSession
+          ? 'סשן מאובטח פעיל בשרת'
+          : 'מנותק — חבר דרך טלפון הענן או התחברות מאובטחת (אופציונלי)';
+
   return {
     envSessionKeyName,
     envIdcKeyName,
-    sessionConfiguredInEnv: configured,
-    sessionMaskedStatusHe: configured
-      ? `מוגדר ב-.env (${rawSid.length} תווים · פעיל לשליחה ישירה)`
-      : 'ריק ב-.env · פועל דרך גשר WebSocket / תצוגת במה',
+    sessionConfiguredInEnv: isConnected,
+    sessionMaskedStatusHe: statusHe,
     targetIdc,
   };
 }
 
 function buildEnvSlotsActivitySnapshot(
   accounts: CompanionAccountSlot[],
-  hasActiveExternalBridge = false
+  hasActiveExternalBridge = false,
+  cloudPhoneResolver?: (slotNumber: number, acc: CompanionAccountSlot) => { connected: boolean; phoneName: string | null }
 ): EnvModeratorSlotActivity[] {
   const rows: EnvModeratorSlotActivity[] = [];
   for (let slot = 1; slot <= 6; slot++) {
-    const envMeta = inspectEnvModeratorSlotConfig(slot);
     const acc =
       accounts.find((a) => a.slotNumber === slot) ||
       accounts[slot - 1] ||
       DEFAULT_COMPANION_ACCOUNTS[slot - 1];
+    const phoneInfo = cloudPhoneResolver ? cloudPhoneResolver(slot, acc) : { connected: false, phoneName: null };
+    const oauthRec = secureOAuthRecordsBySlot.get(slot);
+    const oauthVerified = Boolean(oauthRec?.liveVerifiedInRuntime);
+    const envMeta = inspectEnvModeratorSlotConfig(slot, {
+      cloudPhoneConnected: phoneInfo.connected,
+      cloudPhoneName: phoneInfo.phoneName,
+      oauthVerified,
+      wsBridgeConnected: hasActiveExternalBridge,
+    });
     const rt = getEnvSlotRuntime(slot);
+    const hasError = Boolean(rt.lastConnectionErrorHe || acc.lastConnectionErrorHe);
+    const rawAutoSession = hasServerTikTokModSession(slot) && !hasError;
+    const trulyConnected =
+      Boolean(acc.enabled) &&
+      (phoneInfo.connected || oauthVerified || hasActiveExternalBridge || rawAutoSession);
+
     const liveDeliveryState: EnvModeratorSlotActivity['liveDeliveryState'] = !acc.enabled
       ? 'PAUSED'
-      : envMeta.sessionConfiguredInEnv
-        ? 'DIRECT_TIKTOK_AUTH'
-        : hasActiveExternalBridge
-          ? 'WS_BRIDGE_CONNECTED'
-          : 'STAGE_READY';
+      : phoneInfo.connected
+        ? 'CLOUD_PHONE_CONNECTED'
+        : oauthVerified
+          ? 'OAUTH_VERIFIED'
+          : rawAutoSession
+            ? 'DIRECT_TIKTOK_AUTH'
+            : hasActiveExternalBridge
+              ? 'WS_BRIDGE_CONNECTED'
+              : 'DISCONNECTED_NO_AUTH';
 
     rows.push({
       slotNumber: slot,
@@ -2615,6 +2742,8 @@ function buildEnvSlotsActivitySnapshot(
       avatarUrl: acc.avatarUrl,
       role: acc.role,
       enabled: acc.enabled,
+      isTrulyConnected: trulyConnected,
+      lastConnectionErrorHe: rt.lastConnectionErrorHe || acc.lastConnectionErrorHe || null,
       deployedRoomHandle: acc.deployedRoomHandle || null,
       deployedRoomLive: Boolean(acc.deployedRoomLive),
       liveDeliveryState,
@@ -2631,223 +2760,116 @@ function buildEnvSlotsActivitySnapshot(
   return rows;
 }
 
-const DEFAULT_MODERATOR_AUTO_SCRIPTS: ModeratorAutoScriptRule[] = [
-  {
-    id: 'mscript_whale_1',
-    nameHe: 'תסריט מתנת לווייתן / VIP — פרגון מיידי והרמת לבבות',
-    descriptionHe: 'מופעל אוטומטית כשמתקבלת מתנה גדולה בלייב ומחלק תגובה טבעית בין סלוט #4 לסלוט #2.',
+const DEFAULT_MODERATOR_AUTO_SCRIPTS: ModeratorAutoScriptRule[] =
+  CHAT_ELONGATION_METHODS_CATALOG.map((m, idx) => ({
+    id: `mscript_chain_v2_${idx + 1}`,
+    nameHe: m.titleHe.replace(/^\d+\.\s*/, ''),
+    descriptionHe: `${m.subtitleHe} (${m.expectedChainLengthHe})`,
     enabled: true,
-    triggerEventType: 'WHALE_GIFT',
-    minNumericValue: 100,
-    cooldownSec: 20,
-    steps: [
-      {
-        id: 'ms_w_1',
-        slotNumber: 4,
-        delaySec: 0.8,
-        messageTemplateHe: 'כבוד ענק ל-{{USER}} על {{GIFT}} ({{VALUE}} יהלומים)! תודה שאתה מרים את כל החדר!',
-      },
-      {
-        id: 'ms_w_2',
-        slotNumber: 2,
-        delaySec: 4.2,
-        messageTemplateHe: 'כולם בצ׳אט לפרגן ל-{{USER}} בלבבות — איזו תמיכה מטורפת ב-{{ROOM}}!',
-      },
-    ],
+    triggerEventType: m.recommendedTrigger,
+    minNumericValue: m.recommendedTrigger === 'WHALE_GIFT' ? 100 : 0,
+    cooldownSec: 26,
+    steps: m.steps.map((st, sIdx) => ({
+      id: `ms_v2_${idx + 1}_${sIdx + 1}`,
+      slotNumber: st.slotNumber,
+      delaySec: st.delaySec,
+      messageTemplateHe: st.lineHe,
+      roleActionWhyHe: st.roleActionLabelHe,
+    })),
     triggeredCount: 0,
     lastTriggeredTs: 0,
     lastTriggeredSummaryHe: null,
-  },
-  {
-    id: 'mscript_glove_2',
-    nameHe: 'תסריט פתיחת כפפה x5 — קריאת 5 שניות ראשונות והקשות',
-    descriptionHe: 'מופעל ברגע שזוהתה פתיחת כפפת בוסט (Glove x5) כדי למצות את חלון ה-30 שניות.',
-    enabled: true,
-    triggerEventType: 'GLOVE_OPENED',
-    minNumericValue: 0,
-    cooldownSec: 28,
-    steps: [
-      {
-        id: 'ms_g_1',
-        slotNumber: 1,
-        delaySec: 0,
-        messageTemplateHe: 'כפפה פתוחה 30 שניות עכשיו! כל מתנה קטנה או ורד ב-5 שניות הראשונות תופסת מכפיל x5!',
-      },
-      {
-        id: 'ms_g_2',
-        slotNumber: 5,
-        delaySec: 3.8,
-        messageTemplateHe: 'כולם אצבעות על המסך בהקשות כפולות בזמן הכפפה — כל נקודה שווה פי 5!',
-      },
-    ],
-    triggeredCount: 0,
-    lastTriggeredTs: 0,
-    lastTriggeredSummaryHe: null,
-  },
-  {
-    id: 'mscript_cloud_3',
-    nameHe: 'תסריט זיהוי ענן יריב — הרגעת קהל והכנת סנייפ',
-    descriptionHe: 'מופעל ברגע שרדאר ה-X-Ray מזהה שהיריב פתח ענן ערפל שמסתיר את הסקור.',
-    enabled: true,
-    triggerEventType: 'OPPONENT_CLOUD',
-    minNumericValue: 0,
-    cooldownSec: 25,
-    steps: [
-      {
-        id: 'ms_c_1',
-        slotNumber: 1,
-        delaySec: 0.5,
-        messageTemplateHe: 'היריב פתח ענן כי הוא בלחץ! לא לעצור הקשות — אנחנו עוקבים אחרי הסקור האמיתי!',
-      },
-      {
-        id: 'ms_c_2',
-        slotNumber: 6,
-        delaySec: 4.5,
-        messageTemplateHe: 'ממשיכים לצבור נקודות בשקט מתחת לענן ושומרים את המכה החזקה ל-8 שניות אחרונות!',
-      },
-    ],
-    triggeredCount: 0,
-    lastTriggeredTs: 0,
-    lastTriggeredSummaryHe: null,
-  },
-  {
-    id: 'mscript_speed_4',
-    nameHe: 'תסריט משימת מהירות (Battle Task) — גל הקשות מתואם',
-    descriptionHe: 'מופעל כשטיקטוק פותחת משימת מהירות על המסך לנקודות בונוס חינם.',
-    enabled: true,
-    triggerEventType: 'BATTLE_SPEED_TASK',
-    minNumericValue: 0,
-    cooldownSec: 30,
-    steps: [
-      {
-        id: 'ms_s_1',
-        slotNumber: 5,
-        delaySec: 0.5,
-        messageTemplateHe: 'נפתחה משימת מהירות על המסך! כל צופה נותן עכשיו 30 הקשות מהירות לנקודות בונוס!',
-      },
-      {
-        id: 'ms_s_2',
-        slotNumber: 6,
-        delaySec: 4.0,
-        messageTemplateHe: 'עוד טיפה ואנחנו סוגרים את היעד לפני היריב — שתפו לחבר ותקישו יחד!',
-      },
-    ],
-    triggeredCount: 0,
-    lastTriggeredTs: 0,
-    lastTriggeredSummaryHe: null,
-  },
-  {
-    id: 'mscript_snipe_5',
-    nameHe: 'תסריט 30 שניות אחרונות (חלון סנייפ) — נעילת ניצחון',
-    descriptionHe: 'מופעל אוטומטית בכניסה ל-30 השניות האחרונות של סיבוב הקרב.',
-    enabled: true,
-    triggerEventType: 'SNIPE_WINDOW_30S',
-    minNumericValue: 0,
-    cooldownSec: 40,
-    steps: [
-      {
-        id: 'ms_sn_1',
-        slotNumber: 1,
-        delaySec: 0,
-        messageTemplateHe: '30 שניות לסיום הקרב! להכין סנייפ מדויק ב-8 שניות אחרונות — לא לחשוף מוקדם!',
-      },
-      {
-        id: 'ms_sn_2',
-        slotNumber: 2,
-        delaySec: 4.0,
-        messageTemplateHe: 'כל החדר על המסך בשניות ההכרעה — בואו ניקח את הסיבוב הזה ביחד!',
-      },
-    ],
-    triggeredCount: 0,
-    lastTriggeredTs: 0,
-    lastTriggeredSummaryHe: null,
-  },
-  {
-    id: 'mscript_troll_6',
-    nameHe: 'תסריט בלימת טרול / ספאם — הצפה חיובית דו-שלבית',
-    descriptionHe: 'מופעל כשמגן הצ׳אט מזהה הודעה מורידת מורל מהחדר היריב או קישור ספאם.',
-    enabled: true,
-    triggerEventType: 'TROLL_OR_SPAM_CHAT',
-    minNumericValue: 0,
-    cooldownSec: 18,
-    steps: [
-      {
-        id: 'ms_tr_1',
-        slotNumber: 3,
-        delaySec: 0.4,
-        messageTemplateHe: 'רק אנרגיות טובות בחדר שלנו — כולם להציף לבבות ולהתרכז בניצחון!',
-      },
-      {
-        id: 'ms_tr_2',
-        slotNumber: 4,
-        delaySec: 3.2,
-        messageTemplateHe: 'הקהילה פה הכי חזקה שיש, ממשיכים דאבל טאפ על המסך בלי לעצור!',
-      },
-    ],
-    triggeredCount: 0,
-    lastTriggeredTs: 0,
-    lastTriggeredSummaryHe: null,
-  },
-];
+  }));
 
 function buildDefaultBrainCommanderState(): CompanionBrainCommanderState {
   return {
     autonomousBrainEnabled: true,
     activeTargetRoom: null,
     activeTargetRoomLive: false,
-    currentDirectiveHe: 'מוח AI אחראי על 6 חשבונות המנחים — מוכן לפקודות, לאימון מהצ׳אט ולשליחה חיה ללייבים',
-    brainStatusHe: 'מחובר ל-6 מנחים מאומנים · ממתין לפריסה לחדר או פקודה',
+    currentDirectiveHe:
+      'מוח הרצת צ׳אט ארוך — מנהל אוטומטית את חשבונות ה-TikTok שנבחרו לצוות המנחים מול מערכת הטלפונים והלייב הפעיל',
+    brainStatusHe: 'בחר 3–4 חשבונות TikTok בדשבורד ושייך אותם ללייב · כל שדות החיבור אופציונליים ואינם חוסמים את BOOSTERA',
     trainingSessionsCount: 1,
     lastTrainedAtTs: Date.now() - 30000,
-    lastTrainingSummaryHe: '6 המנחים אומנו על תזמון כפפה x5, הרגעת קהל בענן יריב, הנעת משימת מהירות, פרגון VIP וסינון טרולים.',
+    lastTrainingSummaryHe:
+      'נטענו 6 שיטות פסיכולוגיות להארכת צ׳אט בלייב — מתואמות תחת המוח המרכזי והטלפונים המחוברים.',
     recentOrders: [],
   };
 }
 
-function normalizeLoadedCompanionAccounts(rawAccounts: any[]): CompanionAccountSlot[] {
+function normalizeLoadedCompanionAccounts(
+  rawAccounts: any[],
+  upgradeToPlaybookV2 = false
+): CompanionAccountSlot[] {
   const normalized: CompanionAccountSlot[] = [];
   for (let i = 0; i < rawAccounts.length; i++) {
     const raw = rawAccounts[i] || {};
-    const slotNum = typeof raw.slotNumber === 'number' && raw.slotNumber > 0 ? raw.slotNumber : i + 1;
-    const def = DEFAULT_COMPANION_ACCOUNTS[i] || DEFAULT_COMPANION_ACCOUNTS[0];
+    const slotNum =
+      typeof raw.slotNumber === 'number' && raw.slotNumber > 0 ? raw.slotNumber : i + 1;
+    const def = DEFAULT_COMPANION_ACCOUNTS[slotNum - 1] || DEFAULT_COMPANION_ACCOUNTS[0];
     const authReady = hasServerTikTokModSession(slotNum);
+    const defaultRoleForSlot = DEFAULT_CREW_ROLES_BY_SLOT[slotNum] || null;
+    const selectedCrew =
+      typeof raw.selectedForChatCrew === 'boolean'
+        ? raw.selectedForChatCrew
+        : slotNum <= 4;
     normalized.push({
       id: String(raw.id || def.id || `comp_acc_${slotNum}`),
       slotNumber: slotNum,
       handle: String(raw.handle || def.handle),
-      displayName: String(raw.displayName || def.displayName),
+      displayName: upgradeToPlaybookV2
+        ? def.displayName
+        : String(raw.displayName || def.displayName),
       avatarUrl: String(raw.avatarUrl || def.avatarUrl),
       role: (raw.role as CompanionRoleId) || def.role,
       enabled: raw.enabled !== false,
-      connectionStatus: authReady
-        ? 'TIKTOK_AUTH_LIVE'
-        : raw.connectionStatus === 'LIVE_ROOM_DEPLOYED' ||
-            raw.connectionStatus === 'TIKTOK_AUTH_LIVE' ||
-            raw.connectionStatus === 'WS_BRIDGE_ACTIVE'
-          ? raw.connectionStatus
-          : 'SLOT_READY',
+      // Strict honesty on startup: never persist fake LIVE_ROOM_DEPLOYED / TIKTOK_AUTH_LIVE without verified auth
+      connectionStatus: authReady ? 'TIKTOK_AUTH_LIVE' : 'DISCONNECTED_NO_AUTH',
       hasServerTikTokAuth: authReady,
+      isTrulyConnected: authReady,
+      lastConnectionErrorHe: null,
       deployedRoomHandle: raw.deployedRoomHandle || null,
-      deployedRoomLive: Boolean(raw.deployedRoomLive),
+      deployedRoomLive: false,
+      geelarkDeviceId: typeof raw.geelarkDeviceId === 'string' && raw.geelarkDeviceId.trim() ? raw.geelarkDeviceId.trim() : null,
+      appPackageId: typeof raw.appPackageId === 'string' && raw.appPackageId.trim() ? raw.appPackageId.trim() : 'com.zhiliaoapp.musically',
+      selectedForChatCrew: selectedCrew,
+      assignedCrewRole:
+        typeof raw.assignedCrewRole === 'string' && raw.assignedCrewRole
+          ? raw.assignedCrewRole
+          : selectedCrew
+            ? defaultRoleForSlot
+            : null,
+      verifiedChannel: authReady ? 'SERVER_MANAGED_SESSION' : 'NONE',
+      lastVerifiedAtTs: null,
       trainingLevel:
-        typeof raw.trainingLevel === 'number' ? Math.max(50, Math.min(100, raw.trainingLevel)) : def.trainingLevel,
-      trainedSkillSummaryHe: String(raw.trainedSkillSummaryHe || def.trainedSkillSummaryHe),
+        typeof raw.trainingLevel === 'number'
+          ? Math.max(50, Math.min(100, raw.trainingLevel))
+          : def.trainingLevel,
+      trainedSkillSummaryHe: upgradeToPlaybookV2
+        ? def.trainedSkillSummaryHe
+        : String(raw.trainedSkillSummaryHe || def.trainedSkillSummaryHe),
       trainedLinesHe:
-        Array.isArray(raw.trainedLinesHe) && raw.trainedLinesHe.length > 0
+        !upgradeToPlaybookV2 &&
+        Array.isArray(raw.trainedLinesHe) &&
+        raw.trainedLinesHe.length > 0
           ? raw.trainedLinesHe.map((s: any) => String(s || '').trim()).filter(Boolean)
           : [...def.trainedLinesHe],
       lastOrderHe: raw.lastOrderHe || null,
       externalWebhookOrWsTag: String(raw.externalWebhookOrWsTag || `tiktok-mod-slot-${slotNum}`),
-      toneNotesHe: String(raw.toneNotesHe || def.toneNotesHe),
-      messagesDispatched: Number(raw.messagesDispatched) || 0,
-      moderationsTriggered: Number(raw.moderationsTriggered) || 0,
+      toneNotesHe: upgradeToPlaybookV2
+        ? def.toneNotesHe
+        : String(raw.toneNotesHe || def.toneNotesHe),
+      messagesDispatched: upgradeToPlaybookV2 ? 0 : Number(raw.messagesDispatched) || 0,
+      moderationsTriggered: upgradeToPlaybookV2 ? 0 : Number(raw.moderationsTriggered) || 0,
     });
   }
 
-  // Ensure all 6 starter moderator accounts exist out-of-the-box if migrating from a 4-slot file
   for (const def of DEFAULT_COMPANION_ACCOUNTS) {
     const exists = normalized.some(
-      (a) => a.id === def.id || a.slotNumber === def.slotNumber || a.handle.toLowerCase() === def.handle.toLowerCase()
+      (a) =>
+        a.id === def.id ||
+        a.slotNumber === def.slotNumber ||
+        a.handle.toLowerCase() === def.handle.toLowerCase()
     );
     if (!exists && normalized.length < 6) {
       normalized.push({ ...def, trainedLinesHe: [...def.trainedLinesHe] });
@@ -2862,33 +2884,44 @@ function loadPersistedChatCompanion(): {
   commanderBrain: CompanionBrainCommanderState;
   autoScripts: ModeratorAutoScriptRule[];
   autoEventScriptsEnabled: boolean;
+  allowLocalSimulationWhenDisconnected: boolean;
 } {
   try {
     if (fs.existsSync(CHAT_COMPANION_FILE)) {
       const parsed = JSON.parse(fs.readFileSync(CHAT_COMPANION_FILE, 'utf8'));
       if (parsed && Array.isArray(parsed.accounts) && Array.isArray(parsed.learnedPatterns)) {
+        const isV2 = parsed.playbookVersion === 2;
         const defBrain = buildDefaultBrainCommanderState();
         return {
           accounts: normalizeLoadedCompanionAccounts(
-            parsed.accounts.length > 0 ? parsed.accounts : DEFAULT_COMPANION_ACCOUNTS
+            parsed.accounts.length > 0 ? parsed.accounts : DEFAULT_COMPANION_ACCOUNTS,
+            !isV2
           ),
           learnedPatterns:
-            parsed.learnedPatterns.length > 0 ? parsed.learnedPatterns : DEFAULT_LEARNED_CHAT_PATTERNS,
+            isV2 && parsed.learnedPatterns.length > 0
+              ? parsed.learnedPatterns
+              : DEFAULT_LEARNED_CHAT_PATTERNS,
           commanderBrain: {
             ...defBrain,
-            ...(parsed.commanderBrain && typeof parsed.commanderBrain === 'object' ? parsed.commanderBrain : {}),
-            recentOrders: Array.isArray(parsed.commanderBrain?.recentOrders)
-              ? parsed.commanderBrain.recentOrders.slice(0, 12)
-              : [],
+            ...(isV2 && parsed.commanderBrain && typeof parsed.commanderBrain === 'object'
+              ? parsed.commanderBrain
+              : {}),
+            recentOrders:
+              isV2 && Array.isArray(parsed.commanderBrain?.recentOrders)
+                ? parsed.commanderBrain.recentOrders.slice(0, 12)
+                : [],
           },
           autoScripts:
-            Array.isArray(parsed.autoScripts) && parsed.autoScripts.length > 0
+            isV2 && Array.isArray(parsed.autoScripts) && parsed.autoScripts.length > 0
               ? parsed.autoScripts
               : DEFAULT_MODERATOR_AUTO_SCRIPTS.map((s) => ({
                   ...s,
                   steps: s.steps.map((st) => ({ ...st })),
                 })),
           autoEventScriptsEnabled: parsed.autoEventScriptsEnabled !== false,
+          allowLocalSimulationWhenDisconnected: Boolean(
+            parsed.allowLocalSimulationWhenDisconnected
+          ),
         };
       }
     }
@@ -2896,14 +2929,21 @@ function loadPersistedChatCompanion(): {
     // Ignore corrupt file
   }
   return {
-    accounts: DEFAULT_COMPANION_ACCOUNTS.map((a) => ({ ...a, trainedLinesHe: [...a.trainedLinesHe] })),
-    learnedPatterns: DEFAULT_LEARNED_CHAT_PATTERNS.map((p) => ({ ...p, hebrewLines: [...p.hebrewLines] })),
+    accounts: DEFAULT_COMPANION_ACCOUNTS.map((a) => ({
+      ...a,
+      trainedLinesHe: [...a.trainedLinesHe],
+    })),
+    learnedPatterns: DEFAULT_LEARNED_CHAT_PATTERNS.map((p) => ({
+      ...p,
+      hebrewLines: [...p.hebrewLines],
+    })),
     commanderBrain: buildDefaultBrainCommanderState(),
     autoScripts: DEFAULT_MODERATOR_AUTO_SCRIPTS.map((s) => ({
       ...s,
       steps: s.steps.map((st) => ({ ...st })),
     })),
     autoEventScriptsEnabled: true,
+    allowLocalSimulationWhenDisconnected: false,
   };
 }
 
@@ -2914,7 +2954,9 @@ function savePersistedChatCompanion(state: ChatCompanionState) {
       CHAT_COMPANION_FILE,
       JSON.stringify(
         {
+          playbookVersion: 2,
           autoEventScriptsEnabled: state.autoEventScriptsEnabled,
+          allowLocalSimulationWhenDisconnected: state.allowLocalSimulationWhenDisconnected,
           accounts: state.accounts,
           autoScripts: state.autoScripts.slice(0, 40),
           learnedPatterns: state.learnedPatterns.slice(0, 40),
@@ -3082,8 +3124,11 @@ const battleState: ServerBattleState = {
     autoModerationShieldEnabled: true,
     autoLearnFromLiveChat: true,
     autoEventScriptsEnabled: persistedCompanion.autoEventScriptsEnabled,
-    chatVelocityPerMin: 6,
-    detectedRoomMoodHe: 'פעיל — מוח AI אחראי על 6 חשבונות מנחים מאומנים ומוכנים לשליחה בלייב',
+    allowLocalSimulationWhenDisconnected:
+      persistedCompanion.allowLocalSimulationWhenDisconnected,
+    chatVelocityPerMin: 0,
+    detectedRoomMoodHe:
+      '6 תפקידי הרצת שיחה ארוכה מוכנים — כל חשבון בשרשרת מגיב לחשבון שלפניו ומושך צופים אמיתיים',
     commanderBrain: persistedCompanion.commanderBrain,
     accounts: persistedCompanion.accounts,
     envSlotsActivity: buildEnvSlotsActivitySnapshot(persistedCompanion.accounts, false),
@@ -3222,8 +3267,31 @@ interface ManagedLiveRoom {
   lastSynthesizedTs: number;
 }
 
-const MAX_CONCURRENT_SWARM_ROOMS = 10;
+const MAX_CONCURRENT_SWARM_ROOMS = 12;
 const activeSwarmRooms = new Map<string, ManagedLiveRoom>();
+
+// ============================================================================
+// BOOSTERA SIX-LAYER CENTRAL INTELLIGENCE & AI CHAT CREW MODULES
+// ============================================================================
+const boosteraDataFactory = new BoosteraDataFactory();
+const boosteraKnowledgeEngine = new BoosteraKnowledgeEngine();
+const boosteraCrewOrchestrator = new BoosteraAiChatCrewOrchestrator(
+  battleState.chatCompanion.accounts.slice(0, 4).map((a, idx) => ({
+    slotNumber: a.slotNumber || idx + 1,
+    handle: a.handle,
+    displayName: a.displayName,
+  }))
+);
+boosteraDataFactory.registerAiCrewAgentHandles(
+  boosteraCrewOrchestrator.syncCompanionHandles(
+    battleState.chatCompanion.accounts.slice(0, 4).map((a, idx) => ({
+      slotNumber: a.slotNumber || idx + 1,
+      handle: a.handle,
+    }))
+  )
+);
+const boosteraDecisionOrchestrator = new BoosteraAiDecisionOrchestrator();
+const boosteraExecutionBridge = new BoosteraExecutionBridge();
 
 function nextId(prefix: string): string {
   seqCounter += 1;
@@ -4626,70 +4694,208 @@ async function startServer() {
   }
 
   const authenticatedModeratorConns = new Map<string, TikTokLiveConnection>();
+  let geelarkCoordinator: GeeLarkLiveDirectorCoordinator | null = null;
+
+  function toGeeLarkSlotId(slotNumber: number): TikTokAccountSlotId {
+    const safe = Math.max(1, Math.min(6, Math.round(slotNumber || 1)));
+    return `TIKTOK_ACCOUNT_${safe}` as TikTokAccountSlotId;
+  }
+
+  function resolveVerifiedCloudPhoneForSlot(
+    slotNumber: number,
+    acc?: CompanionAccountSlot
+  ): { connected: boolean; phoneId: string | null; phoneName: string | null; phoneStatus: 'RUNNING' | 'STOPPED' | 'STARTING' | 'UNKNOWN' | 'UNLINKED' } {
+    if (!geelarkCoordinator) {
+      return { connected: false, phoneId: acc?.geelarkDeviceId || null, phoneName: null, phoneStatus: acc?.geelarkDeviceId ? 'UNKNOWN' : 'UNLINKED' };
+    }
+    const glState = geelarkCoordinator.geelark.getState();
+    const glAcc = geelarkCoordinator.getAccount(toGeeLarkSlotId(slotNumber));
+    const linkedPhoneId = acc?.geelarkDeviceId || glAcc?.geelarkDeviceId || null;
+
+    if (!glState.connected) {
+      return {
+        connected: false,
+        phoneId: linkedPhoneId,
+        phoneName: null,
+        phoneStatus: linkedPhoneId ? 'UNKNOWN' : 'UNLINKED',
+      };
+    }
+
+    const effectivePhoneId = linkedPhoneId || (slotNumber === 1 ? glState.selectedPhoneId : null);
+    if (!effectivePhoneId) {
+      return { connected: false, phoneId: null, phoneName: null, phoneStatus: 'UNLINKED' };
+    }
+
+    const dev = glState.devices.find((d) => d.id === effectivePhoneId);
+    if (!dev) {
+      return { connected: false, phoneId: effectivePhoneId, phoneName: null, phoneStatus: 'UNKNOWN' };
+    }
+
+    return {
+      connected: dev.status === 'RUNNING',
+      phoneId: dev.id,
+      phoneName: dev.serialName,
+      phoneStatus: dev.status,
+    };
+  }
+
+  function hasAnyExternalWsBridgeOpen(): boolean {
+    for (const sock of activeServerExternalWs.values()) {
+      if (sock.readyState === WebSocket.OPEN) return true;
+    }
+    return battleState.wsSniffer.externalBridges.some((b) => b.connected);
+  }
+
+  function isSlotTrulyConnected(slotNumber: number, acc?: CompanionAccountSlot): boolean {
+    const phoneInfo = resolveVerifiedCloudPhoneForSlot(slotNumber, acc);
+    if (phoneInfo.connected) return true;
+    const oauthRec = secureOAuthRecordsBySlot.get(slotNumber);
+    if (oauthRec?.liveVerifiedInRuntime) return true;
+    const rt = getEnvSlotRuntime(slotNumber);
+    const hasErr = Boolean(rt.lastConnectionErrorHe || acc?.lastConnectionErrorHe);
+    return (hasServerTikTokModSession(slotNumber) && !hasErr) || hasAnyExternalWsBridgeOpen();
+  }
 
   function syncEnvSlotsActivity() {
-    const anyBridgeConnected = battleState.wsSniffer.externalBridges.some((b) => b.connected);
+    const anyBridgeConnected = hasAnyExternalWsBridgeOpen();
     for (const acc of battleState.chatCompanion.accounts) {
-      acc.hasServerTikTokAuth = hasServerTikTokModSession(acc.slotNumber);
-      if (acc.hasServerTikTokAuth) {
-        acc.connectionStatus = 'TIKTOK_AUTH_LIVE';
-      }
+      const slotNum = acc.slotNumber || 1;
+      const phoneInfo = resolveVerifiedCloudPhoneForSlot(slotNum, acc);
+      const oauthRec = secureOAuthRecordsBySlot.get(slotNum);
+      const oauthVerified = Boolean(oauthRec?.liveVerifiedInRuntime);
+      const envAuth = hasServerTikTokModSession(slotNum);
+      const rt = getEnvSlotRuntime(slotNum);
+      const hasErr = Boolean(rt.lastConnectionErrorHe || acc.lastConnectionErrorHe);
+      const serverAuthOk = phoneInfo.connected || oauthVerified || (envAuth && !hasErr);
+
+      acc.hasServerTikTokAuth = serverAuthOk;
+      acc.isTrulyConnected = Boolean(acc.enabled) && (serverAuthOk || anyBridgeConnected);
+      acc.verifiedChannel = phoneInfo.connected
+        ? 'CLOUD_PHONE_GEELARK'
+        : oauthVerified
+          ? 'TIKTOK_OAUTH_SECURE'
+          : anyBridgeConnected
+            ? 'WS_EXTERNAL_BRIDGE'
+            : envAuth && !hasErr
+              ? 'SERVER_MANAGED_SESSION'
+              : 'NONE';
+
+      acc.connectionStatus = serverAuthOk
+        ? 'TIKTOK_AUTH_LIVE'
+        : anyBridgeConnected
+          ? 'WS_BRIDGE_ACTIVE'
+          : 'DISCONNECTED_NO_AUTH';
     }
     battleState.chatCompanion.envSlotsActivity = buildEnvSlotsActivitySnapshot(
       battleState.chatCompanion.accounts,
-      anyBridgeConnected
+      anyBridgeConnected,
+      (slotNum, acc) => {
+        const p = resolveVerifiedCloudPhoneForSlot(slotNum, acc);
+        return { connected: p.connected, phoneName: p.phoneName };
+      }
     );
   }
 
   async function trySendLiveChatViaTikTokSession(
     acc: CompanionAccountSlot,
     targetRoomHandle: string,
-    messageText: string
-  ): Promise<{ sentDirectTikTok: boolean; deliveryNoteHe: string }> {
+    messageText: string,
+    allowPreviewFallback = false
+  ): Promise<{
+    sentDirectTikTok: boolean;
+    sentBridge: boolean;
+    deliveryStatus: 'SENT_TIKTOK' | 'SENT_WS_BRIDGE' | 'LOCAL_PREVIEW_ONLY' | 'BLOCKED_DISCONNECTED';
+    deliveryNoteHe: string;
+  }> {
     const cleanTarget = sanitizeTikTokHandle(targetRoomHandle);
-    if (!cleanTarget) {
-      return { sentDirectTikTok: false, deliveryNoteHe: 'שודר לבמה ולגשר מנחים' };
-    }
-    const managedRoom = activeSwarmRooms.get(cleanTarget.toLowerCase());
-    const liveRoomId = managedRoom?.summary?.roomId || undefined;
-    const sessionId = (process.env[`TIKTOK_MOD_${acc.slotNumber}_SESSIONID`] || '').trim();
-    const targetIdc = (process.env[`TIKTOK_MOD_${acc.slotNumber}_TARGET_IDC`] || 'useast2a').trim();
+    const slotNum = acc.slotNumber || 1;
+    const rt = getEnvSlotRuntime(slotNum);
 
-    if (sessionId.length > 6 && liveRoomId) {
+    // 1. Primary Authorized Path: Verified Cloud Phone (GeeLark + TikTokPhoneController)
+    const phoneInfo = resolveVerifiedCloudPhoneForSlot(slotNum, acc);
+    if (geelarkCoordinator && phoneInfo.connected && cleanTarget) {
+      const managedRoom = activeSwarmRooms.get(cleanTarget.toLowerCase());
+      const phoneSend = await geelarkCoordinator.sendLiveChatViaCloudPhone({
+        slotId: toGeeLarkSlotId(slotNum),
+        hostUsername: cleanTarget,
+        roomId: managedRoom?.summary?.roomId || null,
+        messageText,
+      });
+      if (phoneSend.status === 'SUCCESS') {
+        acc.lastConnectionErrorHe = null;
+        rt.lastConnectionErrorHe = null;
+        return {
+          sentDirectTikTok: true,
+          sentBridge: false,
+          deliveryStatus: 'SENT_TIKTOK',
+          deliveryNoteHe: phoneSend.messageHe,
+        };
+      }
+      acc.lastConnectionErrorHe = phoneSend.messageHe;
+      rt.lastConnectionErrorHe = phoneSend.messageHe;
+    }
+
+    // 2. Automatic Server-Managed Session (if present on server)
+    const sessionId = (process.env[`TIKTOK_MOD_${slotNum}_SESSIONID`] || '').trim();
+    const targetIdc = (process.env[`TIKTOK_MOD_${slotNum}_TARGET_IDC`] || 'useast2a').trim() || 'useast2a';
+
+    if (sessionId.length > 6 && cleanTarget) {
       try {
-        const cacheKey = `${acc.slotNumber}:${cleanTarget.toLowerCase()}`;
+        const cacheKey = `${slotNum}:${cleanTarget.toLowerCase()}`;
         let senderConn = authenticatedModeratorConns.get(cacheKey);
         if (!senderConn) {
           senderConn = new TikTokLiveConnection(cleanTarget, {
             processInitialData: false,
             fetchRoomInfoOnConnect: false,
             authenticateWs: true,
-            sessionId,
-            ttTargetIdc: targetIdc,
-          } as any);
+            session: {
+              cookie: {
+                type: 'cookie',
+                value: {
+                  sessionId,
+                  ttTargetIdc: targetIdc,
+                },
+              },
+            },
+          });
           authenticatedModeratorConns.set(cacheKey, senderConn);
         }
+
+        const managedRoom = activeSwarmRooms.get(cleanTarget.toLowerCase());
+        let liveRoomId = managedRoom?.summary?.roomId || undefined;
+        if (!liveRoomId) {
+          liveRoomId = await senderConn.fetchRoomId(cleanTarget);
+        }
+
         await senderConn.sendMessage(messageText, liveRoomId);
+        acc.lastConnectionErrorHe = null;
+        rt.lastConnectionErrorHe = null;
         return {
           sentDirectTikTok: true,
-          deliveryNoteHe: `נשלח ישירות לצ׳אט טיקטוק לייב של @${cleanTarget}`,
+          sentBridge: false,
+          deliveryStatus: 'SENT_TIKTOK',
+          deliveryNoteHe: `נשלח באמת לטיקטוק לייב של @${cleanTarget}`,
         };
-      } catch {
-        // Fall through cleanly to WS bridge & live room stage feed
+      } catch (err: unknown) {
+        const rawErr = err instanceof Error ? err.message : 'נכשל אימות סשן בטיקטוק';
+        const shortErrHe = `שליחה ישירה נכשלה (${rawErr.slice(0, 64)})`;
+        acc.lastConnectionErrorHe = shortErrHe;
+        rt.lastConnectionErrorHe = shortErrHe;
       }
     }
 
-    // Also push outbound JSON to any server-connected External WebSocket Bridges
+    // 3. Active External WebSocket Bridge
     let sentServerBridge = false;
+    const managedRoom = cleanTarget ? activeSwarmRooms.get(cleanTarget.toLowerCase()) : undefined;
     const bridgePayload = JSON.stringify({
       event: 'boostera_moderator_send',
-      slotNumber: acc.slotNumber,
+      slotNumber: slotNum,
       accountId: acc.id,
       accountHandle: acc.handle,
       accountDisplayName: acc.displayName,
       role: acc.role,
-      targetRoom: cleanTarget,
-      roomId: liveRoomId || null,
+      targetRoom: cleanTarget || null,
+      roomId: managedRoom?.summary?.roomId || null,
       text: messageText,
       ts: Date.now(),
     });
@@ -4699,26 +4905,36 @@ async function startServer() {
           outSock.send(bridgePayload);
           sentServerBridge = true;
         } catch {
-          // Ignore bridge send error
+          // Ignore single socket failure
         }
       }
     }
 
-    if (sentServerBridge) {
+    if (sentServerBridge || battleState.wsSniffer.externalBridges.some((b) => b.connected)) {
       return {
         sentDirectTikTok: false,
-        deliveryNoteHe: `שוגר לגשר WebSocket חי ולחדר @${cleanTarget}`,
+        sentBridge: true,
+        deliveryStatus: 'SENT_WS_BRIDGE',
+        deliveryNoteHe: cleanTarget
+          ? `נשלח דרך גשר WebSocket פעיל אל @${cleanTarget}`
+          : 'נשלח דרך גשר WebSocket פעיל',
       };
     }
-    if (managedRoom?.summary?.connected) {
+
+    if (allowPreviewFallback || battleState.chatCompanion.allowLocalSimulationWhenDisconnected) {
       return {
         sentDirectTikTok: false,
-        deliveryNoteHe: `שוגר על חדר פעיל @${cleanTarget} + גשר מנחים`,
+        sentBridge: false,
+        deliveryStatus: 'LOCAL_PREVIEW_ONLY',
+        deliveryNoteHe: 'הדגמת שיחה מקומית בלבד (החשבון טרם חובר לטלפון ענן/גשר חי)',
       };
     }
+
     return {
       sentDirectTikTok: false,
-      deliveryNoteHe: cleanTarget ? `שוגר עבור @${cleanTarget} (מוכן בלייב)` : 'שוגר לפיד הצ׳אט החי',
+      sentBridge: false,
+      deliveryStatus: 'BLOCKED_DISCONNECTED',
+      deliveryNoteHe: `לא נשלח — החשבון @${acc.handle} מנותק כרגע (חבר דרך טלפון הענן או גשר מאובטח בדשבורד)`,
     };
   }
 
@@ -4735,6 +4951,7 @@ async function startServer() {
     targetOffender?: string;
     bypassCooldown?: boolean;
     injectIntoStagePreviewChat?: boolean;
+    allowPreviewOverride?: boolean;
   }): CompanionDispatchActionItem | null {
     const now = Date.now();
     if (!opts.bypassCooldown) {
@@ -4756,10 +4973,71 @@ async function startServer() {
       enabledAccounts.find((a) => a.role === opts.preferredRole) ||
       enabledAccounts[0];
 
+    const slotNum = chosenAccount.slotNumber || 1;
+    const trulyConnected = isSlotTrulyConnected(slotNum, chosenAccount);
+    const allowSim =
+      Boolean(opts.allowPreviewOverride) ||
+      Boolean(battleState.chatCompanion.allowLocalSimulationWhenDisconnected);
+
+    // CRITICAL HONESTY GUARD: If account is NOT connected to Cloud Phone / TikTok / WS Bridge and simulation is OFF,
+    // do NOT pretend to run chat or inject fake live messages!
+    if (!trulyConnected && !allowSim) {
+      const rtBlocked = getEnvSlotRuntime(slotNum);
+      const blockedNote = `מומלץ ולא נשלח: @${chosenAccount.handle} מנותק כעת (חבר דרך טלפון הענן או הפעל הדגמה מקומית)`;
+      rtBlocked.lastTriggerReasonHe = blockedNote;
+      const blockedLog: EnvModeratorSlotLogItem = {
+        id: nextId('slotlog'),
+        ts: now,
+        targetRoom: opts.targetRoom || null,
+        messageHe: opts.customMessageHe || chosenAccount.trainedLinesHe[0] || '',
+        sourceKind:
+          opts.kind === 'AUTO_EVENT_SCRIPT'
+            ? 'AUTO_SCRIPT'
+            : opts.kind === 'BRAIN_COMMAND_STEP'
+              ? 'BRAIN_CMD'
+              : 'MANUAL',
+        sourceLabelHe: opts.momentLabelHe,
+        deliveryStatusHe: 'לא נשלח — החשבון מנותק כעת',
+      };
+      rtBlocked.recentLogs.unshift(blockedLog);
+      if (rtBlocked.recentLogs.length > 12) rtBlocked.recentLogs.length = 12;
+      syncEnvSlotsActivity();
+
+      const blockedDispatch: CompanionDispatchActionItem = {
+        id: nextId('comp_blocked'),
+        ts: now,
+        accountId: chosenAccount.id,
+        accountHandle: chosenAccount.handle,
+        accountDisplayName: chosenAccount.displayName,
+        role: chosenAccount.role,
+        kind: opts.kind,
+        momentLabelHe: opts.momentLabelHe,
+        messageTextHe: opts.customMessageHe || chosenAccount.trainedLinesHe[0] || '',
+        targetRoom: opts.targetRoom || null,
+        deliveryModeHe: 'לא נשלח — החשבון מנותק כרגע (המלצת הצ׳אט נשמרה מבלי לחסום את המערכת)',
+        deliveryStatus: 'BLOCKED_DISCONNECTED',
+        targetOffender: opts.targetOffender,
+        dispatchedToBridge: false,
+      };
+      battleState.chatCompanion.recentDispatches.unshift(blockedDispatch);
+      if (battleState.chatCompanion.recentDispatches.length > 40) {
+        battleState.chatCompanion.recentDispatches.length = 40;
+      }
+      broadcast({ type: 'state:update', state: battleState });
+      return blockedDispatch;
+    }
+
     let lineHe = opts.customMessageHe || '';
-    if (!lineHe && chosenAccount.trainedLinesHe && chosenAccount.trainedLinesHe.length > 0 && Math.random() < 0.55) {
+    if (
+      !lineHe &&
+      chosenAccount.trainedLinesHe &&
+      chosenAccount.trainedLinesHe.length > 0 &&
+      Math.random() < 0.7
+    ) {
       lineHe =
-        chosenAccount.trainedLinesHe[Math.floor(Math.random() * chosenAccount.trainedLinesHe.length)];
+        chosenAccount.trainedLinesHe[
+          Math.floor(Math.random() * chosenAccount.trainedLinesHe.length)
+        ];
     }
     if (!lineHe) {
       const matchingPatterns = battleState.chatCompanion.learnedPatterns.filter(
@@ -4770,17 +5048,19 @@ async function startServer() {
         battleState.chatCompanion.learnedPatterns[0];
       if (pickedPattern && pickedPattern.hebrewLines.length > 0) {
         lineHe =
-          pickedPattern.hebrewLines[Math.floor(Math.random() * pickedPattern.hebrewLines.length)];
+          pickedPattern.hebrewLines[
+            Math.floor(Math.random() * pickedPattern.hebrewLines.length)
+          ];
         pickedPattern.usedCount += 1;
       } else {
-        lineHe = 'כולם ביחד בדאבל טאפ על המסך — שומרים על האנרגיה בחדר!';
+        lineHe = 'רגע התערבות פה בצ׳אט — סוגרים את זה לפני הכפפה או רק בסנייפ בסוף?';
       }
     }
 
     if (opts.userPlaceholder) {
       lineHe = lineHe.replace(/\{\{USER\}\}/g, opts.userPlaceholder);
     } else {
-      lineHe = lineHe.replace(/\{\{USER\}\}/g, 'התומך שלנו');
+      lineHe = lineHe.replace(/\{\{USER\}\}/g, 'אחי');
     }
 
     const effectiveTargetRoom =
@@ -4790,21 +5070,30 @@ async function startServer() {
       battleState.tiktokRoom.targetUsername ||
       null;
 
-    chosenAccount.messagesDispatched += 1;
+    if (trulyConnected) {
+      chosenAccount.messagesDispatched += 1;
+    }
     chosenAccount.lastOrderHe = opts.momentLabelHe;
-    if (opts.kind === 'MOD_CLEANUP') {
+    if (opts.kind === 'MOD_CLEANUP' && trulyConnected) {
       chosenAccount.moderationsTriggered += 1;
     }
 
-    // Record per-.env slot (1..6) activity telemetry
-    const slotNum = chosenAccount.slotNumber || 1;
     const rt = getEnvSlotRuntime(slotNum);
-    if (opts.kind === 'AUTO_EVENT_SCRIPT') rt.autoScriptTriggersCount += 1;
-    else if (opts.kind === 'BRAIN_COMMAND_STEP') rt.brainCommandsCount += 1;
-    else if (opts.kind === 'MOD_CLEANUP') rt.moderationsCount += 1;
+    if (trulyConnected) {
+      if (opts.kind === 'AUTO_EVENT_SCRIPT') rt.autoScriptTriggersCount += 1;
+      else if (opts.kind === 'BRAIN_COMMAND_STEP') rt.brainCommandsCount += 1;
+      else if (opts.kind === 'MOD_CLEANUP') rt.moderationsCount += 1;
+    }
     rt.lastSentAtTs = now;
     rt.lastSentMessageHe = lineHe;
     rt.lastTriggerReasonHe = opts.momentLabelHe;
+
+    const initialStatusText = trulyConnected
+      ? effectiveTargetRoom
+        ? `שולח לטיקטוק/גשר אל @${effectiveTargetRoom}...`
+        : 'שולח דרך גשר חי...'
+      : 'הדגמת שיחה מקומית (לא נשלח לטיקטוק)';
+
     const logEntry: EnvModeratorSlotLogItem = {
       id: nextId('slotlog'),
       ts: now,
@@ -4819,7 +5108,7 @@ async function startServer() {
               ? 'MOD_SHIELD'
               : 'MANUAL',
       sourceLabelHe: opts.momentLabelHe,
-      deliveryStatusHe: effectiveTargetRoom ? `שולח אל @${effectiveTargetRoom}...` : 'שודר לפיד ולגשר',
+      deliveryStatusHe: initialStatusText,
     };
     rt.recentLogs.unshift(logEntry);
     if (rt.recentLogs.length > 12) rt.recentLogs.length = 12;
@@ -4836,11 +5125,10 @@ async function startServer() {
       momentLabelHe: opts.momentLabelHe,
       messageTextHe: lineHe,
       targetRoom: effectiveTargetRoom,
-      deliveryModeHe: effectiveTargetRoom
-        ? `שולח לחדר @${effectiveTargetRoom}...`
-        : 'שוגר לצ׳אט ולגשר המנחים',
+      deliveryModeHe: initialStatusText,
+      deliveryStatus: trulyConnected ? 'SENT_WS_BRIDGE' : 'LOCAL_PREVIEW_ONLY',
       targetOffender: opts.targetOffender,
-      dispatchedToBridge: true,
+      dispatchedToBridge: trulyConnected,
     };
 
     battleState.chatCompanion.recentDispatches.unshift(dispatchItem);
@@ -4853,7 +5141,11 @@ async function startServer() {
         user: `${chosenAccount.displayName}`,
         text: lineHe,
         ts: now,
-        source: effectiveTargetRoom ? `מנחה @${effectiveTargetRoom}` : 'מנחה מלווה',
+        source: trulyConnected
+          ? effectiveTargetRoom
+            ? `נשלח ל-@${effectiveTargetRoom}`
+            : 'נשלח לגשר חי'
+          : 'הדגמת שרשרת שיחה (מקומי)',
         avatarUrl: chosenAccount.avatarUrl,
       });
       if (battleState.recentChatMessages.length > 24) {
@@ -4864,9 +5156,12 @@ async function startServer() {
     void trySendLiveChatViaTikTokSession(
       chosenAccount,
       effectiveTargetRoom || '',
-      lineHe
+      lineHe,
+      allowSim
     ).then((resInfo) => {
       dispatchItem.deliveryModeHe = resInfo.deliveryNoteHe;
+      dispatchItem.deliveryStatus = resInfo.deliveryStatus;
+      dispatchItem.dispatchedToBridge = resInfo.sentDirectTikTok || resInfo.sentBridge;
       logEntry.deliveryStatusHe = resInfo.deliveryNoteHe;
       syncEnvSlotsActivity();
       broadcast({
@@ -4963,13 +5258,14 @@ async function startServer() {
         setTimeout(() => {
           dispatchCompanionCrewAction({
             moment: 'DEAD_AIR_ICEBREAKER',
-            momentLabelHe: `תסריט אוטומטי: ${rule.nameHe} (שלב ${idx + 1}/${rule.steps.length})`,
+            momentLabelHe: `שרשרת אוטומטית: ${rule.nameHe} (שלב ${idx + 1}/${rule.steps.length})`,
             preferredRole: 'VIBE_HYPE',
             specificSlotNumber: step.slotNumber >= 1 && step.slotNumber <= 6 ? step.slotNumber : undefined,
             targetRoom: opts.sourceRoom || battleState.chatCompanion.commanderBrain.activeTargetRoom,
             kind: 'AUTO_EVENT_SCRIPT',
             customMessageHe: renderedText,
             bypassCooldown: true,
+            allowPreviewOverride: Boolean(opts.forceTestRuleId),
           });
         }, waitMs);
       });
@@ -5498,7 +5794,7 @@ async function startServer() {
         configured: false,
         redirectUri,
         messageHe:
-          'כדי להפעיל כניסת OAuth רשמית של TikTok Login Kit, הגדר TIKTOK_CLIENT_KEY ו-TIKTOK_CLIENT_SECRET ב-Secrets והוסף את כתובת ה-Callback בפורטל המפתחים של טיקטוק. בינתיים תוכל להתחבר מיידית לכל שידור חי עם @username למטה!',
+          'כדי להפעיל כניסת OAuth מאובטחת של TikTok Login Kit, הגדר TIKTOK_CLIENT_KEY ו-TIKTOK_CLIENT_SECRET ב-Secrets והוסף את כתובת ה-Callback בפורטל המפתחים של טיקטוק (אופציונלי — ניתן לחבר חשבונות גם דרך מערכת הטלפונים).',
       });
       return;
     }
@@ -5541,7 +5837,11 @@ async function startServer() {
             redirect_uri: redirectUri,
           }),
         });
-        const tokenJson = (await tokenResp.json()) as { access_token?: string; open_id?: string };
+        const tokenJson = (await tokenResp.json()) as {
+          access_token?: string;
+          refresh_token?: string;
+          open_id?: string;
+        };
 
         if (tokenJson.access_token) {
           const userResp = await fetch(
@@ -5554,17 +5854,36 @@ async function startServer() {
             data?: { user?: { open_id?: string; display_name?: string; username?: string; avatar_url?: string } };
           };
           const u = userJson.data?.user;
-          if (targetSlotId) {
-            const slotAcc = battleState.chatCompanion.accounts.find((a) => a.id === targetSlotId);
-            if (slotAcc) {
-              if (u?.username) slotAcc.handle = sanitizeTikTokHandle(u.username);
-              if (u?.display_name || u?.username) {
-                slotAcc.displayName = u.display_name || `@${u.username}`;
-              }
-              if (u?.avatar_url) slotAcc.avatarUrl = u.avatar_url;
-              slotAcc.connectionStatus = 'TIKTOK_AUTH_LIVE';
-              savePersistedChatCompanion(battleState.chatCompanion);
+          const slotAcc = targetSlotId
+            ? battleState.chatCompanion.accounts.find((a) => a.id === targetSlotId)
+            : battleState.chatCompanion.accounts[0];
+          if (slotAcc && userResp.ok && u) {
+            if (u.username) slotAcc.handle = sanitizeTikTokHandle(u.username);
+            if (u.display_name || u.username) {
+              slotAcc.displayName = u.display_name || `@${u.username}`;
             }
+            if (u.avatar_url) slotAcc.avatarUrl = u.avatar_url;
+            slotAcc.lastVerifiedAtTs = Date.now();
+            secureOAuthRecordsBySlot.set(slotAcc.slotNumber || 1, {
+              accountId: slotAcc.id,
+              slotNumber: slotAcc.slotNumber || 1,
+              openId: u.open_id || tokenJson.open_id || 'tiktok_user',
+              username: slotAcc.handle,
+              displayName: slotAcc.displayName,
+              avatarUrl: u.avatar_url,
+              accessToken: tokenJson.access_token,
+              refreshToken: tokenJson.refresh_token,
+              verifiedAtTs: Date.now(),
+              liveVerifiedInRuntime: true,
+            });
+            saveSecureOAuthAccountRecords();
+            if (geelarkCoordinator) {
+              geelarkCoordinator.configureAccount(toGeeLarkSlotId(slotAcc.slotNumber || 1), {
+                tiktokUsername: slotAcc.handle,
+              });
+            }
+            syncEnvSlotsActivity();
+            savePersistedChatCompanion(battleState.chatCompanion);
           }
           battleState.tiktokRoom.oauthConnectedUser = {
             openId: u?.open_id || tokenJson.open_id || 'tiktok_user',
@@ -6320,6 +6639,26 @@ Return JSON matching the schema:
 
       pushSwarmFeedEvent(managed, 'CHAT', `${sender}: ${comment}`, lang);
 
+      const isModBadge = Boolean(
+        data?.user?.isModerator ||
+          (Array.isArray(data?.user?.userBadges) &&
+            data.user.userBadges.some((b: any) => /moderator|admin/i.test(String(b?.type || b?.name || ''))))
+      );
+      boosteraDataFactory.ingestEvent({
+        streamId: `live_${key}`,
+        creatorUsername: cleanUsername,
+        roomId: managed.summary.roomId,
+        source: 'TIKTOK_WEBCAST_LIVE',
+        reliability: 'VERIFIED_TIKTOK',
+        category: 'CHAT_MESSAGE',
+        subType: 'CHAT',
+        actorHandle: senderHandle,
+        actorDisplayName: sender,
+        isVerifiedHumanModerator: isModBadge,
+        textContent: comment,
+        languageTag: lang,
+      });
+
       inspectLiveChatForModerationAndCompanion({
         sourceRoom: `@${cleanUsername}`,
         sender,
@@ -6379,6 +6718,20 @@ Return JSON matching the schema:
       if (managed.captionSamples.length > 25) managed.captionSamples.length = 25;
       managed.unsynthesizedEventCount += 1;
       pushSwarmFeedEvent(managed, 'CAPTION', `דיבור חי: "${rawCap.slice(0, 90)}"`, lang);
+      boosteraDataFactory.recordTranscriptSegment({
+        streamId: `live_${key}`,
+        creatorUsername: cleanUsername,
+        speakerLabel: cleanUsername,
+        speakerVerified: true,
+        speakerRole: 'HOST_CREATOR',
+        language: lang,
+        text: rawCap.slice(0, 220),
+        startedAtTs: Date.now() - 2500,
+        endedAtTs: Date.now(),
+        vocalToneHe: 'כתוביות דיבור חי מטיקטוק',
+        volumeDb: null,
+        providerUsed: 'TIKTOK_LIVE_CAPTION',
+      });
       syncGlobalTikTokRoomSummary();
     });
 
@@ -6389,6 +6742,19 @@ Return JSON matching the schema:
       const avatarUrl = extractTikTokUserAvatar(data?.user, sender);
       managed.summary.totalLikes += likeBurst;
       managed.likeWindow.push({ ts: Date.now(), count: likeBurst });
+
+      boosteraDataFactory.ingestEvent({
+        streamId: `live_${key}`,
+        creatorUsername: cleanUsername,
+        roomId: managed.summary.roomId,
+        source: 'TIKTOK_WEBCAST_LIVE',
+        reliability: 'VERIFIED_TIKTOK',
+        category: 'ENGAGEMENT_SIGNAL',
+        subType: 'LIKE',
+        actorHandle: String(data?.user?.uniqueId || sender),
+        actorDisplayName: sender,
+        numericValue: likeBurst,
+      });
 
       if (likeBurst >= 12) {
         pushSwarmFeedEvent(managed, 'LIKE_SURGE', `גל לחיצות מהיר (+${likeBurst} לייקים מ-${sender})`);
@@ -6422,6 +6788,19 @@ Return JSON matching the schema:
       if (managed.giftSamples.length > 30) managed.giftSamples.length = 30;
 
       pushSwarmFeedEvent(managed, 'GIFT', desc);
+      boosteraDataFactory.ingestEvent({
+        streamId: `live_${key}`,
+        creatorUsername: cleanUsername,
+        roomId: managed.summary.roomId,
+        source: 'TIKTOK_WEBCAST_LIVE',
+        reliability: 'VERIFIED_TIKTOK',
+        category: 'ENGAGEMENT_SIGNAL',
+        subType: 'GIFT',
+        actorHandle: String(data?.user?.uniqueId || giver),
+        actorDisplayName: giver,
+        numericValue: diamonds,
+        textContent: `${giftName} x${repeatCount}`,
+      });
 
       const giftImgUrl = extractTikTokEventImageUrl(data);
       const realGifterHttpAvatar = extractRawTikTokHttpUserAvatar(data?.user);
@@ -6526,6 +6905,18 @@ Return JSON matching the schema:
       const avatarUrl = extractTikTokUserAvatar(data?.user, sender);
       managed.summary.sharesCount += 1;
       pushSwarmFeedEvent(managed, 'JOIN_SHARE', `${sender} שיתף את השידור`);
+      boosteraDataFactory.ingestEvent({
+        streamId: `live_${key}`,
+        creatorUsername: cleanUsername,
+        roomId: managed.summary.roomId,
+        source: 'TIKTOK_WEBCAST_LIVE',
+        reliability: 'VERIFIED_TIKTOK',
+        category: 'ENGAGEMENT_SIGNAL',
+        subType: 'SHARE',
+        actorHandle: String(data?.user?.uniqueId || sender),
+        actorDisplayName: sender,
+        numericValue: 1,
+      });
       if (managed.summary.mirrorToStage) {
         processTikTokEvent({ type: 'share', count: 1, user: sender, avatarUrl });
       } else {
@@ -6538,6 +6929,18 @@ Return JSON matching the schema:
       const avatarUrl = extractTikTokUserAvatar(data?.user, sender);
       managed.summary.followsCount += 1;
       pushSwarmFeedEvent(managed, 'JOIN_SHARE', `עוקב חדש: ${sender}`);
+      boosteraDataFactory.ingestEvent({
+        streamId: `live_${key}`,
+        creatorUsername: cleanUsername,
+        roomId: managed.summary.roomId,
+        source: 'TIKTOK_WEBCAST_LIVE',
+        reliability: 'VERIFIED_TIKTOK',
+        category: 'ENGAGEMENT_SIGNAL',
+        subType: 'FOLLOW',
+        actorHandle: String(data?.user?.uniqueId || sender),
+        actorDisplayName: sender,
+        numericValue: 1,
+      });
       if (managed.summary.mirrorToStage) {
         processTikTokEvent({ type: 'follow', count: 1, user: sender, avatarUrl });
       } else {
@@ -6547,8 +6950,20 @@ Return JSON matching the schema:
 
     conn.on(WebcastEvent.MEMBER, (data: any) => {
       managed.summary.joinsCount += 1;
+      const sender = String(data?.user?.nickname || data?.user?.uniqueId || `@${cleanUsername}`);
+      boosteraDataFactory.ingestEvent({
+        streamId: `live_${key}`,
+        creatorUsername: cleanUsername,
+        roomId: managed.summary.roomId,
+        source: 'TIKTOK_WEBCAST_LIVE',
+        reliability: 'VERIFIED_TIKTOK',
+        category: 'PARTICIPANT_PRESENCE',
+        subType: 'JOIN',
+        actorHandle: String(data?.user?.uniqueId || sender),
+        actorDisplayName: sender,
+        numericValue: 1,
+      });
       if (managed.summary.mirrorToStage) {
-        const sender = String(data?.user?.nickname || data?.user?.uniqueId || `@${cleanUsername}`);
         const avatarUrl = extractTikTokUserAvatar(data?.user, sender);
         processTikTokEvent({ type: 'join', count: 1, user: sender, avatarUrl });
       }
@@ -6559,6 +6974,18 @@ Return JSON matching the schema:
       if (viewers > 0) {
         managed.summary.viewerCount = viewers;
         managed.summary.peakViewers = Math.max(managed.summary.peakViewers, viewers);
+        boosteraDataFactory.ingestEvent({
+          streamId: `live_${key}`,
+          creatorUsername: cleanUsername,
+          roomId: managed.summary.roomId,
+          source: 'TIKTOK_WEBCAST_LIVE',
+          reliability: 'VERIFIED_TIKTOK',
+          category: 'PARTICIPANT_PRESENCE',
+          subType: 'VIEWER_COUNT',
+          actorHandle: cleanUsername,
+          explicitRole: 'HOST_CREATOR',
+          numericValue: viewers,
+        });
         syncGlobalTikTokRoomSummary();
       }
     });
@@ -6641,6 +7068,18 @@ Return JSON matching the schema:
         'BATTLE_PK',
         `נפתח קרב PK חי${opp ? ` נגד @${opp}` : ''}!`
       );
+      boosteraDataFactory.ingestEvent({
+        streamId: `live_${key}`,
+        creatorUsername: cleanUsername,
+        roomId: managed.summary.roomId,
+        source: 'TIKTOK_WEBCAST_LIVE',
+        reliability: 'VERIFIED_TIKTOK',
+        category: 'BATTLE_STATE',
+        subType: 'BATTLE_START',
+        actorHandle: cleanUsername,
+        explicitRole: 'HOST_CREATOR',
+        targetHandle: opp || null,
+      });
 
       if (managed.summary.mirrorToStage) {
         battleState.streamMode = 'BATTLE';
@@ -6684,6 +7123,23 @@ Return JSON matching the schema:
         if (hostPts > 0 || oppPts > 0) {
           managed.summary.hostBattlePoints = hostPts;
           managed.summary.opponentBattlePoints = oppPts;
+          boosteraDataFactory.ingestEvent({
+            streamId: `live_${key}`,
+            creatorUsername: cleanUsername,
+            roomId: managed.summary.roomId,
+            source: 'TIKTOK_WEBCAST_LIVE',
+            reliability: 'VERIFIED_TIKTOK',
+            category: 'BATTLE_STATE',
+            subType: 'SCORE_UPDATE',
+            actorHandle: cleanUsername,
+            explicitRole: 'HOST_CREATOR',
+            targetHandle: managed.summary.opponentUsername || null,
+            numericValue: hostPts,
+            metadata: {
+              hostScore: hostPts,
+              opponentScore: oppPts,
+            },
+          });
 
           if (managed.summary.mirrorToStage) {
             battleState.myScore = hostPts;
@@ -6872,6 +7328,13 @@ Return JSON matching the schema:
       const hadActivity = managed.chatSamples.length + managed.giftSamples.length > 0;
       managed.summary.connected = false;
       managed.summary.connecting = false;
+      boosteraDataFactory.ensureStreamRegistered({
+        streamId: `live_${key}`,
+        creatorUsername: cleanUsername,
+        roomId: managed.summary.roomId,
+        source: 'TIKTOK_WEBCAST_LIVE',
+        connected: false,
+      });
       const w = aiMemory.watchedCreators.find((item) => item.username.toLowerCase() === key);
       if (w) {
         w.isLiveNow = false;
@@ -6897,6 +7360,27 @@ Return JSON matching the schema:
       managed.summary.viewerCount = initialViewers;
       managed.summary.peakViewers = initialViewers;
       managed.summary.partyVibeHe = 'מחובר בלייב · קולט אנרגיה, צ׳אט ומסיבה מסביב';
+      boosteraDataFactory.ensureStreamRegistered({
+        streamId: `live_${key}`,
+        creatorUsername: cleanUsername,
+        roomId: managed.summary.roomId,
+        source: 'TIKTOK_WEBCAST_LIVE',
+        connected: true,
+      });
+      if (initialViewers > 0) {
+        boosteraDataFactory.ingestEvent({
+          streamId: `live_${key}`,
+          creatorUsername: cleanUsername,
+          roomId: managed.summary.roomId,
+          source: 'TIKTOK_WEBCAST_LIVE',
+          reliability: 'VERIFIED_TIKTOK',
+          category: 'PARTICIPANT_PRESENCE',
+          subType: 'VIEWER_COUNT',
+          actorHandle: cleanUsername,
+          explicitRole: 'HOST_CREATOR',
+          numericValue: initialViewers,
+        });
+      }
 
       const w = aiMemory.watchedCreators.find((item) => item.username.toLowerCase() === key);
       if (w) {
@@ -9076,38 +9560,50 @@ ${JSON.stringify(
     return collected;
   }
 
-  function scheduleBrainSquadOrderExecution(order: BrainSquadOrderItem) {
+  function scheduleBrainSquadOrderExecution(order: BrainSquadOrderItem, allowPreviewOverride = false) {
     battleState.chatCompanion.commanderBrain.recentOrders.unshift(order);
     if (battleState.chatCompanion.commanderBrain.recentOrders.length > 12) {
       battleState.chatCompanion.commanderBrain.recentOrders.length = 12;
     }
     battleState.chatCompanion.commanderBrain.currentDirectiveHe = order.commandHe;
-    battleState.chatCompanion.commanderBrain.brainStatusHe = `מבצע תוכנית מדורגת (${order.steps.length} הודעות מתוזמנות)${
-      order.targetRoom ? ` בחדר @${order.targetRoom}` : ''
+    battleState.chatCompanion.commanderBrain.brainStatusHe = `מריץ שרשרת שיחה בין ${order.steps.length} תפקידים${
+      order.targetRoom ? ` עבור @${order.targetRoom}` : ''
     }`;
     savePersistedChatCompanion(battleState.chatCompanion);
     broadcast({ type: 'state:update', state: battleState });
 
     for (const step of order.steps) {
-      const waitMs = Math.max(0, Math.min(25000, Math.round((step.delaySec || 0) * 1000)));
+      const waitMs = Math.max(0, Math.min(28000, Math.round((step.delaySec || 0) * 1000)));
       setTimeout(() => {
-        step.status = 'SENT';
         step.sentAtTs = Date.now();
-        dispatchCompanionCrewAction({
+        const disp = dispatchCompanionCrewAction({
           moment: 'DEAD_AIR_ICEBREAKER',
-          momentLabelHe: `פקודת מוח AI: ${step.tacticalPurposeHe || order.commandHe.slice(0, 36)}`,
+          momentLabelHe: `שרשרת שיחה: ${step.tacticalPurposeHe || order.commandHe.slice(0, 36)}`,
           preferredRole: step.role,
           specificAccountId: step.accountId,
           targetRoom: order.targetRoom,
           kind: 'BRAIN_COMMAND_STEP',
           customMessageHe: step.lineHe,
           bypassCooldown: true,
+          allowPreviewOverride,
         });
-        const allSent = order.steps.every((s) => s.status === 'SENT');
-        if (allSent) {
-          battleState.chatCompanion.commanderBrain.brainStatusHe = order.targetRoom
-            ? `הפקודה הושלמה בחדר @${order.targetRoom} · עוקב אחר הצ׳אט החי`
-            : 'הפקודה הושלמה · המוח עוקב אחר תגובת הקהל בצ׳אט';
+        if (disp?.deliveryStatus === 'BLOCKED_DISCONNECTED') {
+          step.status = 'BLOCKED_DISCONNECTED';
+        } else if (disp?.deliveryStatus === 'LOCAL_PREVIEW_ONLY') {
+          step.status = 'PREVIEW_ONLY';
+        } else {
+          step.status = 'SENT';
+        }
+
+        const allDone = order.steps.every((s) => s.status !== 'QUEUED');
+        if (allDone) {
+          const anyRealSent = order.steps.some((s) => s.status === 'SENT');
+          const anyBlocked = order.steps.some((s) => s.status === 'BLOCKED_DISCONNECTED');
+          battleState.chatCompanion.commanderBrain.brainStatusHe = anyBlocked
+            ? 'השרשרת נעצרה — החשבונות לא מחוברים לטיקטוק (חבר סשנים ב-.env או הפעל מצב הדגמה מקומית)'
+            : anyRealSent
+              ? `שרשרת 6 התפקידים נשלחה בלייב${order.targetRoom ? ` אל @${order.targetRoom}` : ''} · עוקב אחר תגובות הקהל`
+              : 'שרשרת 6 התפקידים הוצגה בהדגמה מקומית (חבר סשנים ב-.env לשליחה חיה לטיקטוק)';
           savePersistedChatCompanion(battleState.chatCompanion);
           broadcast({ type: 'state:update', state: battleState });
         }
@@ -9119,8 +9615,11 @@ ${JSON.stringify(
     commandHe: string;
     targetRoomHandle?: string;
     source: 'USER_COMMAND' | 'AUTONOMOUS_BRAIN';
+    allowPreviewOverride?: boolean;
   }): Promise<BrainSquadOrderItem> {
-    const rawCmd = String(opts.commandHe || '').trim() || 'תרימו אווירה טבעית בצ׳אט ותניעו דאבל טאפ';
+    const rawCmd =
+      String(opts.commandHe || '').trim() ||
+      'פתחו שרשרת ויכוח ידידותי 50/50 בין התפקידים שגורמת לצופים לענות בצ׳אט';
     const handleInCmdMatch = rawCmd.match(/@([a-zA-Z0-9._]{3,30})/);
     const requestedRoom = sanitizeTikTokHandle(
       opts.targetRoomHandle ||
@@ -9141,47 +9640,53 @@ ${JSON.stringify(
         if (acc.enabled) {
           acc.deployedRoomHandle = requestedRoom;
           acc.deployedRoomLive = Boolean(roomRes.connected);
-          if (!acc.hasServerTikTokAuth) {
-            acc.connectionStatus = 'LIVE_ROOM_DEPLOYED';
-          }
         }
       }
+      syncEnvSlotsActivity();
     }
 
     const enabledAccounts = battleState.chatCompanion.accounts.filter((a) => a.enabled);
     const activeAccounts =
-      enabledAccounts.length > 0 ? enabledAccounts : battleState.chatCompanion.accounts.slice(0, 4);
+      enabledAccounts.length > 0 ? enabledAccounts : battleState.chatCompanion.accounts.slice(0, 6);
     const chatCorpus = collectLiveChatTrainingCorpus();
 
     try {
       const ai = getGeminiClient();
       const accountsBrief = activeAccounts
-        .map(
-          (a) =>
-            `- id="${a.id}" | @${a.handle} (${a.displayName}) | תפקיד=${a.role} | סגנון=${a.toneNotesHe} | משפטים שאומן עליהם=${a.trainedLinesHe.slice(0, 2).join(' / ')}`
-        )
+        .map((a) => {
+          const roleSpec = CHAT_RUNNER_ROLES_CATALOG.find((r) => r.role === a.role);
+          return `- id="${a.id}" | סלוט #${a.slotNumber} @${a.handle} (${a.displayName}) | תפקיד בשרשרת="${roleSpec?.runnerTitleHe || a.role}" | איך מריץ צ׳אט="${roleSpec?.howHeRunsChatHe || a.toneNotesHe}"`;
+        })
         .join('\n');
 
       const response = await ai.models.generateContent({
         model: 'gemini-4-hydrogen',
-        contents: `אתה "המוח המרכזי" (Central AI Moderator Brain) שאחראי על צוות של ${activeAccounts.length} חשבונות מנחים מלווים אמיתיים בטיקטוק לייב (קהל יעד: ${battleState.countryCalibration.labelHe}).
-מצב החדר כרגע:
-- חדר יעד משודר: ${requestedRoom ? '@' + requestedRoom : 'במת השידור הפעילה'}
-- סקור קרב: אנחנו ${battleState.myScore} מול יריב ${battleState.opponentScore} | שלב: ${battleState.phase} | כפפה: ${battleState.gloveRemainingSec} שנ׳ | ענן יריב פתוח: ${battleState.cloudRadar.active ? 'כן!' : 'לא'}
-- קצב צ׳אט: ${battleState.chatCompanion.chatVelocityPerMin} הודעות/דקה
+        contents: `אתה המוח שמנהל צוות של ${activeAccounts.length} חשבונות הרצת צ׳אט ארוך בטיקטוק לייב (קהל: ${battleState.countryCalibration.labelHe}).
+חשוב מאוד: אלה **לא מנחים רשמיים**! אסור בתכלית האיסור לכתוב סיסמאות רובוטיות שסוגרות שיחה כמו "כולם לתת לייקים", "תודה על המתנות" או "ערב טוב לכולם"!
+המטרה היא לגרום **לצ׳אט ארוך ומתגלגל** שבו צופים אמיתיים נשאבים להגיב.
 
-צוות חשבונות המנחים שעומדים לפקודתך:
+איך הצוות עובד — כל אחד בתפקיד שלו בשרשרת:
+1. סלוט #1 (פותח הפיתיון והדילמה): זורק התערבות או שאלת 50/50 חדה.
+2. סלוט #2 (מצית הוויכוח הידידותי): עונה ל-#1 בדעה הפוכה בחיוך ("אין סיכוי חחח...") כדי שצופים יקפצו להכריע מי צודק.
+3. סלוט #3 (מסובב נרטיב "אנחנו מולם"): מוסיף מתח/סוד מול החדר היריב או ענן ההסתרה.
+4. סלוט #4 (מגנט שמות מהקהל): פונה לצופה/לחדשים בשאלה ישירה שקל לענות עליה.
+5. סלוט #5 (סופר ההצבעות החי): מתרגם ל-1 מול 2 או יעד קטן וסופר תיקו בצ׳אט.
+6. סלוט #6 (מאריך השרשרת והקליפהאנגר): משאיר משפט סקרנות פתוח לצופים שנכנסו מהפור-יו.
+
+מצב הלייב כרגע:
+- חדר יעד: ${requestedRoom ? '@' + requestedRoom : 'במת השידור'}
+- סקור: אנחנו ${battleState.myScore} מול יריב ${battleState.opponentScore} | שלב: ${battleState.phase} | כפפה: ${battleState.gloveRemainingSec} שנ׳ | ענן יריב: ${battleState.cloudRadar.active ? 'פתוח!' : 'לא'}
+
+החשבונות הזמינים:
 ${accountsBrief}
 
-מה שלמדנו מהצ׳אט החי בדקות האחרונות:
-${chatCorpus.slice(0, 20).join('\n')}
+מה שקרה בצ׳אט בדקות האחרונות:
+${chatCorpus.slice(0, 16).join('\n')}
 
-הפקודה שקיבלת עכשיו לביצוע:
+הנחיה/מצב מבוקש (המשתמש לא צריך להמציא מילים — תמציא אתה את כל השרשרת בשבילו!):
 "${rawCmd}"
 
-בנה תוכנית פעולה חכמה של 3 עד 5 צעדים מתוזמנים בין חשבונות שונים מהצוות:
-- חשוב מאוד: החשבונות חייבים להישמע כמו בני אדם אמיתיים ומנחים שמגיבים גם לקהל וגם זה לזה בהפרשי שניות טבעיים (למשל delaySec: 0, 2.5, 5.5, 8.5) — לעולם לא רובוטיים ולעולם לא אותו טקסט!
-- השתמש ב-accountId המדויק מתוך הרשימה למעלה.`,
+בנה שרשרת שיחה טבעית של 5 עד 6 צעדים מתוזמנים (delaySec: 0, 3.5, 7.2, 11.0, 14.8, 18.5) שבה כל חשבון מדבר בסלנג ישראלי טבעי בגובה העיניים ומגיב לחשבון שלפניו.`,
         config: {
           responseMimeType: 'application/json',
           responseSchema: {
@@ -9226,10 +9731,10 @@ ${chatCorpus.slice(0, 20).join('\n')}
           role: matchedAcc.role,
           delaySec:
             typeof rs.delaySec === 'number'
-              ? Math.max(0, Math.min(22, Number(rs.delaySec.toFixed(1))))
-              : builtSteps.length * 2.8,
+              ? Math.max(0, Math.min(25, Number(rs.delaySec.toFixed(1))))
+              : Number((builtSteps.length * 3.5).toFixed(1)),
           lineHe: line,
-          tacticalPurposeHe: String(rs?.tacticalPurposeHe || 'הנחיית צ׳אט מתוזמנת').trim(),
+          tacticalPurposeHe: String(rs?.tacticalPurposeHe || 'שלב בשרשרת הארכת צ׳אט').trim(),
           status: 'QUEUED',
         });
       }
@@ -9242,51 +9747,62 @@ ${chatCorpus.slice(0, 20).join('\n')}
           commandHe: rawCmd,
           brainReasoningHe:
             String(parsed.brainReasoningHe || '').trim() ||
-            'חלוקת תפקידים טבעית ומדורגת בין המנחים ליצירת מומנטום בצ׳אט.',
+            'שרשרת 6 תפקידים משלימים ליצירת צ׳אט ארוך ומתגלגל.',
           targetRoom: requestedRoom || null,
           steps: builtSteps,
         };
-        scheduleBrainSquadOrderExecution(order);
+        scheduleBrainSquadOrderExecution(order, Boolean(opts.allowPreviewOverride));
         return order;
       }
     } catch {
-      // Deterministic smart fallback if Gemini quota/network hiccups so commands ALWAYS execute live
+      // Fallback to built-in 6-role Split Debate chain
     }
 
-    const fallbackSteps: BrainSquadOrderStep[] = activeAccounts.slice(0, 3).map((acc, idx) => ({
-      stepIndex: idx + 1,
-      accountId: acc.id,
-      accountHandle: acc.handle,
-      accountDisplayName: acc.displayName,
-      role: acc.role,
-      delaySec: Number((idx * 2.6).toFixed(1)),
-      lineHe:
-        acc.trainedLinesHe[0] ||
-        'יאללה חברים כולנו על המסך בדאבל טאפ — מרימים את החדר עכשיו!',
-      tacticalPurposeHe: `ביצוע פקודה מתפקיד ${acc.role}`,
-      status: 'QUEUED',
-    }));
+    const fallbackMethod = CHAT_ELONGATION_METHODS_CATALOG[0];
+    const fallbackSteps: BrainSquadOrderStep[] = fallbackMethod.steps.map((st, idx) => {
+      const acc =
+        activeAccounts.find((a) => a.slotNumber === st.slotNumber) ||
+        activeAccounts[idx % activeAccounts.length];
+      return {
+        stepIndex: idx + 1,
+        accountId: acc.id,
+        accountHandle: acc.handle,
+        accountDisplayName: acc.displayName,
+        role: acc.role,
+        delaySec: st.delaySec,
+        lineHe: st.lineHe.replace(/\{\{USER\}\}/g, 'אחי').replace(/\{\{ROOM\}\}/g, requestedRoom ? '@' + requestedRoom : 'הלייב'),
+        tacticalPurposeHe: st.roleActionLabelHe,
+        status: 'QUEUED',
+      };
+    });
 
     const fallbackOrder: BrainSquadOrderItem = {
       id: nextId('brain_ord'),
       ts: Date.now(),
       source: opts.source,
       commandHe: rawCmd,
-      brainReasoningHe: 'תיאום מדורג אוטומטי בין המנחים הפעילים על בסיס הפלייבוק המאומן.',
+      brainReasoningHe: fallbackMethod.psychologyWhyItWorksHe,
       targetRoom: requestedRoom || null,
       steps: fallbackSteps,
     };
-    scheduleBrainSquadOrderExecution(fallbackOrder);
+    scheduleBrainSquadOrderExecution(fallbackOrder, Boolean(opts.allowPreviewOverride));
     return fallbackOrder;
   }
 
-  // Autonomous Brain Coordinator Heartbeat: manages chat organically from learned patterns when active
+  // Autonomous Brain Coordinator Heartbeat: ONLY fires when accounts are truly connected (or user explicitly enabled local simulation)
   let lastAutonomousBrainActionTs = Date.now();
   setInterval(() => {
     const brain = battleState.chatCompanion.commanderBrain;
     if (!brain.autonomousBrainEnabled || !battleState.chatCompanion.autoCompanionEnabled) return;
+    const anyConnected = battleState.chatCompanion.accounts.some(
+      (a) => a.enabled && isSlotTrulyConnected(a.slotNumber, a)
+    );
+    if (!anyConnected && !battleState.chatCompanion.allowLocalSimulationWhenDisconnected) {
+      return;
+    }
+
     const now = Date.now();
-    if (now - lastAutonomousBrainActionTs < 38000) return;
+    if (now - lastAutonomousBrainActionTs < 42000) return;
 
     const hasLiveTarget =
       Boolean(brain.activeTargetRoom) ||
@@ -9297,13 +9813,13 @@ ${chatCorpus.slice(0, 20).join('\n')}
 
     let autoDirective = '';
     if (battleState.cloudRadar.active) {
-      autoDirective = 'היריב פתח ענן הסתרה — הרגיעו את הצ׳אט, שמרו על דאבל טאפ והכינו סנייפ מסודר';
+      autoDirective = 'היריב פתח ענן הסתרה — הריצו שרשרת מבצע שקט בין התפקידים שמושכת צופים לכתוב "בפנים"';
     } else if (battleState.gloveRemainingSec > 10) {
-      autoDirective = 'חלון כפפה x5 פתוח עכשיו — הניעו מתנות קטנות והקשות מהירות לתפיסת המכפיל';
+      autoDirective = 'חלון כפפה x5 פתוח — הריצו ויכוח קצר והצבעת מומנטום שגורמת לקהל לזרוק ורדים ב-5 שניות';
     } else if (battleState.snipeWindowActive) {
-      autoDirective = 'חלון 30 שניות אחרונות לקרב — קראו לסנייפ מדויק ולסגירת פער';
+      autoDirective = '30 שניות אחרונות לקרב — הריצו מתח קליפהאנגר וסנייפ בין התפקידים';
     } else if (battleState.chatCompanion.chatVelocityPerMin < 4 && activeSwarmRooms.size > 0) {
-      autoDirective = 'הצ׳אט שקט כרגע — פתחו שיחה טבעית קצרה בין 2 מנחים ושאלה לקהל להרמת האלגוריתם';
+      autoDirective = 'הצ׳אט שקט — פתחו שרשרת ויכוח 50/50 או פיתיון תיקון בין התפקידים להארכת הצ׳אט';
     }
 
     if (autoDirective) {
@@ -9323,6 +9839,7 @@ ${chatCorpus.slice(0, 20).join('\n')}
       autoLearnFromLiveChat,
       autonomousBrainEnabled,
       autoEventScriptsEnabled,
+      allowLocalSimulationWhenDisconnected,
     } = req.body || {};
     if (typeof autoCompanionEnabled === 'boolean') {
       battleState.chatCompanion.autoCompanionEnabled = autoCompanionEnabled;
@@ -9339,23 +9856,337 @@ ${chatCorpus.slice(0, 20).join('\n')}
     if (typeof autoEventScriptsEnabled === 'boolean') {
       battleState.chatCompanion.autoEventScriptsEnabled = autoEventScriptsEnabled;
     }
+    if (typeof allowLocalSimulationWhenDisconnected === 'boolean') {
+      battleState.chatCompanion.allowLocalSimulationWhenDisconnected =
+        allowLocalSimulationWhenDisconnected;
+    }
     syncEnvSlotsActivity();
     savePersistedChatCompanion(battleState.chatCompanion);
     broadcast({ type: 'state:update', state: battleState });
     res.json({ ok: true, state: battleState });
   });
 
-  app.post('/api/chat-companion/reload-env-status', (_req, res) => {
+  app.post('/api/chat-companion/reload-env-status', async (req, res) => {
     authenticatedModeratorConns.clear();
+    for (let slot = 1; slot <= 6; slot++) {
+      const rt = getEnvSlotRuntime(slot);
+      rt.lastConnectionErrorHe = null;
+    }
+    for (const acc of battleState.chatCompanion.accounts) {
+      acc.lastConnectionErrorHe = null;
+    }
+
+    const checkRoom = sanitizeTikTokHandle(
+      String(
+        req.body?.targetRoomHandle ||
+          battleState.chatCompanion.commanderBrain.activeTargetRoom ||
+          battleState.tiktokRoom.targetUsername ||
+          ''
+      )
+    );
+    let roomLiveVerified: boolean | null = null;
+    if (checkRoom) {
+      try {
+        const probe = new TikTokLiveConnection(checkRoom, {
+          processInitialData: false,
+          fetchRoomInfoOnConnect: false,
+        });
+        roomLiveVerified = await probe.fetchIsLive(checkRoom);
+        battleState.chatCompanion.commanderBrain.activeTargetRoomLive = roomLiveVerified;
+      } catch {
+        roomLiveVerified = false;
+      }
+    }
+
     syncEnvSlotsActivity();
     savePersistedChatCompanion(battleState.chatCompanion);
     broadcast({ type: 'state:update', state: battleState });
     res.json({
       ok: true,
-      configuredCount: battleState.chatCompanion.envSlotsActivity.filter((s) => s.sessionConfiguredInEnv).length,
+      configuredCount: battleState.chatCompanion.envSlotsActivity.filter(
+        (s) => s.sessionConfiguredInEnv
+      ).length,
+      trulyConnectedCount: battleState.chatCompanion.envSlotsActivity.filter(
+        (s) => s.isTrulyConnected
+      ).length,
+      roomLiveVerified,
       envSlotsActivity: battleState.chatCompanion.envSlotsActivity,
       state: battleState,
     });
+  });
+
+  // Run one of the 6 built-in Long-Chat Methods (or convert it in 1 click into an Auto-Script)
+  app.post('/api/chat-companion/run-method', (req, res) => {
+    const methodId = String(req.body?.methodId || '').trim() as ChatElongationMethodId;
+    const previewMode = req.body?.previewMode !== false;
+    const saveAsAutoScript = Boolean(req.body?.saveAsAutoScript);
+    const customTrigger = req.body?.triggerEventType as ModeratorTriggerEventType | undefined;
+    const targetRoom = sanitizeTikTokHandle(
+      String(
+        req.body?.targetRoomHandle ||
+          battleState.chatCompanion.commanderBrain.activeTargetRoom ||
+          battleState.tiktokRoom.targetUsername ||
+          ''
+      )
+    );
+
+    const methodSpec =
+      CHAT_ELONGATION_METHODS_CATALOG.find((m) => m.id === methodId) ||
+      CHAT_ELONGATION_METHODS_CATALOG[0];
+
+    let savedScript: ModeratorAutoScriptRule | null = null;
+    if (saveAsAutoScript) {
+      const trig: ModeratorTriggerEventType =
+        customTrigger && VALID_SCRIPT_TRIGGERS.has(customTrigger)
+          ? customTrigger
+          : methodSpec.recommendedTrigger;
+      savedScript = {
+        id: nextId('mscript_method'),
+        nameHe: methodSpec.titleHe.replace(/^\d+\.\s*/, ''),
+        descriptionHe: `${methodSpec.subtitleHe} (${methodSpec.expectedChainLengthHe})`,
+        enabled: true,
+        triggerEventType: trig,
+        minNumericValue: trig === 'WHALE_GIFT' ? 100 : 0,
+        cooldownSec: 25,
+        steps: methodSpec.steps.map((st, idx) => ({
+          id: nextId(`mstep_${idx}`),
+          slotNumber: st.slotNumber,
+          delaySec: st.delaySec,
+          messageTemplateHe: st.lineHe,
+          roleActionWhyHe: st.roleActionLabelHe,
+        })),
+        triggeredCount: 0,
+        lastTriggeredTs: 0,
+        lastTriggeredSummaryHe: null,
+      };
+      battleState.chatCompanion.autoScripts.unshift(savedScript);
+      savePersistedChatCompanion(battleState.chatCompanion);
+      broadcast({ type: 'state:update', state: battleState });
+    }
+
+    let order: BrainSquadOrderItem | null = null;
+    if (req.body?.runNow !== false) {
+      const accounts = battleState.chatCompanion.accounts;
+      const steps: BrainSquadOrderStep[] = methodSpec.steps.map((st, idx) => {
+        const acc =
+          accounts.find((a) => a.slotNumber === st.slotNumber) ||
+          accounts[idx % accounts.length];
+        return {
+          stepIndex: idx + 1,
+          accountId: acc.id,
+          accountHandle: acc.handle,
+          accountDisplayName: acc.displayName,
+          role: acc.role,
+          delaySec: st.delaySec,
+          lineHe: st.lineHe
+            .replace(/\{\{USER\}\}/g, 'אלמוג')
+            .replace(/\{\{GIFT\}\}/g, 'אריה אש')
+            .replace(/\{\{ROOM\}\}/g, targetRoom ? `@${targetRoom}` : 'הלייב שלנו'),
+          tacticalPurposeHe: st.roleActionLabelHe,
+          status: 'QUEUED',
+        };
+      });
+
+      order = {
+        id: nextId('method_ord'),
+        ts: Date.now(),
+        source: 'USER_COMMAND',
+        commandHe: methodSpec.titleHe,
+        brainReasoningHe: methodSpec.psychologyWhyItWorksHe,
+        targetRoom: targetRoom || null,
+        steps,
+      };
+      scheduleBrainSquadOrderExecution(order, previewMode);
+    }
+
+    res.json({
+      ok: true,
+      method: methodSpec,
+      order,
+      savedScript,
+      state: battleState,
+    });
+  });
+
+  // Zero-Effort AI Chain Generator ("אין לי מילים לכולם — תבנה לי שרשרת שיחה ארוכה ל-6 התפקידים")
+  app.post('/api/chat-companion/generate-chain', async (req, res) => {
+    try {
+      const methodId = String(req.body?.methodId || '').trim() as ChatElongationMethodId;
+      const topicHe = String(req.body?.topicOrSituationHe || '').trim();
+      const runImmediately = Boolean(req.body?.runImmediately);
+      const saveAsAutoScript = Boolean(req.body?.saveAsAutoScript);
+      const previewMode = req.body?.previewMode !== false;
+      const triggerEventType = req.body?.triggerEventType as ModeratorTriggerEventType | undefined;
+      const targetRoom = sanitizeTikTokHandle(
+        String(
+          req.body?.targetRoomHandle ||
+            battleState.chatCompanion.commanderBrain.activeTargetRoom ||
+            battleState.tiktokRoom.targetUsername ||
+            ''
+        )
+      );
+
+      const selectedMethod =
+        CHAT_ELONGATION_METHODS_CATALOG.find((m) => m.id === methodId) ||
+        CHAT_ELONGATION_METHODS_CATALOG[0];
+
+      const ai = getGeminiClient();
+      const rolesContext = CHAT_RUNNER_ROLES_CATALOG.map((r) => {
+        const acc =
+          battleState.chatCompanion.accounts.find((a) => a.slotNumber === r.slotNumber) ||
+          DEFAULT_COMPANION_ACCOUNTS[r.slotNumber - 1];
+        return `סלוט #${r.slotNumber} (@${acc.handle} - ${acc.displayName}): תפקיד="${r.runnerTitleHe}" | איך הוא עובד="${r.howHeRunsChatHe}" | מה אסור לו להגיד="${r.neverSayMistakeHe}"`;
+      }).join('\n');
+
+      const situationBrief =
+        topicHe ||
+        `קרב לייב חי (${battleState.myScore} מול ${battleState.opponentScore}, שלב ${battleState.phase}${
+          battleState.cloudRadar.active ? ', היריב פתח ענן הסתרה' : ''
+        }${battleState.gloveRemainingSec > 0 ? ', כפפה x5 באוויר' : ''}) — צור שיחה סוחפת בלי שהמשדר יצטרך לחשוב על מילים!`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-4-hydrogen',
+        contents: `המשתמש אומר: "אין לי מילים לכולם, זה לא מנחים! איך הם מריצים צ׳אט וגורמים לצ׳אט ארוך? כל אחד בתפקיד שלו."
+בנה עבורו עכשיו שרשרת שיחה ישראלית טבעית, אנושית וחכמה בת 6 שלבים (סלוט #1 עד סלוט #6) שמייצרת צ׳אט ארוך של 30–45 שניות!
+
+השיטה הפסיכולוגית שנבחרה:
+${selectedMethod.titleHe} — ${selectedMethod.psychologyWhyItWorksHe}
+
+6 התפקידים בשרשרת שלנו:
+${rolesContext}
+
+הנושא או המצב בלייב כרגע:
+"${situationBrief}"
+
+חוקי ברזל:
+1. אסור לכתוב משפטים של "מנחה רובוטי" ("כולם להקיש", "ערב טוב", "תודה על הלייקים").
+2. כל סלוט (1 עד 6) חייב לדבר בסלנג ישראלי יומיומי בגובה העיניים ולהגיב למה שנאמר לפניו (כולל אי-הסכמה חיננית בין #1 ל-#2, בניית מתח ב-#3, פנייה לצופה {{USER}} או לחדשים ב-#4, ספירת קולות 1 מול 2 ב-#5, וקליפהאנגר פתוח ב-#6).
+3. תזמונים מומלצים בשניות: 0, 3.6, 7.4, 11.2, 15.0, 18.8.`,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              chainTitleHe: { type: Type.STRING },
+              whyItCreatesLongChatHe: { type: Type.STRING },
+              steps: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    slotNumber: { type: Type.INTEGER },
+                    delaySec: { type: Type.NUMBER },
+                    roleActionWhyHe: { type: Type.STRING },
+                    messageTemplateHe: { type: Type.STRING },
+                  },
+                  required: ['slotNumber', 'delaySec', 'roleActionWhyHe', 'messageTemplateHe'],
+                },
+              },
+            },
+            required: ['chainTitleHe', 'whyItCreatesLongChatHe', 'steps'],
+          },
+        },
+      });
+
+      const parsed = JSON.parse((response.text ?? '{}').trim());
+      const builtSteps: ModeratorScriptStep[] = (
+        Array.isArray(parsed.steps) && parsed.steps.length > 0
+          ? parsed.steps.slice(0, 6)
+          : selectedMethod.steps
+      ).map((st: any, idx: number) => ({
+        id: nextId(`genstep_${idx}`),
+        slotNumber:
+          typeof st.slotNumber === 'number' && st.slotNumber >= 1 && st.slotNumber <= 6
+            ? Math.round(st.slotNumber)
+            : (idx % 6) + 1,
+        delaySec:
+          typeof st.delaySec === 'number'
+            ? Math.max(0, Math.min(26, Number(st.delaySec.toFixed(1))))
+            : Number((idx * 3.6).toFixed(1)),
+        messageTemplateHe: String(st.messageTemplateHe || st.lineHe || '').trim(),
+        roleActionWhyHe: String(st.roleActionWhyHe || st.roleActionLabelHe || '').trim(),
+      }));
+
+      const chainTitleHe =
+        String(parsed.chainTitleHe || '').trim() ||
+        `שרשרת 6 תפקידים: ${topicHe || selectedMethod.titleHe.replace(/^\d+\.\s*/, '')}`;
+      const whyHe =
+        String(parsed.whyItCreatesLongChatHe || '').trim() ||
+        selectedMethod.psychologyWhyItWorksHe;
+
+      let savedScript: ModeratorAutoScriptRule | null = null;
+      if (saveAsAutoScript) {
+        const trig: ModeratorTriggerEventType =
+          triggerEventType && VALID_SCRIPT_TRIGGERS.has(triggerEventType)
+            ? triggerEventType
+            : selectedMethod.recommendedTrigger;
+        savedScript = {
+          id: nextId('mscript_ai'),
+          nameHe: chainTitleHe,
+          descriptionHe: whyHe,
+          enabled: true,
+          triggerEventType: trig,
+          minNumericValue: trig === 'WHALE_GIFT' ? 100 : 0,
+          cooldownSec: 25,
+          steps: builtSteps,
+          triggeredCount: 0,
+          lastTriggeredTs: 0,
+          lastTriggeredSummaryHe: null,
+        };
+        battleState.chatCompanion.autoScripts.unshift(savedScript);
+        savePersistedChatCompanion(battleState.chatCompanion);
+        broadcast({ type: 'state:update', state: battleState });
+      }
+
+      let order: BrainSquadOrderItem | null = null;
+      if (runImmediately) {
+        const accounts = battleState.chatCompanion.accounts;
+        const orderSteps: BrainSquadOrderStep[] = builtSteps.map((st, idx) => {
+          const acc =
+            accounts.find((a) => a.slotNumber === st.slotNumber) ||
+            accounts[idx % accounts.length];
+          return {
+            stepIndex: idx + 1,
+            accountId: acc.id,
+            accountHandle: acc.handle,
+            accountDisplayName: acc.displayName,
+            role: acc.role,
+            delaySec: st.delaySec,
+            lineHe: st.messageTemplateHe
+              .replace(/\{\{USER\}\}/g, 'אלמוג')
+              .replace(/\{\{GIFT\}\}/g, 'אריה אש')
+              .replace(/\{\{ROOM\}\}/g, targetRoom ? `@${targetRoom}` : 'הלייב שלנו'),
+            tacticalPurposeHe: st.roleActionWhyHe || 'שלב בשרשרת שיחה ארוכה',
+            status: 'QUEUED',
+          };
+        });
+        order = {
+          id: nextId('gen_ord'),
+          ts: Date.now(),
+          source: 'USER_COMMAND',
+          commandHe: chainTitleHe,
+          brainReasoningHe: whyHe,
+          targetRoom: targetRoom || null,
+          steps: orderSteps,
+        };
+        scheduleBrainSquadOrderExecution(order, previewMode);
+      }
+
+      res.json({
+        ok: true,
+        generatedChain: {
+          titleHe: chainTitleHe,
+          whyItCreatesLongChatHe: whyHe,
+          steps: builtSteps,
+        },
+        order,
+        savedScript,
+        state: battleState,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'שגיאה ביצירת שרשרת שיחה אוטומטית ב-AI';
+      res.status(500).json({ error: msg });
+    }
   });
 
   const VALID_SCRIPT_TRIGGERS = new Set<ModeratorTriggerEventType>([
@@ -9409,6 +10240,7 @@ ${chatCorpus.slice(0, 20).join('\n')}
                 ? Math.max(0, Math.min(25, Number(st.delaySec.toFixed(1))))
                 : idx * 3.5,
             messageTemplateHe: String(st?.messageTemplateHe || '').trim(),
+            roleActionWhyHe: st?.roleActionWhyHe ? String(st.roleActionWhyHe).trim() : undefined,
           }))
           .filter((st: ModeratorScriptStep) => st.messageTemplateHe.length > 0)
       : existing?.steps || [];
@@ -9420,8 +10252,8 @@ ${chatCorpus.slice(0, 20).join('\n')}
       }
       existing = {
         id: nextId('mscript'),
-        nameHe: String(nameHe || 'תסריט תגובה אוטומטי חדש').trim(),
-        descriptionHe: String(descriptionHe || 'מופעל אוטומטית בזיהוי אירוע בלייב.').trim(),
+        nameHe: String(nameHe || 'שרשרת שיחה אוטומטית חדשה').trim(),
+        descriptionHe: String(descriptionHe || 'מופעלת אוטומטית בזיהוי אירוע בלייב.').trim(),
         enabled: enabled !== false,
         triggerEventType: cleanTrigger,
         customWsEventKey:
@@ -9965,6 +10797,1120 @@ ${collectedLiveChat.slice(0, 35).join('\n') || 'אין עדיין דגימות �
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'שגיאה בלמידת מנחי צ׳אט מול Gemini';
       res.status(500).json({ error: msg });
+    }
+  });
+
+  // ============================================================================
+  // BOOSTERA CENTRAL INTELLIGENCE, AI CHAT CREW & AUTONOMOUS BRAIN API ROUTES
+  // ============================================================================
+  const stageExecutionCallbacks: ExistingBoosteraStageCallbacks = {
+    triggerVfx: ({ effectId, intensity, sourceLabel }) => {
+      const out = tryTriggerOneShot(effectId, sourceLabel, intensity, false);
+      if (out.triggered && out.instance) {
+        broadcast({ type: 'effect:triggered', effect: out.instance, state: battleState });
+      }
+      return { triggered: out.triggered, reason: out.reason };
+    },
+    triggerCamera: ({ presetId, intensity, durationMs, reasonHe }) => {
+      const safePreset = (
+        [
+          'STEADY_BREATH',
+          'BASS_PUMP',
+          'ZOOM_PUNCH',
+          'SNIPE_CREEP',
+          'EARTHQUAKE_SHAKE',
+          'DUTCH_WHIP',
+          'VACUUM_DROP',
+        ].includes(presetId)
+          ? presetId
+          : 'STEADY_BREATH'
+      ) as CameraPresetId;
+      triggerCameraKinetic(safePreset, intensity, durationMs, reasonHe);
+      broadcast({ type: 'state:update', state: battleState });
+    },
+    changeMusic: ({ trackId, volumePct, reasonHe }) => {
+      const safeTrack = VALID_MUSIC_IDS.has(trackId) ? trackId : battleState.activeMusicTrackId;
+      emitMusicChange(safeTrack, volumePct ?? battleState.musicVolumePct, reasonHe);
+    },
+    reduceSoundVolume: ({ reasonHe }) => {
+      const nextVol = Math.max(12, Math.round(battleState.musicVolumePct * 0.65));
+      emitMusicChange(battleState.activeMusicTrackId, nextVol, reasonHe);
+      return { newVolumePct: nextVol };
+    },
+    dispatchCompanionLine: ({ slotNumber, targetRoom, messageHe, purposeHe, allowPreviewOverride }) => {
+      const item = dispatchCompanionCrewAction({
+        moment: 'DEAD_AIR_ICEBREAKER',
+        momentLabelHe: purposeHe,
+        preferredRole: 'VIBE_HYPE',
+        kind: 'BRAIN_COMMAND_STEP',
+        specificSlotNumber: slotNumber,
+        targetRoom,
+        customMessageHe: messageHe,
+        bypassCooldown: true,
+        allowPreviewOverride: Boolean(allowPreviewOverride),
+      });
+      savePersistedChatCompanion(battleState.chatCompanion);
+      broadcast({ type: 'state:update', state: battleState });
+      const actuallySent = Boolean(
+        item &&
+          (item.deliveryStatus === 'SENT_TIKTOK' ||
+            item.deliveryStatus === 'SENT_WS_BRIDGE' ||
+            (allowPreviewOverride && item.deliveryStatus === 'LOCAL_PREVIEW_ONLY'))
+      );
+      return {
+        sent: actuallySent,
+        statusHe: actuallySent && item
+          ? `נשלח בשקיפות דרך מנחה #${slotNumber} (@${item.accountHandle}) לחדר ${targetRoom}`
+          : `נשמר כהמלצה בלבד — חשבון #${slotNumber} טרם מחובר לטלפון ענן/אימות חי (אינו חוסם את המערכת)`,
+      };
+    },
+  };
+
+  // Instantiate unified GeeLark Cloud Phone + TikTok Accounts Coordinator (connected to existing BOOSTERA engines)
+  geelarkCoordinator = new GeeLarkLiveDirectorCoordinator(DATA_DIR, {
+    connectLiveRoomToSwarm: async (username: string) => {
+      const out = await connectCreatorToSwarm(username, { addToWatchlist: true, silentIfOffline: true });
+      const room = activeSwarmRooms.get(sanitizeTikTokHandle(username).toLowerCase());
+      return {
+        connected: Boolean(out.connected),
+        roomId: room?.summary?.roomId || null,
+        viewerCount: room?.summary?.viewerCount || 0,
+        errorHe: out.errorHe,
+      };
+    },
+    getActiveLiveRoomsSnapshot: () =>
+      Array.from(activeSwarmRooms.values()).map((r) => ({
+        hostUsername: r.summary.username,
+        roomId: r.summary.roomId || null,
+        isLive: Boolean(r.summary.connected),
+        viewerCount: r.summary.viewerCount || 0,
+        likesCount: r.summary.totalLikes || 0,
+        giftsDiamonds: r.summary.diamondsCount || 0,
+        battleActive: Boolean(r.summary.inBattle),
+        dataSource: 'TIKTOK_LIVE_CONNECTOR' as const,
+        updatedAtTs: Date.now(),
+      })),
+    getRecentAuthorizedChat: () => battleState.recentChatMessages.slice(0, 25),
+    sendAuthorizedLiveChatReply: async ({ targetRoom, messageText, slotNumber }) => {
+      const acc =
+        battleState.chatCompanion.accounts.find((a) => a.slotNumber === (slotNumber || 1)) ||
+        battleState.chatCompanion.accounts[0];
+      const sendOut = await trySendLiveChatViaTikTokSession(acc, targetRoom, messageText, false);
+      return {
+        sentDirect: sendOut.sentDirectTikTok || sendOut.sentBridge,
+        noteHe: sendOut.deliveryNoteHe,
+      };
+    },
+    triggerBoosteraVfx: ({ effectId, reasonHe, intensity }) => {
+      const out = tryTriggerOneShot(effectId, reasonHe, intensity ?? 0.9, false);
+      return {
+        triggered: out.triggered,
+        activeEffectsCount: battleState.activeEffects.length,
+        summaryHe: out.triggered ? `הופעל אפקט ${effectId}` : out.reason || 'לא הופעל',
+      };
+    },
+    getActiveEffectsCount: () => battleState.activeEffects.length,
+    onStateChanged: () => {
+      syncEnvSlotsActivity();
+      broadcast({ type: 'state:update', state: battleState });
+    },
+  });
+
+  // Sync existing Companion Account handles & devices into GeeLark coordinator slots
+  for (const acc of battleState.chatCompanion.accounts) {
+    const slotNum = acc.slotNumber || 1;
+    if (slotNum >= 1 && slotNum <= 6) {
+      geelarkCoordinator.configureAccount(toGeeLarkSlotId(slotNum), {
+        tiktokUsername: acc.handle,
+        geelarkDeviceId: acc.geelarkDeviceId ?? undefined,
+        appPackageId: acc.appPackageId ?? undefined,
+      });
+    }
+  }
+
+  // Sync selected Chat Crew accounts with BoosteraAiChatCrewOrchestrator on boot
+  function syncSelectedAccountsIntoCrewOrchestrator() {
+    const selected = battleState.chatCompanion.accounts
+      .filter((a) => a.selectedForChatCrew && a.assignedCrewRole)
+      .slice(0, 4)
+      .map((a) => ({
+        slotNumber: a.slotNumber || 1,
+        handle: a.handle,
+        displayName: a.displayName,
+        crewRole: a.assignedCrewRole as AiCrewArchetypeId,
+      }));
+    if (selected.length > 0) {
+      boosteraCrewOrchestrator.assignSelectedAccountsToCrew(selected);
+    }
+  }
+  syncSelectedAccountsIntoCrewOrchestrator();
+  syncEnvSlotsActivity();
+
+  async function verifyStoredOAuthTokensLive(): Promise<void> {
+    for (const [slotNum, rec] of secureOAuthRecordsBySlot.entries()) {
+      if (!rec.accessToken) {
+        rec.liveVerifiedInRuntime = false;
+        continue;
+      }
+      try {
+        const resp = await fetch(
+          'https://open.tiktokapis.com/v2/user/info/?fields=open_id,avatar_url,display_name,username',
+          { headers: { Authorization: `Bearer ${rec.accessToken}` } }
+        );
+        if (resp.ok) {
+          const json = (await resp.json()) as {
+            data?: { user?: { username?: string; display_name?: string; avatar_url?: string } };
+          };
+          const u = json.data?.user;
+          if (u) {
+            rec.liveVerifiedInRuntime = true;
+            rec.verifiedAtTs = Date.now();
+            const acc = battleState.chatCompanion.accounts.find((a) => a.slotNumber === slotNum);
+            if (acc) {
+              if (u.username) acc.handle = sanitizeTikTokHandle(u.username);
+              if (u.display_name) acc.displayName = u.display_name;
+              if (u.avatar_url) acc.avatarUrl = u.avatar_url;
+              acc.lastVerifiedAtTs = rec.verifiedAtTs;
+            }
+          } else {
+            rec.liveVerifiedInRuntime = false;
+          }
+        } else {
+          rec.liveVerifiedInRuntime = false;
+        }
+      } catch {
+        rec.liveVerifiedInRuntime = false;
+      }
+    }
+  }
+
+  function buildPhoneAndAccountsBridgeState(): PhoneAndAccountsBridgeState {
+    const glState = geelarkCoordinator
+      ? geelarkCoordinator.geelark.getState()
+      : {
+          configuredInEnv: false,
+          authMode: 'UNCONFIGURED' as const,
+          tokenStatusHe: 'לא מוגדר',
+          connected: false,
+          verifiedAtTs: null,
+          lastErrorHe: null,
+          devices: [],
+          selectedPhoneId: null,
+        };
+
+    const devBaseUrl = resolveBaseAppUrl();
+    const redirectUri = `${devBaseUrl}/auth/tiktok/callback`;
+    const sharedRedirectUri = devBaseUrl.includes('ais-dev-')
+      ? `${devBaseUrl.replace('ais-dev-', 'ais-pre-')}/auth/tiktok/callback`
+      : redirectUri;
+
+    const clientKey = process.env.TIKTOK_CLIENT_KEY;
+    const clientSecret = process.env.TIKTOK_CLIENT_SECRET;
+    const oauthConfigured = Boolean(
+      clientKey &&
+        clientKey !== 'MY_TIKTOK_CLIENT_KEY' &&
+        clientSecret &&
+        clientSecret !== 'MY_TIKTOK_CLIENT_SECRET'
+    );
+
+    const phoneMissing: string[] = [];
+    if (!glState.configuredInEnv) {
+      phoneMissing.push(
+        'הגדר ב-Settings > Secrets את GEELARK_API_TOKEN (או את הצמד GEELARK_APP_ID + GEELARK_API_KEY) מתוך ממשק ה-API של טלפוני הענן שלך.'
+      );
+      phoneMissing.push(
+        'וודא שלפחות מכשיר טלפון ענן אחד דולק במצב RUNNING ואפליקציית TikTok מחוברת בו לחשבון הרצוי.'
+      );
+      phoneMissing.push(
+        'לחץ בדשבורד על "בדוק חיבור אמיתי עכשיו" — המערכת מתחברת ישירות דרך GeeLark HTTPS OpenAPI (אין צורך ב-ADB מקומי בשרת).'
+      );
+    } else if (!glState.connected) {
+      phoneMissing.push(
+        glState.lastErrorHe ||
+          'טוקן טלפוני הענן מזוהה בשרת — לחץ על "בדוק חיבור אמיתי עכשיו" לאימות חי מול רשימת המכשירים.'
+      );
+    } else if (glState.devices.filter((d) => d.status === 'RUNNING').length === 0) {
+      phoneMissing.push(
+        'החיבור ל-GeeLark אומת, אך אף טלפון ענן אינו במצב RUNNING כרגע — הפעל מכשיר ישירות משורת החשבון למטה.'
+      );
+    }
+
+    const oauthMissing: string[] = [];
+    if (!oauthConfigured) {
+      oauthMissing.push(
+        'לאימות TikTok OAuth ישיר מהדפדפן (אופציונלי): הגדר TIKTOK_CLIENT_KEY ו-TIKTOK_CLIENT_SECRET ב-Settings > Secrets.'
+      );
+      oauthMissing.push(`הוסף ב-TikTok Developers את כתובת ה-Redirect URI: ${redirectUri}`);
+    }
+
+    const wsBridgesActiveCount =
+      Array.from(activeServerExternalWs.values()).filter((s) => s.readyState === WebSocket.OPEN).length +
+      battleState.wsSniffer.externalBridges.filter((b) => b.connected).length;
+    const wsConnected = wsBridgesActiveCount > 0;
+
+    const crewAgents = boosteraCrewOrchestrator.getControlCenterState().agents;
+    const activeTargetLive = battleState.chatCompanion.commanderBrain.activeTargetRoom || null;
+    const activeTargetLiveOnline = Boolean(
+      activeTargetLive &&
+        (battleState.chatCompanion.commanderBrain.activeTargetRoomLive ||
+          activeSwarmRooms.get(activeTargetLive.toLowerCase())?.summary?.connected)
+    );
+
+    const unifiedAccounts: UnifiedManagedTikTokAccount[] = battleState.chatCompanion.accounts
+      .slice(0, 6)
+      .map((acc, idx) => {
+        const slotNum = acc.slotNumber || idx + 1;
+        const geelarkSlotId = toGeeLarkSlotId(slotNum);
+        const phoneInfo = resolveVerifiedCloudPhoneForSlot(slotNum, acc);
+        const oauthRec = secureOAuthRecordsBySlot.get(slotNum);
+        const oauthVerified = Boolean(oauthRec?.liveVerifiedInRuntime);
+        const rt = getEnvSlotRuntime(slotNum);
+        const hasErr = Boolean(rt.lastConnectionErrorHe || acc.lastConnectionErrorHe);
+        const serverAutoSession = hasServerTikTokModSession(slotNum) && !hasErr;
+
+        let verifiedChannel: ManagedTikTokVerifiedChannel = 'NONE';
+        if (phoneInfo.connected) {
+          verifiedChannel = 'CLOUD_PHONE_GEELARK';
+        } else if (oauthVerified) {
+          verifiedChannel = 'TIKTOK_OAUTH_SECURE';
+        } else if (wsConnected) {
+          verifiedChannel = 'WS_EXTERNAL_BRIDGE';
+        } else if (serverAutoSession) {
+          verifiedChannel = 'SERVER_MANAGED_SESSION';
+        }
+
+        const isVerifiedConnected = verifiedChannel !== 'NONE';
+        const assignedLive = acc.deployedRoomHandle || null;
+        const assignedLiveOnline = Boolean(
+          assignedLive &&
+            (activeSwarmRooms.get(assignedLive.toLowerCase())?.summary?.connected ||
+              (assignedLive === activeTargetLive && activeTargetLiveOnline))
+        );
+
+        const verifiedStatus: ManagedTikTokVerifiedStatus = !isVerifiedConnected
+          ? 'DISCONNECTED'
+          : assignedLive
+            ? 'ACTIVE_IN_LIVE'
+            : 'CONNECTED';
+
+        const linkedCrewAgent = crewAgents.find(
+          (ag) => ag.enabled && ag.linkedCompanionSlotNumber === slotNum
+        );
+        const selectedForCrew = Boolean(acc.selectedForChatCrew ?? Boolean(linkedCrewAgent));
+        const assignedRole =
+          (acc.assignedCrewRole as AiCrewArchetypeId | null) ||
+          linkedCrewAgent?.crewRole ||
+          null;
+
+        const verificationDetailHe =
+          verifiedChannel === 'CLOUD_PHONE_GEELARK'
+            ? `מחובר ומאומת דרך טלפון ענן (${phoneInfo.phoneName || phoneInfo.phoneId})`
+            : verifiedChannel === 'TIKTOK_OAUTH_SECURE'
+              ? 'מחובר ומאומת דרך TikTok OAuth מאובטח בשרת'
+              : verifiedChannel === 'WS_EXTERNAL_BRIDGE'
+                ? 'מחובר דרך גשר WebSocket חיצוני פעיל'
+                : verifiedChannel === 'SERVER_MANAGED_SESSION'
+                  ? 'מחובר דרך סשן מאובטח מנוהל בשרת'
+                  : assignedLive
+                    ? `משויך ל-@${assignedLive} אך מנותק (טרם אומת מול טלפון ענן או OAuth)`
+                    : 'מנותק — טרם אומת מול טלפון ענן או התחברות מאובטחת';
+
+        return {
+          accountId: acc.id,
+          slotNumber: slotNum,
+          geelarkSlotId,
+          handle: acc.handle,
+          displayName: acc.displayName,
+          avatarUrl: acc.avatarUrl,
+          enabled: acc.enabled,
+          verifiedStatus,
+          verifiedChannel,
+          verificationDetailHe,
+          lastVerifiedAtTs:
+            verifiedChannel === 'CLOUD_PHONE_GEELARK'
+              ? glState.verifiedAtTs
+              : verifiedChannel === 'TIKTOK_OAUTH_SECURE'
+                ? oauthRec?.verifiedAtTs || null
+                : acc.lastVerifiedAtTs || null,
+          geelarkDeviceId: phoneInfo.phoneId,
+          geelarkDeviceName: phoneInfo.phoneName,
+          geelarkDeviceStatus: phoneInfo.phoneStatus,
+          appPackageId: acc.appPackageId || 'com.zhiliaoapp.musically',
+          selectedForChatCrew: selectedForCrew,
+          assignedCrewRole: selectedForCrew ? assignedRole || DEFAULT_CREW_ROLES_BY_SLOT[slotNum] || 'CONVERSATION_HOST' : null,
+          assignedCrewAgentId: linkedCrewAgent?.agentId || null,
+          assignedLiveStream: assignedLive,
+          assignedLiveActive: assignedLiveOnline,
+          messagesSentCount: acc.messagesDispatched || 0,
+          lastConnectionErrorHe: rt.lastConnectionErrorHe || acc.lastConnectionErrorHe || null,
+        };
+      });
+
+    return {
+      checkedAtTs: Date.now(),
+      nonBlockingOptionalMode: true,
+      phoneSystem: {
+        configuredInEnv: glState.configuredInEnv,
+        connected: glState.connected,
+        verifiedAtTs: glState.verifiedAtTs,
+        authMode: glState.authMode,
+        statusSummaryHe: glState.connected
+          ? `מחובר ומאומת (${glState.devices.filter((d) => d.status === 'RUNNING').length}/${glState.devices.length} טלפוני ענן במצב RUNNING)`
+          : glState.configuredInEnv
+            ? glState.lastErrorHe || 'טוקן מוגדר — מוכן לבדיקת חיבור חיה מול טלפוני הענן'
+            : 'טרם מחובר — חסר GEELARK_API_TOKEN ב-Secrets (אופציונלי, לא חוסם את הפעלת המערכת)',
+        missingPrerequisitesHe: phoneMissing,
+        devices: glState.devices.map((d) => ({
+          id: d.id,
+          serialName: d.serialName,
+          status: d.status,
+          osVersion: d.osVersion,
+          deviceModel: d.deviceModel,
+          countryCode: d.countryCode,
+          tiktokPackages: d.installedApps.map((ap) => ap.packageName),
+          lastCheckedTs: d.lastCheckedTs,
+        })),
+      },
+      oauthSystem: {
+        configured: oauthConfigured,
+        redirectUri,
+        sharedRedirectUri,
+        statusSummaryHe: oauthConfigured
+          ? 'מוגדר ומוכן להתחברות מאובטחת בחלון TikTok OAuth'
+          : 'טרם הוגדרו TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET ב-Secrets (אופציונלי)',
+        missingPrerequisitesHe: oauthMissing,
+      },
+      wsBridgeSystem: {
+        connected: wsConnected,
+        activeBridgesCount: wsBridgesActiveCount,
+        statusSummaryHe: wsConnected
+          ? `${wsBridgesActiveCount} גשרי WebSocket חיים מחוברים`
+          : 'אין גשר WebSocket חיצוני פתוח כרגע (אופציונלי)',
+      },
+      accounts: unifiedAccounts,
+      selectedCrewCount: unifiedAccounts.filter((a) => a.selectedForChatCrew).length,
+      connectedAccountsCount: unifiedAccounts.filter((a) => a.verifiedStatus !== 'DISCONNECTED').length,
+      activeInLiveCount: unifiedAccounts.filter((a) => a.verifiedStatus === 'ACTIVE_IN_LIVE').length,
+      activeTargetLive,
+      activeTargetLiveOnline,
+    };
+  }
+
+  function buildAndBroadcastIntelligenceDashboard() {
+    syncEnvSlotsActivity();
+    boosteraDataFactory.registerAiCrewAgentHandles(
+      boosteraCrewOrchestrator.syncCompanionHandles(
+        battleState.chatCompanion.accounts.map((a, idx) => ({
+          slotNumber: a.slotNumber || idx + 1,
+          handle: a.handle,
+        }))
+      )
+    );
+    const accountsBridge = buildPhoneAndAccountsBridgeState();
+    const dashboard = buildUnifiedIntelligenceDashboardState({
+      dataFactory: boosteraDataFactory,
+      knowledgeEngine: boosteraKnowledgeEngine,
+      crewOrchestrator: boosteraCrewOrchestrator,
+      decisionOrchestrator: boosteraDecisionOrchestrator,
+      executionBridge: boosteraExecutionBridge,
+      accountsBridge,
+    });
+    broadcast({ type: 'intelligence:update', dashboard });
+    return dashboard;
+  }
+
+  // Auto-verify configured OpenRouter models & stored OAuth tokens (if any) at server startup
+  void Promise.allSettled([
+    boosteraDecisionOrchestrator.verifyOpenRouterCatalogOnly(),
+    verifyStoredOAuthTokensLive(),
+    geelarkCoordinator.geelark.getState().configuredInEnv
+      ? geelarkCoordinator.geelark.connectAndVerify()
+      : Promise.resolve(),
+  ]).then(() => {
+    syncEnvSlotsActivity();
+    buildAndBroadcastIntelligenceDashboard();
+  });
+
+  app.get('/api/accounts-bridge/status', (_req, res) => {
+    syncEnvSlotsActivity();
+    res.json({ ok: true, bridge: buildPhoneAndAccountsBridgeState() });
+  });
+
+  app.post('/api/accounts-bridge/verify', async (_req, res) => {
+    try {
+      if (geelarkCoordinator) {
+        await geelarkCoordinator.geelark.connectAndVerify();
+      }
+      await verifyStoredOAuthTokensLive();
+      const targetLive = battleState.chatCompanion.commanderBrain.activeTargetRoom;
+      if (targetLive) {
+        try {
+          const probe = new TikTokLiveConnection(targetLive, {
+            processInitialData: false,
+            fetchRoomInfoOnConnect: false,
+          });
+          battleState.chatCompanion.commanderBrain.activeTargetRoomLive = await probe.fetchIsLive(targetLive);
+        } catch {
+          battleState.chatCompanion.commanderBrain.activeTargetRoomLive = false;
+        }
+      }
+      syncEnvSlotsActivity();
+      savePersistedChatCompanion(battleState.chatCompanion);
+      broadcast({ type: 'state:update', state: battleState });
+      const dashboard = buildAndBroadcastIntelligenceDashboard();
+      res.json({
+        ok: true,
+        bridge: dashboard.accountsBridge,
+        dashboard,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: String(err?.message || 'שגיאה בבדיקת חיבורי החשבונות והטלפונים') });
+    }
+  });
+
+  app.post('/api/accounts-bridge/select-crew', (req, res) => {
+    const selections = Array.isArray(req.body?.selections) ? req.body.selections : [];
+    const validRoles = new Set<AiCrewArchetypeId>([
+      'CONVERSATION_HOST',
+      'COMMUNITY_MANAGER',
+      'BATTLE_ANALYST',
+      'CREATIVE_ENGAGEMENT',
+    ]);
+
+    const chosenAssignments: Array<{
+      slotNumber: number;
+      handle: string;
+      displayName?: string;
+      crewRole: AiCrewArchetypeId;
+    }> = [];
+
+    for (const acc of battleState.chatCompanion.accounts) {
+      const slotNum = acc.slotNumber || 1;
+      const incoming = selections.find(
+        (s: any) => s.accountId === acc.id || Number(s.slotNumber) === slotNum
+      );
+      if (!incoming) continue;
+
+      if (typeof incoming.handle === 'string' && incoming.handle.trim()) {
+        acc.handle = sanitizeTikTokHandle(incoming.handle) || acc.handle;
+      }
+      if (typeof incoming.displayName === 'string' && incoming.displayName.trim()) {
+        acc.displayName = incoming.displayName.trim();
+      }
+      if (incoming.geelarkDeviceId !== undefined) {
+        acc.geelarkDeviceId = incoming.geelarkDeviceId ? String(incoming.geelarkDeviceId).trim() : null;
+      }
+      if (typeof incoming.appPackageId === 'string' && incoming.appPackageId.trim()) {
+        acc.appPackageId = incoming.appPackageId.trim();
+      }
+
+      const isSelected = Boolean(incoming.selected);
+      acc.selectedForChatCrew = isSelected;
+      acc.enabled = isSelected ? true : acc.enabled;
+
+      const roleCandidate = incoming.crewRole as AiCrewArchetypeId;
+      const role: AiCrewArchetypeId = validRoles.has(roleCandidate)
+        ? roleCandidate
+        : DEFAULT_CREW_ROLES_BY_SLOT[slotNum] || 'CONVERSATION_HOST';
+
+      acc.assignedCrewRole = isSelected ? role : null;
+
+      if (geelarkCoordinator && slotNum >= 1 && slotNum <= 6) {
+        geelarkCoordinator.configureAccount(toGeeLarkSlotId(slotNum), {
+          tiktokUsername: acc.handle,
+          geelarkDeviceId: acc.geelarkDeviceId ?? null,
+          appPackageId: acc.appPackageId,
+        });
+      }
+
+      if (isSelected && chosenAssignments.length < 4) {
+        chosenAssignments.push({
+          slotNumber: slotNum,
+          handle: acc.handle,
+          displayName: acc.displayName,
+          crewRole: role,
+        });
+      }
+    }
+
+    // Ensure unique roles across up to 4 selected accounts
+    const allRoles: AiCrewArchetypeId[] = [
+      'CONVERSATION_HOST',
+      'COMMUNITY_MANAGER',
+      'BATTLE_ANALYST',
+      'CREATIVE_ENGAGEMENT',
+    ];
+    const usedRoles = new Set<AiCrewArchetypeId>();
+    for (const item of chosenAssignments) {
+      if (usedRoles.has(item.crewRole)) {
+        const freeRole = allRoles.find((r) => !usedRoles.has(r)) || item.crewRole;
+        item.crewRole = freeRole;
+        const matchingAcc = battleState.chatCompanion.accounts.find((a) => a.slotNumber === item.slotNumber);
+        if (matchingAcc) matchingAcc.assignedCrewRole = freeRole;
+      }
+      usedRoles.add(item.crewRole);
+    }
+
+    boosteraCrewOrchestrator.assignSelectedAccountsToCrew(chosenAssignments);
+    syncEnvSlotsActivity();
+    savePersistedChatCompanion(battleState.chatCompanion);
+    broadcast({ type: 'state:update', state: battleState });
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+
+    res.json({
+      ok: true,
+      selectedCrewCount: chosenAssignments.length,
+      bridge: dashboard.accountsBridge,
+      dashboard,
+      state: battleState,
+    });
+  });
+
+  app.post('/api/accounts-bridge/assign-live', async (req, res) => {
+    try {
+      const cleanLive = sanitizeTikTokHandle(String(req.body?.targetLiveHandle || ''));
+      if (!cleanLive) {
+        res.status(400).json({ error: 'יש להזין או לבחור @username של שידור לייב לשיוך המנחים.' });
+        return;
+      }
+
+      const swarmResult = await connectCreatorToSwarm(cleanLive, {
+        addToWatchlist: true,
+        silentIfOffline: true,
+      });
+      const streamId = `live_${cleanLive.toLowerCase()}`;
+      boosteraDataFactory.ensureStreamRegistered({
+        streamId,
+        creatorUsername: cleanLive,
+        roomId: swarmResult.summary?.roomId || null,
+        source: 'TIKTOK_WEBCAST_LIVE',
+        connected: Boolean(swarmResult.connected),
+      });
+
+      battleState.chatCompanion.commanderBrain.activeTargetRoom = cleanLive;
+      battleState.chatCompanion.commanderBrain.activeTargetRoomLive = Boolean(swarmResult.connected);
+
+      const onlySelected = req.body?.onlySelectedCrew !== false;
+      let assignedCount = 0;
+
+      for (const acc of battleState.chatCompanion.accounts) {
+        const shouldAssign = onlySelected ? Boolean(acc.selectedForChatCrew) : Boolean(acc.enabled);
+        if (shouldAssign) {
+          acc.deployedRoomHandle = cleanLive;
+          acc.deployedRoomLive = Boolean(swarmResult.connected);
+          assignedCount += 1;
+
+          // If this account has a verified RUNNING Cloud Phone, join the Live room on the phone automatically
+          const slotNum = acc.slotNumber || 1;
+          const phoneInfo = resolveVerifiedCloudPhoneForSlot(slotNum, acc);
+          if (geelarkCoordinator && phoneInfo.connected) {
+            await geelarkCoordinator.joinLiveAsViewer(cleanLive, toGeeLarkSlotId(slotNum));
+          }
+        }
+      }
+
+      boosteraDataFactory.setActiveAiCrewCountForStream(streamId, Math.max(1, Math.min(4, assignedCount || 3)));
+      syncEnvSlotsActivity();
+      savePersistedChatCompanion(battleState.chatCompanion);
+      broadcast({ type: 'state:update', state: battleState });
+      const dashboard = buildAndBroadcastIntelligenceDashboard();
+
+      res.json({
+        ok: true,
+        targetLive: cleanLive,
+        roomOnline: Boolean(swarmResult.connected),
+        assignedCount,
+        bridge: dashboard.accountsBridge,
+        dashboard,
+        state: battleState,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: String(err?.message || 'שגיאה בשיוך המנחים לשידור הלייב') });
+    }
+  });
+
+  app.post('/api/accounts-bridge/connect-account', async (req, res) => {
+    try {
+      const accountId = String(req.body?.accountId || '').trim();
+      const slotNumber = Number(req.body?.slotNumber || 0);
+      const action = String(req.body?.action || 'VERIFY_AND_OPEN_PHONE');
+
+      const acc =
+        battleState.chatCompanion.accounts.find((a) => a.id === accountId) ||
+        battleState.chatCompanion.accounts.find((a) => a.slotNumber === slotNumber);
+
+      if (!acc) {
+        res.status(404).json({ error: 'החשבון המבוקש לא נמצא במערכת.' });
+        return;
+      }
+
+      const slotNum = acc.slotNumber || 1;
+      const glSlotId = toGeeLarkSlotId(slotNum);
+
+      if (typeof req.body?.handle === 'string' && req.body.handle.trim()) {
+        acc.handle = sanitizeTikTokHandle(req.body.handle) || acc.handle;
+      }
+      if (typeof req.body?.displayName === 'string' && req.body.displayName.trim()) {
+        acc.displayName = req.body.displayName.trim();
+      }
+      if (req.body?.geelarkDeviceId !== undefined) {
+        acc.geelarkDeviceId = req.body.geelarkDeviceId ? String(req.body.geelarkDeviceId).trim() : null;
+      }
+      if (typeof req.body?.appPackageId === 'string' && req.body.appPackageId.trim()) {
+        acc.appPackageId = req.body.appPackageId.trim();
+      }
+
+      if (geelarkCoordinator) {
+        geelarkCoordinator.configureAccount(glSlotId, {
+          tiktokUsername: acc.handle,
+          geelarkDeviceId: acc.geelarkDeviceId ?? null,
+          appPackageId: acc.appPackageId || 'com.zhiliaoapp.musically',
+        });
+      }
+
+      if (action === 'DISCONNECT_OAUTH') {
+        secureOAuthRecordsBySlot.delete(slotNum);
+        saveSecureOAuthAccountRecords();
+        syncEnvSlotsActivity();
+        savePersistedChatCompanion(battleState.chatCompanion);
+        broadcast({ type: 'state:update', state: battleState });
+        const dashboard = buildAndBroadcastIntelligenceDashboard();
+        res.json({
+          ok: true,
+          messageHe: `אימות ה-OAuth של @${acc.handle} נותק בצורה בטוחה.`,
+          bridge: dashboard.accountsBridge,
+          dashboard,
+        });
+        return;
+      }
+
+      if (action === 'SAVE_ACCOUNT_PROFILE') {
+        syncSelectedAccountsIntoCrewOrchestrator();
+        syncEnvSlotsActivity();
+        savePersistedChatCompanion(battleState.chatCompanion);
+        broadcast({ type: 'state:update', state: battleState });
+        const dashboard = buildAndBroadcastIntelligenceDashboard();
+        res.json({
+          ok: true,
+          messageHe: `פרטי החשבון @${acc.handle} ושיוך המכשיר נשמרו.`,
+          bridge: dashboard.accountsBridge,
+          dashboard,
+        });
+        return;
+      }
+
+      // action === 'VERIFY_AND_OPEN_PHONE'
+      if (!geelarkCoordinator) {
+        res.status(500).json({ error: 'מתאם טלפוני הענן אינו זמין.' });
+        return;
+      }
+
+      const verifyRes = await geelarkCoordinator.geelark.connectAndVerify();
+      const glState = geelarkCoordinator.geelark.getState();
+
+      if (!glState.connected) {
+        syncEnvSlotsActivity();
+        savePersistedChatCompanion(battleState.chatCompanion);
+        const dashboard = buildAndBroadcastIntelligenceDashboard();
+        res.json({
+          ok: false,
+          honestStatus: 'DISCONNECTED',
+          messageHe:
+            verifyRes.messageHe ||
+            'חיבור הטלפון עדיין אינו פעיל — הגדר GEELARK_API_TOKEN ב-Secrets והפעל מכשיר ענן (המערכת ממשיכה לפעול כרגיל ללא חסימה).',
+          missingPrerequisitesHe: dashboard.accountsBridge?.phoneSystem.missingPrerequisitesHe || [],
+          bridge: dashboard.accountsBridge,
+          dashboard,
+        });
+        return;
+      }
+
+      const targetPhoneId = acc.geelarkDeviceId || glState.selectedPhoneId;
+      if (!targetPhoneId) {
+        const dashboard = buildAndBroadcastIntelligenceDashboard();
+        res.json({
+          ok: false,
+          honestStatus: 'DISCONNECTED',
+          messageHe: 'מחובר ל-GeeLark אך לא נמצא אף מכשיר טלפון בחשבון — צור או בחר מכשיר ענן ב-GeeLark.',
+          bridge: dashboard.accountsBridge,
+          dashboard,
+        });
+        return;
+      }
+
+      acc.geelarkDeviceId = targetPhoneId;
+      geelarkCoordinator.configureAccount(glSlotId, { geelarkDeviceId: targetPhoneId });
+
+      const dev = glState.devices.find((d) => d.id === targetPhoneId);
+      if (dev && dev.status !== 'RUNNING') {
+        await geelarkCoordinator.geelark.startPhoneIfNeeded(targetPhoneId);
+        await geelarkCoordinator.geelark.connectAndVerify();
+      }
+
+      const glAcc = geelarkCoordinator.getAccount(glSlotId);
+      const openRes = await geelarkCoordinator.phoneController.openTikTok(glAcc);
+      await geelarkCoordinator.activateAccount(glSlotId);
+
+      syncEnvSlotsActivity();
+      savePersistedChatCompanion(battleState.chatCompanion);
+      broadcast({ type: 'state:update', state: battleState });
+      const dashboard = buildAndBroadcastIntelligenceDashboard();
+      const updatedBridgeAcc = dashboard.accountsBridge?.accounts.find((a) => a.accountId === acc.id);
+
+      res.json({
+        ok: updatedBridgeAcc?.verifiedStatus !== 'DISCONNECTED',
+        honestStatus: updatedBridgeAcc?.verifiedStatus || 'DISCONNECTED',
+        messageHe: openRes.messageHe,
+        bridge: dashboard.accountsBridge,
+        dashboard,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: String(err?.message || 'שגיאה בחיבור החשבון לטלפון הענן') });
+    }
+  });
+
+  app.get('/api/intelligence/dashboard', (_req, res) => {
+    const dashboard = buildUnifiedIntelligenceDashboardState({
+      dataFactory: boosteraDataFactory,
+      knowledgeEngine: boosteraKnowledgeEngine,
+      crewOrchestrator: boosteraCrewOrchestrator,
+      decisionOrchestrator: boosteraDecisionOrchestrator,
+      executionBridge: boosteraExecutionBridge,
+      accountsBridge: buildPhoneAndAccountsBridgeState(),
+    });
+    res.json({ ok: true, dashboard });
+  });
+
+  app.post('/api/intelligence/config', async (req, res) => {
+    const updated = boosteraDecisionOrchestrator.updateConfig(req.body || {});
+    if (typeof req.body?.piiSanitizationEnabled === 'boolean') {
+      boosteraDataFactory.setPiiSanitization(req.body.piiSanitizationEnabled);
+    }
+    await boosteraDecisionOrchestrator.verifyOpenRouterCatalogOnly();
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: true, config: updated, dashboard });
+  });
+
+  app.post('/api/intelligence/config/reset-defaults', async (_req, res) => {
+    const updated = boosteraDecisionOrchestrator.resetToAutoDefaults();
+    boosteraDataFactory.setPiiSanitization(updated.piiSanitizationEnabled);
+    await boosteraDecisionOrchestrator.verifyOpenRouterCatalogOnly();
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: true, config: updated, dashboard });
+  });
+
+  app.post('/api/intelligence/test-models', async (_req, res) => {
+    try {
+      const results = await boosteraDecisionOrchestrator.testModelsConnectivityAndLatency();
+      const dashboard = buildAndBroadcastIntelligenceDashboard();
+      res.json({
+        ok: true,
+        modelHealth: results,
+        openRouterStatus: boosteraDecisionOrchestrator.getOpenRouterConnectionSummary(),
+        dashboard,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: String(err?.message || 'שגיאה בבדיקת מודלים') });
+    }
+  });
+
+  app.post('/api/intelligence/analyze', async (req, res) => {
+    try {
+      const tier =
+        req.body?.tier === 'FAST_REACTION' || req.body?.tier === 'DEEP_INTELLIGENCE'
+          ? req.body.tier
+          : 'STRATEGIC_ANALYSIS';
+      const targetStreamId =
+        typeof req.body?.targetStreamId === 'string' && req.body.targetStreamId.trim()
+          ? req.body.targetStreamId.trim()
+          : undefined;
+      const frameDataUrl =
+        typeof req.body?.frameDataUrl === 'string' && req.body.frameDataUrl.startsWith('data:image/')
+          ? req.body.frameDataUrl
+          : null;
+
+      let decision;
+      if (tier === 'FAST_REACTION' && targetStreamId) {
+        decision = boosteraDecisionOrchestrator.evaluateFastReactionLevel1({
+          targetStreamId,
+          dataFactory: boosteraDataFactory,
+        });
+      }
+      if (!decision) {
+        decision = await boosteraDecisionOrchestrator.runStrategicOrDeepAnalysis({
+          tier: tier === 'DEEP_INTELLIGENCE' ? 'DEEP_INTELLIGENCE' : 'STRATEGIC_ANALYSIS',
+          targetStreamId,
+          frameDataUrl,
+          dataFactory: boosteraDataFactory,
+          knowledgeEngine: boosteraKnowledgeEngine,
+          crewOrchestrator: boosteraCrewOrchestrator,
+        });
+      }
+
+      if (!decision.requires_approval && decision.final_decision !== 'NO_ACTION') {
+        boosteraExecutionBridge.executeDecision({
+          decision,
+          dataFactory: boosteraDataFactory,
+          knowledgeEngine: boosteraKnowledgeEngine,
+          crewOrchestrator: boosteraCrewOrchestrator,
+          orchestrator: boosteraDecisionOrchestrator,
+          stageCallbacks: stageExecutionCallbacks,
+          onOutcomeMeasured: () => {
+            buildAndBroadcastIntelligenceDashboard();
+          },
+        });
+      }
+
+      const dashboard = buildAndBroadcastIntelligenceDashboard();
+      res.json({ ok: true, decision, dashboard });
+    } catch (err: any) {
+      res.status(500).json({ error: String(err?.message || 'שגיאה בהרצת ניתוח המוח המרכזי') });
+    }
+  });
+
+  app.post('/api/intelligence/decision/resolve', (req, res) => {
+    const decisionId = String(req.body?.decisionId || '').trim();
+    const approve = Boolean(req.body?.approve);
+    const allowPreviewOverride = Boolean(req.body?.allowPreviewOverride);
+    const decision = boosteraDecisionOrchestrator.getDecisionById(decisionId);
+    if (!decision) {
+      res.status(404).json({ error: 'החלטת המוח המבוקשת לא נמצאה.' });
+      return;
+    }
+    decision.approval_status = approve ? 'APPROVED' : 'REJECTED';
+    const execOut = boosteraExecutionBridge.executeDecision({
+      decision,
+      dataFactory: boosteraDataFactory,
+      knowledgeEngine: boosteraKnowledgeEngine,
+      crewOrchestrator: boosteraCrewOrchestrator,
+      orchestrator: boosteraDecisionOrchestrator,
+      stageCallbacks: stageExecutionCallbacks,
+      allowPreviewOverride,
+      onOutcomeMeasured: () => {
+        buildAndBroadcastIntelligenceDashboard();
+      },
+    });
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: true, decision, execution: execOut, dashboard });
+  });
+
+  app.post('/api/intelligence/multimodal/telemetry', (req, res) => {
+    const streamId = String(req.body?.streamId || 'live_studio').trim();
+    const creatorUsername = String(req.body?.creatorUsername || battleState.tiktokRoom.targetUsername || 'studio_live').trim();
+    if (req.body?.visual && typeof req.body.visual === 'object') {
+      boosteraDataFactory.updateVisualTelemetry(streamId, creatorUsername, req.body.visual);
+    }
+    if (req.body?.audio && typeof req.body.audio === 'object') {
+      boosteraDataFactory.updateAudioMusicTelemetry(streamId, creatorUsername, req.body.audio);
+    }
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: true, multimodal: dashboard.multimodal });
+  });
+
+  app.post('/api/intelligence/multimodal/transcribe', async (req, res) => {
+    try {
+      const audioBase64 = String(req.body?.audioBase64 || '');
+      const mimeType = String(req.body?.mimeType || 'audio/webm');
+      const streamId = String(req.body?.streamId || 'live_studio');
+      const creatorUsername = String(req.body?.creatorUsername || battleState.tiktokRoom.targetUsername || 'studio_live');
+      const speakerLabel = String(req.body?.speakerLabel || creatorUsername);
+      const speakerVerified = Boolean(req.body?.speakerVerified);
+      const volumeDb = typeof req.body?.volumeDb === 'number' ? req.body.volumeDb : null;
+
+      const stt = await boosteraDecisionOrchestrator.transcribeAuthorizedAudioChunk({
+        audioBase64,
+        mimeType,
+        streamId,
+      });
+
+      let segment = null;
+      if (stt.ok && stt.text) {
+        segment = boosteraDataFactory.recordTranscriptSegment({
+          streamId,
+          creatorUsername,
+          speakerLabel,
+          speakerVerified,
+          language: stt.language,
+          text: stt.text,
+          startedAtTs: Date.now() - 5000,
+          endedAtTs: Date.now(),
+          vocalToneHe: volumeDb !== null && volumeDb > -14 ? 'טון נמרץ / עוצמה גבוהה' : 'דיבור רציף בשידור',
+          volumeDb,
+          providerUsed: stt.providerUsed,
+        });
+      }
+
+      const dashboard = buildAndBroadcastIntelligenceDashboard();
+      res.json({ ok: stt.ok, stt, segment, dashboard });
+    } catch (err: any) {
+      res.status(500).json({ error: String(err?.message || 'שגיאה בתמלול שמע') });
+    }
+  });
+
+  app.post('/api/intelligence/knowledge/search', async (req, res) => {
+    const query = String(req.body?.query || '').trim();
+    const layerFilter = req.body?.layerFilter || undefined;
+    let queryEmbedding: number[] | null = null;
+    if (query && boosteraDecisionOrchestrator.getConfig().openRouterKeyConfiguredOnServer) {
+      const embOut = await boosteraDecisionOrchestrator.createOpenRouterEmbedding(query, 'semantic_search');
+      if (embOut.ok && embOut.vector) {
+        queryEmbedding = embOut.vector;
+      }
+    }
+    const hits = boosteraKnowledgeEngine.semanticSearch(query, {
+      topK: 10,
+      layerFilter,
+      queryEmbedding,
+    });
+    res.json({
+      ok: true,
+      hits,
+      embeddingSource: queryEmbedding
+        ? `${boosteraDecisionOrchestrator.getConfig().embeddingModel} (OpenRouter)`
+        : 'אינדוקס וקטורי דטרמיניסטי מקומי',
+    });
+  });
+
+  app.post('/api/intelligence/knowledge/purge', (req, res) => {
+    const streamId = typeof req.body?.streamId === 'string' && req.body.streamId.trim() ? req.body.streamId.trim() : undefined;
+    if (typeof req.body?.retentionDays === 'number') {
+      boosteraKnowledgeEngine.setRetentionDays(req.body.retentionDays);
+    }
+    const purgedCount = req.body?.purgeNow ? boosteraKnowledgeEngine.purgeStreamOrAllData(streamId) : 0;
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: true, purgedCount, dashboard });
+  });
+
+  app.post('/api/intelligence/replay/save', (req, res) => {
+    const titleHe = typeof req.body?.titleHe === 'string' ? req.body.titleHe : undefined;
+    const streamId = typeof req.body?.streamId === 'string' ? req.body.streamId : undefined;
+    const replay = boosteraDataFactory.saveCurrentSnapshotAsReplay(titleHe, streamId);
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: true, replayId: replay.replayId, eventsCount: replay.eventsCount, dashboard });
+  });
+
+  app.post('/api/intelligence/replay/start', (req, res) => {
+    const replayId = String(req.body?.replayId || '').trim();
+    const out = boosteraDataFactory.startReplaySession(replayId, () => {
+      buildAndBroadcastIntelligenceDashboard();
+    });
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: out.ok, errorHe: out.errorHe, dashboard });
+  });
+
+  app.post('/api/intelligence/crew/policy', (req, res) => {
+    boosteraCrewOrchestrator.updatePolicyConfig({
+      maxActiveCrewPerStream: req.body?.maxActiveCrewPerStream,
+      silenceWhenCreatorSpeaks: req.body?.silenceWhenCreatorSpeaks,
+      busyChatThresholdPerMin: req.body?.busyChatThresholdPerMin,
+    });
+    if (typeof req.body?.streamId === 'string' && typeof req.body?.maxActiveCrewPerStream === 'number') {
+      boosteraDataFactory.setActiveAiCrewCountForStream(req.body.streamId, req.body.maxActiveCrewPerStream);
+    }
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: true, crewControl: dashboard.crewControl, dashboard });
+  });
+
+  app.post('/api/intelligence/crew/identity', (req, res) => {
+    const agentId = String(req.body?.agentId || '').trim();
+    const updated = boosteraCrewOrchestrator.updateAgentIdentityDirect(agentId, req.body || {});
+    if (!updated) {
+      res.status(404).json({ error: 'מנחה ה-AI המבוקש לא נמצא.' });
+      return;
+    }
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: true, agent: updated, dashboard });
+  });
+
+  app.post('/api/intelligence/crew/proposal/resolve', (req, res) => {
+    const agentId = String(req.body?.agentId || '').trim();
+    const approve = Boolean(req.body?.approve);
+    const updated = boosteraCrewOrchestrator.resolveIdentityProposal(agentId, approve);
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: Boolean(updated), agent: updated, dashboard });
+  });
+
+  app.post('/api/intelligence/crew/propose-message', (req, res) => {
+    const streamId = String(req.body?.streamId || 'live_studio').trim();
+    const candidateAgentId = String(req.body?.agentId || 'ai_crew_1_host').trim();
+    const addressedToHandle = String(req.body?.addressedToHandle || '').trim();
+    const rawSuggestedMessageHe = String(req.body?.messageHe || '').trim();
+    const purposeHe = String(req.body?.purposeHe || 'הודעת מנחה מתואמת לשידור').trim();
+    const viewerValueHe = String(req.body?.viewerValueHe || 'סיוע ברצף השיחה ומענה לצופים').trim();
+    const dispatchImmediatelyIfAllowed = Boolean(req.body?.dispatchImmediately);
+    const allowPreviewOverride = Boolean(req.body?.allowPreviewOverride);
+
+    const dossier = boosteraDataFactory.getStreamDossier(streamId);
+    const gateRes = boosteraCrewOrchestrator.evaluateAndCoordinateCrewMessage({
+      streamDossier: dossier,
+      candidateAgentId,
+      addressedToHandle,
+      rawSuggestedMessageHe,
+      purposeHe,
+      viewerValueHe,
+      requireHumanApproval: !dispatchImmediatelyIfAllowed,
+    });
+
+    let dispatchStatusHe = gateRes.gateLog.explanationHe;
+    if (gateRes.allowed && gateRes.selectedAgent) {
+      let sent = false;
+      if (dispatchImmediatelyIfAllowed) {
+        const out = stageExecutionCallbacks.dispatchCompanionLine({
+          slotNumber: gateRes.selectedAgent.linkedCompanionSlotNumber,
+          targetRoom: `@${dossier?.creatorUsername || streamId.replace(/^live_/, '')}`,
+          messageHe: gateRes.formattedTransparentMessageHe,
+          purposeHe,
+          allowPreviewOverride,
+        });
+        sent = out.sent;
+        dispatchStatusHe = out.statusHe;
+      }
+
+      boosteraCrewOrchestrator.recordCrewActionAndScheduleMeasurement({
+        agent: gateRes.selectedAgent,
+        streamId: dossier?.streamId || streamId,
+        creatorUsername: dossier?.creatorUsername || streamId.replace(/^live_/, ''),
+        addressedTo: addressedToHandle || `@${dossier?.creatorUsername || 'stream'}`,
+        purposeHe,
+        messageTextHe: gateRes.formattedTransparentMessageHe,
+        dispatchedState: sent ? 'SENT_AUTHORIZED' : 'SUGGESTED_PENDING_APPROVAL',
+        dataFactory: boosteraDataFactory,
+        knowledgeEngine: boosteraKnowledgeEngine,
+        onMeasured: () => {
+          buildAndBroadcastIntelligenceDashboard();
+        },
+      });
+    }
+
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: gateRes.allowed, gate: gateRes.gateLog, dispatchStatusHe, dashboard });
+  });
+
+  app.post('/api/intelligence/ideas/status', (req, res) => {
+    const ideaId = String(req.body?.ideaId || '').trim();
+    const status =
+      req.body?.status === 'APPROVED_FOR_DEV' || req.body?.status === 'ARCHIVED'
+        ? req.body.status
+        : 'PROPOSED';
+    boosteraDecisionOrchestrator.updateIdeaStatus(ideaId, status);
+    const dashboard = buildAndBroadcastIntelligenceDashboard();
+    res.json({ ok: true, dashboard });
+  });
+
+  app.post('/api/intelligence/tests/run', async (_req, res) => {
+    try {
+      const report = await runBoosteraPhase5TestSuite({
+        dataFactory: boosteraDataFactory,
+        knowledgeEngine: boosteraKnowledgeEngine,
+        crewOrchestrator: boosteraCrewOrchestrator,
+        decisionOrchestrator: boosteraDecisionOrchestrator,
+        executionBridge: boosteraExecutionBridge,
+        stageCallbacks: stageExecutionCallbacks,
+      });
+      const dashboard = buildAndBroadcastIntelligenceDashboard();
+      res.json({ ok: true, report, dashboard });
+    } catch (err: any) {
+      res.status(500).json({ error: String(err?.message || 'שגיאה בהרצת סוויטת הבדיקות') });
     }
   });
 
